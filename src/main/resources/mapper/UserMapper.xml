@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.andrew.smartielts.auth.mapper.UserMapper">
+
+    <!-- 1. 儲存用戶 -->
+    <insert id="save" parameterType="com.andrew.smartielts.auth.domain.pojo.User">
+        INSERT INTO sys_user(email, password, role)
+        VALUES(#{email}, #{password}, #{role})
+    </insert>
+
+    <!-- 2. 根據 Email 查找用戶物件 (findByEmail 應該回傳 User 物件) -->
+    <select id="findByEmail" resultType="com.andrew.smartielts.auth.domain.pojo.User">
+        SELECT * FROM sys_user WHERE email = #{email}
+    </select>
+
+    <!-- 3. 檢查 Email 是否存在 (existsByEmail 應該回傳 boolean 或 count) -->
+    <select id="existsByEmail" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM sys_user WHERE email = #{email}
+    </select>
+
+</mapper>

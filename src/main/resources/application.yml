@@ -1,0 +1,21 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: SmartIELTS
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/SmartIELTS
+    username: root
+    password: 1234
+  data:
+    redis:
+      port: 6379
+      host: 127.0.0.1
+      database: 0
+jwt:
+  secret-key: andrew-smart-ielts-secret-key
+  ttl: 3600000   # 1 ??????
+mybatis:
+  # ????????? XML ???
+  mapper-locations: classpath:mapper/*.xml
