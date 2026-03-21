@@ -1,21 +1,95 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
+
 spring:
   application:
-    name: SmartIELTS
+    name: ${SPRING_APPLICATION_NAME:SmartIELTS}
+
+  mvc:
+    servlet:
+      path: ${SPRING_MVC_SERVLET_PATH:/api}
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/SmartIELTS
-    username: root
-    password: 1234
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
   data:
     redis:
-      port: 6379
-      host: 127.0.0.1
-      database: 0
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
+
+  servlet:
+    multipart:
+      max-file-size: ${SPRING_MULTIPART_MAX_FILE_SIZE:20MB}
+      max-request-size: ${SPRING_MULTIPART_MAX_REQUEST_SIZE:100MB}
+
 jwt:
-  secret-key: eduhk-andrew-smart-learnIelts-secret-key
-  ttl: 7200000   # 2 ??????
+  secret-key: ${JWT_SECRET_KEY}
+  ttl: ${JWT_TTL:7200000}
+
 mybatis:
-  # ????????? XML ???
-  mapper-locations: classpath:mapper/*.xml
+  mapper-locations: ${MYBATIS_MAPPER_LOCATIONS:classpath*:mapper/**/*.xml}
+  type-aliases-package: ${MYBATIS_TYPE_ALIASES_PACKAGE:com.andrew.smartielts}
+  configuration:
+    map-underscore-to-camel-case: ${MYBATIS_MAP_UNDERSCORE_TO_CAMEL_CASE:true}
+
+knife4j:
+  enable: ${KNIFE4J_ENABLE:true}
+
+aliyun:
+  oss:
+    endpoint: ${ALIYUN_OSS_ENDPOINT}
+    region: ${ALIYUN_OSS_REGION}
+    access-key-id: ${ALIYUN_OSS_ACCESS_KEY_ID}
+    access-key-secret: ${ALIYUN_OSS_ACCESS_KEY_SECRET}
+    buckets:
+      writing-question:
+        bucket-name: ${ALIYUN_OSS_BUCKET_WRITING_QUESTION}
+        domain: ${ALIYUN_OSS_DOMAIN_WRITING_QUESTION}
+      writing-record:
+        bucket-name: ${ALIYUN_OSS_BUCKET_WRITING_RECORD}
+        domain: ${ALIYUN_OSS_DOMAIN_WRITING_RECORD}
+      listening-recording:
+        bucket-name: ${ALIYUN_OSS_BUCKET_LISTENING_RECORDING}
+        domain: ${ALIYUN_OSS_DOMAIN_LISTENING_RECORDING}
+      speaking-audio:
+        bucket-name: ${ALIYUN_OSS_BUCKET_SPEAKING_AUDIO}
+        domain: ${ALIYUN_OSS_DOMAIN_SPEAKING_AUDIO}
+
+  ocr:
+    access-key-id: ${ALIYUN_OCR_ACCESS_KEY_ID:}
+    access-key-secret: ${ALIYUN_OCR_ACCESS_KEY_SECRET:}
+    endpoint: ${ALIYUN_OCR_ENDPOINT:ocr-api.cn-hangzhou.aliyuncs.com}
+
+  writing-score-ai:
+    model: ${WRITING_SCORE_AI_MODEL:qwen3.5-flash}
+    base-url: ${ALIYUN_AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+    api-key: ${ALIYUN_AI_API_KEY:}
+
+  speaking-score-ai:
+    base-url: ${ALIYUN_AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+    api-key: ${ALIYUN_AI_API_KEY:}
+
+    per-question-model: ${SPEAKING_SCORE_AI_MODEL:qwen3-omni-flash}
+    final-model: ${SPEAKING_SCORE_AI_MODEL:qwen3.5-flash}
+
+  bailian:
+    asr:
+      endpoint: https://dashscope.aliyuncs.com/api/v1/services/audio/asr/transcription
+      api-key: ${ALIYUN_AI_API_KEY:}
+      model: qwen3-asr-flash
+      region: cn-beijing
+
+did:
+  api-key: ${DID_API_KEY:}
+  webhook-url: ${DID_WEBHOOK_URL:http://localhost:8080/api/speaking/webhook/end}
+  presenter-id: ${DID_PRESENTER_ID:v2_agt_017IbrpB}
+  voice-id: ${DID_VOICE_ID:en-US-JennyNeural}
+
+app:
+  security:
+    require-https-webhook: false
+

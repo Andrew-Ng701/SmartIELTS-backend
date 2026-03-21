@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.andrew.smartielts.reading.mapper.ReadingRecordMapper">
+
+    <resultMap id="ReadingRecordResultMap" type="com.andrew.smartielts.reading.domain.pojo.ReadingRecord">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="test_id" property="testId"/>
+        <result column="total_score" property="totalScore"/>
+        <result column="created_time" property="createdTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, user_id, test_id, total_score, created_time
+    </sql>
+
+    <insert id="insert"
+            parameterType="com.andrew.smartielts.reading.domain.pojo.ReadingRecord"
+            useGeneratedKeys="true"
+            keyProperty="id"
+            keyColumn="id">
+        INSERT INTO reading_record (user_id, test_id, total_score, created_time)
+        VALUES (#{userId}, #{testId}, #{totalScore}, #{createdTime})
+    </insert>
+
+    <select id="findById" resultMap="ReadingRecordResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM reading_record
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByUserId" resultMap="ReadingRecordResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM reading_record
+        WHERE user_id = #{userId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="findAll" resultMap="ReadingRecordResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM reading_record
+        ORDER BY id DESC
+    </select>
+
+    <update id="updateTotalScore">
+        UPDATE reading_record
+        SET total_score = #{totalScore}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM reading_record
+        WHERE id = #{id}
+    </delete>
+
+</mapper>

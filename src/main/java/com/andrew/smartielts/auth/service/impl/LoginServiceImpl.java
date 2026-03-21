@@ -3,7 +3,7 @@ package com.andrew.smartielts.auth.service.impl;
 import com.andrew.smartielts.auth.domain.dto.AuthResponseDTO;
 import com.andrew.smartielts.auth.domain.dto.UserDTO;
 import com.andrew.smartielts.auth.domain.pojo.User;
-import com.andrew.smartielts.auth.mapper.UserMapper;
+import com.andrew.smartielts.auth.mapper.AuthMapper;
 import com.andrew.smartielts.auth.service.LoginService;
 import com.andrew.smartielts.security.properties.JwtProperties;
 import com.andrew.smartielts.utils.JwtUtil;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 public class LoginServiceImpl implements LoginService{
 
     @Autowired
-    private UserMapper userMapper;
+    private AuthMapper authMapper;
 
     @Autowired
     private JwtProperties jwtProperties;
@@ -26,7 +26,7 @@ public class LoginServiceImpl implements LoginService{
     public AuthResponseDTO login(UserDTO dto) {
 
         // 1️⃣ 查詢用戶
-        User user = userMapper.findByEmail(dto.getEmail());
+        User user = authMapper.findByEmail(dto.getEmail());
 
         if (user == null) {
             throw new RuntimeException("User not found");

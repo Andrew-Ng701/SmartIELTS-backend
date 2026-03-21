@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.andrew.smartielts.reading.mapper.ReadingQuestionMapper">
+
+    <resultMap id="ReadingQuestionResultMap" type="com.andrew.smartielts.reading.domain.pojo.ReadingQuestion">
+        <id column="id" property="id"/>
+        <result column="passage_id" property="passageId"/>
+        <result column="question_type" property="questionType"/>
+        <result column="answer_mode" property="answerMode"/>
+        <result column="question_text" property="questionText"/>
+        <result column="correct_answer" property="correctAnswer"/>
+        <result column="options_json" property="optionsJson"/>
+        <result column="accepted_answers_json" property="acceptedAnswersJson"/>
+        <result column="group_label" property="groupLabel"/>
+        <result column="display_order" property="displayOrder"/>
+        <result column="score" property="score"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, passage_id, question_type, answer_mode, question_text, correct_answer,
+        options_json, accepted_answers_json, group_label, display_order, score
+    </sql>
+
+    <insert id="insert" parameterType="com.andrew.smartielts.reading.domain.pojo.ReadingQuestion"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO reading_question (
+        passage_id, question_type, answer_mode, question_text, correct_answer,
+        options_json, accepted_answers_json, group_label, display_order, score
+        )
+        VALUES (
+        #{passageId}, #{questionType}, #{answerMode}, #{questionText}, #{correctAnswer},
+        #{optionsJson}, #{acceptedAnswersJson}, #{groupLabel}, #{displayOrder}, #{score}
+        )
+    </insert>
+
+    <select id="findById" parameterType="java.lang.Long" resultMap="ReadingQuestionResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM reading_question
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByPassageId" parameterType="java.lang.Long" resultMap="ReadingQuestionResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM reading_question
+        WHERE passage_id = #{passageId}
+        ORDER BY display_order ASC, id ASC
+    </select>
+
+    <update id="update" parameterType="com.andrew.smartielts.reading.domain.pojo.ReadingQuestion">
+        UPDATE reading_question
+        SET
+        question_type = #{questionType},
+        answer_mode = #{answerMode},
+        question_text = #{questionText},
+        correct_answer = #{correctAnswer},
+        options_json = #{optionsJson},
+        accepted_answers_json = #{acceptedAnswersJson},
+        group_label = #{groupLabel},
+        display_order = #{displayOrder},
+        score = #{score}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM reading_question WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByPassageId" parameterType="java.lang.Long">
+        DELETE FROM reading_question WHERE passage_id = #{passageId}
+    </delete>
+
+</mapper>

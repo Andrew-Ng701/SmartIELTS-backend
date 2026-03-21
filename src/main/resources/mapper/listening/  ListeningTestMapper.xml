@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.andrew.smartielts.listening.mapper.ListeningTestMapper">
+
+    <resultMap id="ListeningTestResultMap" type="com.andrew.smartielts.listening.domain.pojo.ListeningTest">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="audioUrl" column="audio_url"/>
+        <result property="totalScore" column="total_score"/>
+        <result property="audioObjectKey" column="audio_object_key"/>
+        <result property="createdTime" column="created_time"/>
+    </resultMap>
+
+    <insert id="insertListeningTest"
+            parameterType="com.andrew.smartielts.listening.domain.pojo.ListeningTest"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        insert into listening_test (
+            title,
+            audio_url,
+            total_score,
+            audio_object_key,
+            created_time
+        ) values (
+                     #{title},
+                     #{audioUrl},
+                     #{totalScore},
+                     #{audioObjectKey},
+                     #{createdTime}
+                 )
+    </insert>
+
+    <select id="findById" resultMap="ListeningTestResultMap">
+        select
+            id,
+            title,
+            audio_url,
+            total_score,
+            audio_object_key,
+            created_time
+        from listening_test
+        where id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="ListeningTestResultMap">
+        select
+            id,
+            title,
+            audio_url,
+            total_score,
+            audio_object_key,
+            created_time
+        from listening_test
+        order by id desc
+    </select>
+
+    <update id="updateListeningTest"
+            parameterType="com.andrew.smartielts.listening.domain.pojo.ListeningTest">
+        update listening_test
+        set
+            title = #{title},
+            audio_url = #{audioUrl},
+            total_score = #{totalScore},
+            audio_object_key = #{audioObjectKey}
+        where id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        delete from listening_test
+        where id = #{id}
+    </delete>
+</mapper>

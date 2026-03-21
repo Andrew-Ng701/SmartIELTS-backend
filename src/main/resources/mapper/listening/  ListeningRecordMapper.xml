@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.andrew.smartielts.listening.mapper.ListeningRecordMapper">
+
+    <resultMap id="ListeningRecordResultMap" type="com.andrew.smartielts.listening.domain.pojo.ListeningRecord">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="test_id" property="testId"/>
+        <result column="total_score" property="totalScore"/>
+        <result column="created_time" property="createdTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, user_id, test_id, total_score, created_time
+    </sql>
+
+    <insert id="insert" parameterType="com.andrew.smartielts.listening.domain.pojo.ListeningRecord"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO listening_record (
+        user_id, test_id, total_score, created_time
+        )
+        VALUES (
+        #{userId}, #{testId}, #{totalScore}, #{createdTime}
+        )
+    </insert>
+
+    <select id="findById" parameterType="java.lang.Long" resultMap="ListeningRecordResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM listening_record
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByUserId" parameterType="java.lang.Long" resultMap="ListeningRecordResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM listening_record
+        WHERE user_id = #{userId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="findAll" resultMap="ListeningRecordResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM listening_record
+        ORDER BY id DESC
+    </select>
+
+    <update id="updateTotalScore">
+        UPDATE listening_record
+        SET total_score = #{totalScore}
+        WHERE id = #{id}
+    </update>
+
+</mapper>

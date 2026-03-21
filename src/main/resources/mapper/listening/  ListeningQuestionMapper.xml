@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.andrew.smartielts.listening.mapper.ListeningQuestionMapper">
+
+    <resultMap id="ListeningQuestionResultMap" type="com.andrew.smartielts.listening.domain.pojo.ListeningQuestion">
+        <id column="id" property="id"/>
+        <result column="test_id" property="testId"/>
+        <result column="section_number" property="sectionNumber"/>
+        <result column="question_number" property="questionNumber"/>
+        <result column="question_type" property="questionType"/>
+        <result column="answer_mode" property="answerMode"/>
+        <result column="question_text" property="questionText"/>
+        <result column="correct_answer" property="correctAnswer"/>
+        <result column="options_json" property="optionsJson"/>
+        <result column="accepted_answers_json" property="acceptedAnswersJson"/>
+        <result column="display_order" property="displayOrder"/>
+        <result column="score" property="score"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, test_id, section_number, question_number, question_type, answer_mode,
+        question_text, correct_answer, options_json, accepted_answers_json,
+        display_order, score
+    </sql>
+
+    <insert id="insertListeningQuestion" parameterType="com.andrew.smartielts.listening.domain.pojo.ListeningQuestion"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO listening_question (
+        test_id, section_number, question_number, question_type, answer_mode,
+        question_text, correct_answer, options_json, accepted_answers_json,
+        display_order, score
+        )
+        VALUES (
+        #{testId}, #{sectionNumber}, #{questionNumber}, #{questionType}, #{answerMode},
+        #{questionText}, #{correctAnswer}, #{optionsJson}, #{acceptedAnswersJson},
+        #{displayOrder}, #{score}
+        )
+    </insert>
+
+    <select id="findById" parameterType="java.lang.Long" resultMap="ListeningQuestionResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM listening_question
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByTestId" parameterType="java.lang.Long" resultMap="ListeningQuestionResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM listening_question
+        WHERE test_id = #{testId}
+        ORDER BY display_order ASC, question_number ASC, id ASC
+    </select>
+
+    <update id="updateListeningQuestion" parameterType="com.andrew.smartielts.listening.domain.pojo.ListeningQuestion">
+        UPDATE listening_question
+        SET
+        section_number = #{sectionNumber},
+        question_number = #{questionNumber},
+        question_type = #{questionType},
+        answer_mode = #{answerMode},
+        question_text = #{questionText},
+        correct_answer = #{correctAnswer},
+        options_json = #{optionsJson},
+        accepted_answers_json = #{acceptedAnswersJson},
+        display_order = #{displayOrder},
+        score = #{score}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM listening_question
+        WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByTestId" parameterType="java.lang.Long">
+        DELETE FROM listening_question
+        WHERE test_id = #{testId}
+    </delete>
+
+</mapper>

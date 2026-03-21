@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-@MapperScan("com.andrew.smartielts.auth.mapper")
+@MapperScan("com.andrew.smartielts.**.mapper")
 public class SmartIeltsApplication {
 
     public static void main(String[] args) {

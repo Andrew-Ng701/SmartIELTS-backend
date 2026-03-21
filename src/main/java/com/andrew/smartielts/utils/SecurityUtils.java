@@ -7,17 +7,18 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public class SecurityUtils {
 
     public static Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null ||
-                !(authentication.getPrincipal() instanceof LoginUser)) {
+        if (authentication == null || authentication.getPrincipal() == null) {
             throw new RuntimeException("User not authenticated");
         }
 
-        LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        Object principal = authentication.getPrincipal();
 
-        return loginUser.getUserId();
+        if (principal instanceof LoginUser loginUser) {
+            return loginUser.getUserId();
+        }
+
+        throw new RuntimeException("Invalid authentication principal");
     }
 }

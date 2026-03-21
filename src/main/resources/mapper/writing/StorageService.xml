@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.andrew.smartielts.writing.mapper.WritingRecordMapper">
+
+    <resultMap id="WritingRecordResultMap" type="com.andrew.smartielts.writing.domain.pojo.WritingRecord">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="question_id" property="questionId"/>
+        <result column="input_type" property="inputType"/>
+        <result column="text_content" property="textContent"/>
+        <result column="extracted_text" property="extractedText"/>
+        <result column="target_score" property="targetScore"/>
+        <result column="ai_score" property="aiScore"/>
+        <result column="ai_feedback" property="aiFeedback"/>
+        <result column="ai_raw_response" property="aiRawResponse"/>
+        <result column="ai_status" property="aiStatus"/>
+        <result column="ai_provider" property="aiProvider"/>
+        <result column="ai_model" property="aiModel"/>
+        <result column="created_time" property="createdTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,
+        user_id,
+        question_id,
+        input_type,
+        text_content,
+        extracted_text,
+        target_score,
+        ai_score,
+        ai_feedback,
+        ai_raw_response,
+        ai_status,
+        ai_provider,
+        ai_model,
+        created_time
+    </sql>
+
+    <insert id="insert"
+            parameterType="com.andrew.smartielts.writing.domain.pojo.WritingRecord"
+            useGeneratedKeys="true"
+            keyProperty="id"
+            keyColumn="id">
+        INSERT INTO writing_record
+        (
+        user_id,
+        question_id,
+        input_type,
+        text_content,
+        extracted_text,
+        target_score,
+        ai_score,
+        ai_feedback,
+        ai_raw_response,
+        ai_status,
+        ai_provider,
+        ai_model,
+        created_time
+        )
+        VALUES
+        (
+        #{userId},
+        #{questionId},
+        #{inputType},
+        #{textContent},
+        #{extractedText},
+        #{targetScore},
+        #{aiScore},
+        #{aiFeedback},
+        #{aiRawResponse},
+        #{aiStatus},
+        #{aiProvider},
+        #{aiModel},
+        #{createdTime}
+        )
+    </insert>
+
+    <select id="findById"
+            parameterType="java.lang.Long"
+            resultMap="WritingRecordResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM writing_record
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByUserId"
+            parameterType="java.lang.Long"
+            resultMap="WritingRecordResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM writing_record
+        WHERE user_id = #{userId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="findAll"
+            resultMap="WritingRecordResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM writing_record
+        ORDER BY id DESC
+    </select>
+
+    <update id="updateExtractedText">
+        UPDATE writing_record
+        SET extracted_text = #{extractedText}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateAiResult"
+            parameterType="com.andrew.smartielts.writing.domain.pojo.WritingRecord">
+        UPDATE writing_record
+        SET
+        ai_score = #{aiScore},
+        ai_feedback = #{aiFeedback},
+        ai_raw_response = #{aiRawResponse},
+        ai_status = #{aiStatus}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateAiStatus">
+        UPDATE writing_record
+        SET ai_status = #{aiStatus}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById"
+            parameterType="java.lang.Long">
+        DELETE FROM writing_record
+        WHERE id = #{id}
+    </delete>
+
+</mapper>

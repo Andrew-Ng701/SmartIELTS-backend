@@ -31,6 +31,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String uri = request.getRequestURI();
+
+        if (uri.startsWith("/api/swagger-ui")
+                || uri.startsWith("/api/v3/api-docs")
+                || uri.equals("/api/swagger-ui.html")
+                || uri.equals("/api/doc.html")
+                || uri.startsWith("/api/webjars")
+                || uri.startsWith("/api/swagger-resources")
+                || uri.equals("/api/auth/login")
+                || uri.equals("/api/auth/register")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String header = request.getHeader("Authorization");
 
         if (header == null || !header.startsWith("Bearer ")) {
@@ -43,22 +57,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             Claims claims = JwtUtil.parseJWT(jwtProperties.getSecretKey(), token);
 
-            Long userId = Long.valueOf(claims.get("userId").toString());
-            String role = claims.get("role").toString();
+            Object userIdObj = claims.get("userId");
+            Object roleObj = claims.get("role");
+
+            if (userIdObj == null || roleObj == null) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+
+            Long userId = Long.valueOf(userIdObj.toString());
+            String role = roleObj.toString();
 
             List<GrantedAuthority> authorities =
                     List.of(new SimpleGrantedAuthority("ROLE_" + role));
 
-            // ✅ 改成 LoginUser
-            LoginUser loginUser =
-                    new LoginUser(userId, role, authorities);
+            LoginUser loginUser = new LoginUser(userId, role, authorities);
 
             UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            loginUser,
-                            null,
-                            authorities
-                    );
+                    new UsernamePasswordAuthenticationToken(loginUser, null, authorities);
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 

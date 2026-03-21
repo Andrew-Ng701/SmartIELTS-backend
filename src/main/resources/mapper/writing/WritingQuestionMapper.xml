@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.andrew.smartielts.writing.mapper.WritingQuestionMapper">
+
+    <resultMap id="WritingQuestionResultMap" type="com.andrew.smartielts.writing.domain.pojo.WritingQuestion">
+        <id property="id" column="id"/>
+        <result property="taskType" column="task_type"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="imageUrl" column="image_url"/>
+        <result property="imageObjectKey" column="image_object_key"/>
+        <result property="createdTime" column="created_time"/>
+    </resultMap>
+
+    <insert id="insertWritingQuestion"
+            parameterType="com.andrew.smartielts.writing.domain.pojo.WritingQuestion"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        insert into writing_question (
+            task_type,
+            title,
+            description,
+            image_url,
+            image_object_key,
+            created_time
+        ) values (
+                     #{taskType},
+                     #{title},
+                     #{description},
+                     #{imageUrl},
+                     #{imageObjectKey},
+                     #{createdTime}
+                 )
+    </insert>
+
+    <select id="findById" resultMap="WritingQuestionResultMap">
+        select
+            id,
+            task_type,
+            title,
+            description,
+            image_url,
+            image_object_key,
+            created_time
+        from writing_question
+        where id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="WritingQuestionResultMap">
+        select
+            id,
+            task_type,
+            title,
+            description,
+            image_url,
+            image_object_key,
+            created_time
+        from writing_question
+        order by id desc
+    </select>
+
+    <update id="updateWritingQuestion"
+            parameterType="com.andrew.smartielts.writing.domain.pojo.WritingQuestion">
+        update writing_question
+        set
+            task_type = #{taskType},
+            title = #{title},
+            description = #{description},
+            image_url = #{imageUrl},
+            image_object_key = #{imageObjectKey}
+        where id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        delete from writing_question
+        where id = #{id}
+    </delete>
+</mapper>

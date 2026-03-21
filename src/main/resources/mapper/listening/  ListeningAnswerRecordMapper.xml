@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.andrew.smartielts.listening.mapper.ListeningAnswerRecordMapper">
+
+    <resultMap id="ListeningAnswerRecordResultMap" type="com.andrew.smartielts.listening.domain.pojo.ListeningAnswerRecord">
+        <id column="id" property="id"/>
+        <result column="record_id" property="recordId"/>
+        <result column="question_id" property="questionId"/>
+        <result column="user_answer" property="userAnswer"/>
+        <result column="is_correct" property="isCorrect"/>
+        <result column="score" property="score"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, record_id, question_id, user_answer, is_correct, score
+    </sql>
+
+    <insert id="insert" parameterType="com.andrew.smartielts.listening.domain.pojo.ListeningAnswerRecord"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO listening_answer_record (
+        record_id, question_id, user_answer, is_correct, score
+        )
+        VALUES (
+        #{recordId}, #{questionId}, #{userAnswer}, #{isCorrect}, #{score}
+        )
+    </insert>
+
+    <select id="findByRecordId" parameterType="java.lang.Long" resultMap="ListeningAnswerRecordResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM listening_answer_record
+        WHERE record_id = #{recordId}
+        ORDER BY id ASC
+    </select>
+
+</mapper>

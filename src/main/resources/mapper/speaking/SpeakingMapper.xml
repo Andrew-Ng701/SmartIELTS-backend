@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.andrew.smartielts.speaking.mapper.SpeakingMapper">
+
+    <resultMap id="SpeakingQuestionResultMap" type="com.andrew.smartielts.speaking.domain.pojo.SpeakingQuestion">
+        <id property="id" column="id"/>
+        <result property="part" column="part"/>
+        <result property="subType" column="sub_type"/>
+        <result property="topicKey" column="topic_key"/>
+        <result property="questionText" column="question_text"/>
+        <result property="cueCard" column="cue_card"/>
+        <result property="followUpQuestionsJson" column="follow_up_questions_json"/>
+        <result property="prepSeconds" column="prep_seconds"/>
+        <result property="answerSeconds" column="answer_seconds"/>
+        <result property="displayOrder" column="display_order"/>
+        <result property="active" column="active"/>
+        <result property="createdTime" column="created_time"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, part, sub_type, topic_key, question_text, cue_card,
+        follow_up_questions_json, prep_seconds, answer_seconds,
+        display_order, active, created_time
+    </sql>
+
+    <insert id="insertSpeakingQuestion" parameterType="com.andrew.smartielts.speaking.domain.pojo.SpeakingQuestion"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO speaking_question (
+            part, sub_type, topic_key, question_text, cue_card,
+            follow_up_questions_json, prep_seconds, answer_seconds,
+            display_order, active, created_time
+        ) VALUES (
+                     #{part}, #{subType}, #{topicKey}, #{questionText}, #{cueCard},
+                     #{followUpQuestionsJson}, #{prepSeconds}, #{answerSeconds},
+                     #{displayOrder}, #{active}, #{createdTime}
+                 )
+    </insert>
+
+    <select id="findById" resultMap="SpeakingQuestionResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM speaking_question
+        WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="SpeakingQuestionResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM speaking_question
+        ORDER BY part, sub_type, display_order, id
+    </select>
+
+    <update id="updateSpeakingQuestion" parameterType="com.andrew.smartielts.speaking.domain.pojo.SpeakingQuestion">
+        UPDATE speaking_question
+        SET
+            part = #{part},
+            sub_type = #{subType},
+            topic_key = #{topicKey},
+            question_text = #{questionText},
+            cue_card = #{cueCard},
+            follow_up_questions_json = #{followUpQuestionsJson},
+            prep_seconds = #{prepSeconds},
+            answer_seconds = #{answerSeconds},
+            display_order = #{displayOrder},
+            active = #{active}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM speaking_question
+        WHERE id = #{id}
+    </delete>
+
+    <select id="findByPart" resultMap="SpeakingQuestionResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM speaking_question
+        WHERE part = #{part} AND active = 1
+        ORDER BY display_order, id
+    </select>
+
+    <select id="findByPartAndSubType" resultMap="SpeakingQuestionResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM speaking_question
+        WHERE part = #{part}
+        AND sub_type = #{subType}
+        AND active = 1
+        ORDER BY display_order, id
+    </select>
+
+    <select id="findByPartAndTopicKeyAndSubType" resultMap="SpeakingQuestionResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM speaking_question
+        WHERE part = #{part}
+        AND topic_key = #{topicKey}
+        AND sub_type = #{subType}
+        AND active = 1
+        ORDER BY display_order, id
+    </select>
+
+</mapper>

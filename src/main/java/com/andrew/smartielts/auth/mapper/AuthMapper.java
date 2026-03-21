@@ -4,7 +4,7 @@ import com.andrew.smartielts.auth.domain.pojo.User;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface UserMapper {
+public interface AuthMapper {
 
     User findByEmail(String email);
 

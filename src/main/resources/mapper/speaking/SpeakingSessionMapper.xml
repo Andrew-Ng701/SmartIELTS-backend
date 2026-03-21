@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.andrew.smartielts.speaking.mapper.SpeakingSessionMapper">
+
+    <resultMap id="SpeakingSessionResultMap" type="com.andrew.smartielts.speaking.domain.pojo.SpeakingSession">
+        <id property="id" column="id"/>
+        <result property="sessionId" column="session_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="examType" column="exam_type"/>
+        <result property="totalQuestions" column="total_questions"/>
+        <result property="currentIndex" column="current_index"/>
+        <result property="examStatus" column="exam_status"/>
+        <result property="examPlanJson" column="exam_plan_json"/>
+        <result property="fluencyAndCoherence" column="fluency_and_coherence"/>
+        <result property="lexicalResource" column="lexical_resource"/>
+        <result property="grammaticalRangeAndAccuracy" column="grammatical_range_and_accuracy"/>
+        <result property="pronunciation" column="pronunciation"/>
+        <result property="overallScore" column="overall_score"/>
+        <result property="finalFeedback" column="final_feedback"/>
+        <result property="startedTime" column="started_time"/>
+        <result property="completedTime" column="completed_time"/>
+        <result property="createdTime" column="created_time"/>
+        <result property="updatedTime" column="updated_time"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, session_id, user_id, exam_type, total_questions, current_index,
+        exam_status, exam_plan_json, fluency_and_coherence, lexical_resource,
+        grammatical_range_and_accuracy, pronunciation, overall_score, final_feedback,
+        started_time, completed_time, created_time, updated_time
+    </sql>
+
+    <insert id="insertSpeakingSession" parameterType="com.andrew.smartielts.speaking.domain.pojo.SpeakingSession"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO speaking_session (
+            session_id, user_id, exam_type, total_questions, current_index,
+            exam_status, exam_plan_json, fluency_and_coherence, lexical_resource,
+            grammatical_range_and_accuracy, pronunciation, overall_score, final_feedback,
+            started_time, completed_time, created_time, updated_time
+        ) VALUES (
+                     #{sessionId}, #{userId}, #{examType}, #{totalQuestions}, #{currentIndex},
+                     #{examStatus}, #{examPlanJson}, #{fluencyAndCoherence}, #{lexicalResource},
+                     #{grammaticalRangeAndAccuracy}, #{pronunciation}, #{overallScore}, #{finalFeedback},
+                     #{startedTime}, #{completedTime}, #{createdTime}, #{updatedTime}
+                 )
+    </insert>
+
+    <select id="findBySessionId" resultMap="SpeakingSessionResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM speaking_session
+        WHERE session_id = #{sessionId}
+        LIMIT 1
+    </select>
+
+    <update id="updateSpeakingSession" parameterType="com.andrew.smartielts.speaking.domain.pojo.SpeakingSession">
+        UPDATE speaking_session
+        SET
+            session_id = #{sessionId},
+            user_id = #{userId},
+            exam_type = #{examType},
+            total_questions = #{totalQuestions},
+            current_index = #{currentIndex},
+            exam_status = #{examStatus},
+            exam_plan_json = #{examPlanJson},
+            fluency_and_coherence = #{fluencyAndCoherence},
+            lexical_resource = #{lexicalResource},
+            grammatical_range_and_accuracy = #{grammaticalRangeAndAccuracy},
+            pronunciation = #{pronunciation},
+            overall_score = #{overallScore},
+            final_feedback = #{finalFeedback},
+            started_time = #{startedTime},
+            completed_time = #{completedTime},
+            updated_time = #{updatedTime}
+        WHERE id = #{id}
+    </update>
+
+    <select id="findCompletedSessionsByUserId" resultMap="SpeakingSessionResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM speaking_session
+        WHERE user_id = #{userId}
+        AND exam_status = 'COMPLETED'
+        ORDER BY completed_time DESC, id DESC
+    </select>
+
+</mapper>
