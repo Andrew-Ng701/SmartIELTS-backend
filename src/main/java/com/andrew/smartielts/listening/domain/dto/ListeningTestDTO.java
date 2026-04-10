@@ -7,4 +7,5 @@ public class ListeningTestDTO {
 
     private String title;
     private Integer totalScore;
+    private String transcriptText;
 }

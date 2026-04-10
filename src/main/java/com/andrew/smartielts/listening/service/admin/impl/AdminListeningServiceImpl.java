@@ -5,6 +5,7 @@ import com.andrew.smartielts.common.page.PageResult;
 import com.andrew.smartielts.common.storage.BucketType;
 import com.andrew.smartielts.common.storage.UploadResult;
 import com.andrew.smartielts.common.storage.service.StorageService;
+import com.andrew.smartielts.listening.ai.service.ListeningTranscriptService;
 import com.andrew.smartielts.listening.domain.dto.ListeningCreateTestForm;
 import com.andrew.smartielts.listening.domain.dto.ListeningQuestionDTO;
 import com.andrew.smartielts.listening.domain.dto.ListeningTestDTO;
@@ -24,9 +25,9 @@ import com.andrew.smartielts.listening.mapper.ListeningQuestionMapper;
 import com.andrew.smartielts.listening.mapper.ListeningRecordMapper;
 import com.andrew.smartielts.listening.mapper.ListeningTestMapper;
 import com.andrew.smartielts.listening.service.admin.AdminListeningService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -37,20 +38,30 @@ import java.util.Objects;
 @Service
 public class AdminListeningServiceImpl implements AdminListeningService {
 
-    @Autowired
-    private ListeningTestMapper listeningTestMapper;
+    private static final String LISTENING_AUDIO_BIZ_PATH = "listeningaudio";
 
-    @Autowired
-    private ListeningQuestionMapper listeningQuestionMapper;
+    private final ListeningTestMapper listeningTestMapper;
+    private final ListeningQuestionMapper listeningQuestionMapper;
+    private final ListeningRecordMapper listeningRecordMapper;
+    private final ListeningAnswerRecordMapper listeningAnswerRecordMapper;
+    private final StorageService storageService;
+    private final ListeningTranscriptService listeningTranscriptService;
 
-    @Autowired
-    private ListeningRecordMapper listeningRecordMapper;
-
-    @Autowired
-    private ListeningAnswerRecordMapper listeningAnswerRecordMapper;
-
-    @Autowired
-    private StorageService storageService;
+    public AdminListeningServiceImpl(
+            ListeningTestMapper listeningTestMapper,
+            ListeningQuestionMapper listeningQuestionMapper,
+            ListeningRecordMapper listeningRecordMapper,
+            ListeningAnswerRecordMapper listeningAnswerRecordMapper,
+            StorageService storageService,
+            ListeningTranscriptService listeningTranscriptService
+    ) {
+        this.listeningTestMapper = listeningTestMapper;
+        this.listeningQuestionMapper = listeningQuestionMapper;
+        this.listeningRecordMapper = listeningRecordMapper;
+        this.listeningAnswerRecordMapper = listeningAnswerRecordMapper;
+        this.storageService = storageService;
+        this.listeningTranscriptService = listeningTranscriptService;
+    }
 
     @Override
     @Transactional
@@ -60,22 +71,84 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         }
 
         ListeningTest test = new ListeningTest();
-        test.setTitle(form.getTitle());
+        test.setTitle(trimToNull(form.getTitle()));
         test.setTotalScore(form.getTotalScore());
         test.setCreatedTime(LocalDateTime.now());
         test.setIsDeleted(0);
+
+        String manualTranscriptText = trimToNull(form.getTranscriptText());
 
         if (form.getFile() != null && !form.getFile().isEmpty()) {
             UploadResult upload = storageService.upload(
                     form.getFile(),
                     BucketType.LISTENING_RECORDING,
-                    "listening/audio"
+                    LISTENING_AUDIO_BIZ_PATH
             );
             test.setAudioUrl(upload.getFileUrl());
             test.setAudioObjectKey(upload.getFileKey());
+
+            String asrTranscriptText = listeningTranscriptService.generateTranscript(upload.getFileUrl());
+            test.setTranscriptText(firstNonBlank(asrTranscriptText, manualTranscriptText));
+        } else {
+            test.setTranscriptText(manualTranscriptText);
         }
 
         listeningTestMapper.insertListeningTest(test);
+        return test;
+    }
+
+    @Override
+    @Transactional
+    public ListeningTest updateTest(Long id, ListeningTestDTO dto) {
+        ListeningTest test = listeningTestMapper.findActiveById(id);
+        if (test == null) {
+            throw new RuntimeException("Listening test not found");
+        }
+        if (dto == null) {
+            throw new RuntimeException("Request body is required");
+        }
+
+        test.setTitle(trimToNull(dto.getTitle()));
+        test.setTotalScore(dto.getTotalScore());
+        test.setTranscriptText(trimToNull(dto.getTranscriptText()));
+
+        listeningTestMapper.updateListeningTest(test);
+        return test;
+    }
+
+    @Override
+    @Transactional
+    public ListeningTest updateTestAudio(Long id, MultipartFile file, String title, Integer totalScore, String transcriptText) {
+        ListeningTest test = listeningTestMapper.findActiveById(id);
+        if (test == null) {
+            throw new RuntimeException("Listening test not found");
+        }
+        if (file == null || file.isEmpty()) {
+            throw new RuntimeException("Audio file is required");
+        }
+
+        UploadResult upload = storageService.upload(
+                file,
+                BucketType.LISTENING_RECORDING,
+                LISTENING_AUDIO_BIZ_PATH
+        );
+
+        test.setAudioUrl(upload.getFileUrl());
+        test.setAudioObjectKey(upload.getFileKey());
+
+        if (title != null) {
+            test.setTitle(trimToNull(title));
+        }
+        if (totalScore != null) {
+            test.setTotalScore(totalScore);
+        }
+
+        String manualTranscriptText = trimToNull(transcriptText);
+        String asrTranscriptText = listeningTranscriptService.generateTranscript(upload.getFileUrl());
+
+        test.setTranscriptText(firstNonBlank(asrTranscriptText, manualTranscriptText));
+
+        listeningTestMapper.updateListeningTest(test);
         return test;
     }
 
@@ -105,26 +178,10 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         detailVO.setId(test.getId());
         detailVO.setTitle(test.getTitle());
         detailVO.setAudioUrl(test.getAudioUrl());
+        detailVO.setTranscriptText(test.getTranscriptText());
         detailVO.setTotalScore(test.getTotalScore());
         detailVO.setQuestions(questionVOList);
         return detailVO;
-    }
-
-    @Override
-    @Transactional
-    public ListeningTest updateTest(Long id, ListeningTestDTO dto) {
-        ListeningTest test = listeningTestMapper.findActiveById(id);
-        if (test == null) {
-            throw new RuntimeException("Listening test not found");
-        }
-        if (dto == null) {
-            throw new RuntimeException("Request body is required");
-        }
-
-        test.setTitle(dto.getTitle());
-        test.setTotalScore(dto.getTotalScore());
-        listeningTestMapper.updateListeningTest(test);
-        return test;
     }
 
     @Override
@@ -134,7 +191,6 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         if (test == null) {
             throw new RuntimeException("Listening test not found");
         }
-
         listeningQuestionMapper.softDeleteByTestId(id);
         listeningTestMapper.softDeleteById(id);
     }
@@ -146,7 +202,6 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         if (test == null) {
             throw new RuntimeException("Listening test not found");
         }
-
         listeningTestMapper.restoreById(id);
         listeningQuestionMapper.restoreByTestId(id);
     }
@@ -175,7 +230,6 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         question.setDisplayOrder(dto.getDisplayOrder() == null ? 0 : dto.getDisplayOrder());
         question.setScore(dto.getScore() == null ? 1 : dto.getScore());
         question.setIsDeleted(0);
-
         listeningQuestionMapper.insertListeningQuestion(question);
     }
 
@@ -200,7 +254,6 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         question.setAcceptedAnswersJson(dto.getAcceptedAnswersJson());
         question.setDisplayOrder(dto.getDisplayOrder() == null ? 0 : dto.getDisplayOrder());
         question.setScore(dto.getScore() == null ? 1 : dto.getScore());
-
         listeningQuestionMapper.updateListeningQuestion(question);
     }
 
@@ -211,7 +264,6 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         if (question == null) {
             throw new RuntimeException("Listening question not found");
         }
-
         listeningQuestionMapper.softDeleteById(questionId);
     }
 
@@ -237,7 +289,6 @@ public class AdminListeningServiceImpl implements AdminListeningService {
     @Override
     public PageResult<ListeningRecordVO> pageActiveRecords(AdminListeningRecordPageQuery query) {
         AdminListeningRecordPageQuery safeQuery = query == null ? new AdminListeningRecordPageQuery() : query;
-
         RecordQueryValidator.validate(
                 safeQuery.getPageNum(),
                 safeQuery.getPageSize(),
@@ -260,13 +311,11 @@ public class AdminListeningServiceImpl implements AdminListeningService {
 
         List<ListeningRecord> records = listeningRecordMapper.pageAdminActive(safeQuery, offset, pageSize);
         List<ListeningRecordVO> voList = new ArrayList<>();
-
         if (records != null) {
             for (ListeningRecord record : records) {
                 voList.add(toRecordVO(record));
             }
         }
-
         return new PageResult<>(voList, total, pageNum, pageSize);
     }
 
@@ -286,13 +335,11 @@ public class AdminListeningServiceImpl implements AdminListeningService {
 
         List<ListeningRecord> records = listeningRecordMapper.pageAdminDeleted(safeQuery, offset, pageSize);
         List<ListeningRecordVO> voList = new ArrayList<>();
-
         if (records != null) {
             for (ListeningRecord record : records) {
                 voList.add(toRecordVO(record));
             }
         }
-
         return new PageResult<>(voList, total, pageNum, pageSize);
     }
 
@@ -315,7 +362,6 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         for (ListeningQuestion question : questions) {
             questionVOList.add(toQuestionVO(question));
         }
-
         questionVOList.sort(Comparator
                 .comparing(ListeningQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
                 .thenComparing(ListeningQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo)));
@@ -356,6 +402,7 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         detailVO.setTestId(test.getId());
         detailVO.setTestTitle(test.getTitle());
         detailVO.setAudioUrl(test.getAudioUrl());
+        detailVO.setTranscriptText(test.getTranscriptText());
         detailVO.setTotalScore(record.getTotalScore());
         detailVO.setCreatedTime(record.getCreatedTime());
         detailVO.setQuestions(questionVOList);
@@ -373,7 +420,6 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         if (record.getIsDeleted() != null && record.getIsDeleted() == 1) {
             throw new RuntimeException("Listening record already deleted");
         }
-
         listeningRecordMapper.softDeleteById(recordId);
     }
 
@@ -387,7 +433,6 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         if (record.getIsDeleted() == null || record.getIsDeleted() == 0) {
             throw new RuntimeException("Listening record is not deleted");
         }
-
         listeningRecordMapper.restoreById(recordId);
     }
 
@@ -428,5 +473,23 @@ public class AdminListeningServiceImpl implements AdminListeningService {
             return 10;
         }
         return Math.min(pageSize, 100);
+    }
+
+    private String trimToNull(String text) {
+        if (text == null) {
+            return null;
+        }
+        String trimmed = text.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.isBlank()) {
+            return first.trim();
+        }
+        if (second != null && !second.isBlank()) {
+            return second.trim();
+        }
+        return null;
     }
 }

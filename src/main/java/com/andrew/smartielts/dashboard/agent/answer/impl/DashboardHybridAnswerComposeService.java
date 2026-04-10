@@ -34,6 +34,7 @@ public class DashboardHybridAnswerComposeService implements DashboardAnswerCompo
                             .data(request.getData())
                             .factualSummary(templateResult.getAnswer())
                             .suggestions(templateResult.getSuggestions())
+                            .responseLanguage(request.getResponseLanguage())
                             .build()
             );
 
@@ -44,7 +45,7 @@ public class DashboardHybridAnswerComposeService implements DashboardAnswerCompo
                             : rewriteResult.getSuggestions())
                     .build();
         } catch (Exception e) {
-            log.warn("AI answer rewrite failed, fallback to template answer: {}", e.getMessage());
+            log.warn("AI answer rewrite failed, fallback to template answer {}", e.getMessage());
             return templateResult;
         }
     }

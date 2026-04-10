@@ -5,14 +5,14 @@ public final class DashboardSqlFewShotConstants {
     private DashboardSqlFewShotConstants() {
     }
 
-    public static final String DASHSCOPESQLGENERATIONFEWSHOTS = """
+    public static final String DASHSCOPE_SQL_GENERATION_FEW_SHOTS = """
 Example 1
 Input:
 role USER
 operatorUserId 1001
 targetUserId 1001
 originalQuery 最近 10 次作答
-intentJson {"success":true,"capability":"STRUCTUREDQUERY","queryMode":"STRUCTUREDQUERY","targetScope":"SELF","targetUserId":1001,"filters":{"limit":10,"sortBy":"createdTime","sortDirection":"desc"}}
+intentJson {"success":true,"capability":"STRUCTURED_QUERY","queryMode":"STRUCTURED_QUERY","targetScope":"SELF","targetUserId":1001,"filters":{"limit":10,"sortBy":"createdTime","sortDirection":"desc"}}
 contextJson {}
 
 Output:
@@ -24,7 +24,7 @@ role USER
 operatorUserId 1001
 targetUserId 1001
 originalQuery 我剛做的 reading 第 7 題怎麼做
-intentJson {"success":true,"capability":"STRUCTUREDQUERY","queryMode":"STRUCTUREDQUERY","targetScope":"SELF","targetUserId":1001,"filters":{"module":"reading","recordId":9001,"questionNumber":7}}
+intentJson {"success":true,"capability":"STRUCTURED_QUERY","queryMode":"STRUCTURED_QUERY","targetScope":"SELF","targetUserId":1001,"filters":{"module":"reading","recordId":9001,"questionNumber":7}}
 contextJson {"askScene":"QUESTION_EXPLAIN","objectRef":{"module":"reading","recordId":9001,"questionNumber":7}}
 
 Output:
@@ -36,7 +36,7 @@ role USER
 operatorUserId 1001
 targetUserId 1001
 originalQuery 這篇閱讀文章題目是什麼
-intentJson {"success":true,"capability":"STRUCTUREDQUERY","queryMode":"STRUCTUREDQUERY","targetScope":"SELF","targetUserId":1001,"filters":{"module":"reading","passageId":8001}}
+intentJson {"success":true,"capability":"STRUCTURED_QUERY","queryMode":"STRUCTURED_QUERY","targetScope":"SELF","targetUserId":1001,"filters":{"module":"reading","passageId":8001}}
 contextJson {"askScene":"ARTICLE_TITLE","objectRef":{"module":"reading","passageId":8001}}
 
 Output:
@@ -48,7 +48,7 @@ role USER
 operatorUserId 1001
 targetUserId 1001
 originalQuery 我最近那題 listening 為什麼錯
-intentJson {"success":true,"capability":"STRUCTUREDQUERY","queryMode":"STRUCTUREDQUERY","targetScope":"SELF","targetUserId":1001,"filters":{"module":"listening","limit":1,"sortBy":"createdTime","sortDirection":"desc"}}
+intentJson {"success":true,"capability":"STRUCTURED_QUERY","queryMode":"STRUCTURED_QUERY","targetScope":"SELF","targetUserId":1001,"filters":{"module":"listening","limit":1,"sortBy":"createdTime","sortDirection":"desc"}}
 contextJson {"askScene":"QUESTION_RESULT_EXPLAIN","objectRef":{"module":"listening"}}
 
 Output:
@@ -60,7 +60,7 @@ role USER
 operatorUserId 1001
 targetUserId 1001
 originalQuery 最近那題口說題目是什麼
-intentJson {"success":true,"capability":"STRUCTUREDQUERY","queryMode":"STRUCTUREDQUERY","targetScope":"SELF","targetUserId":1001,"filters":{"module":"speaking","limit":1,"sortBy":"createdTime","sortDirection":"desc"}}
+intentJson {"success":true,"capability":"STRUCTURED_QUERY","queryMode":"STRUCTURED_QUERY","targetScope":"SELF","targetUserId":1001,"filters":{"module":"speaking","limit":1,"sortBy":"createdTime","sortDirection":"desc"}}
 contextJson {"askScene":"ARTICLE_TITLE","objectRef":{"module":"speaking"}}
 
 Output:
@@ -72,7 +72,7 @@ role USER
 operatorUserId 1001
 targetUserId 1001
 originalQuery 這次 writing 題目是什麼
-intentJson {"success":true,"capability":"STRUCTUREDQUERY","queryMode":"STRUCTUREDQUERY","targetScope":"SELF","targetUserId":1001,"filters":{"module":"writing","recordId":7001}}
+intentJson {"success":true,"capability":"STRUCTURED_QUERY","queryMode":"STRUCTURED_QUERY","targetScope":"SELF","targetUserId":1001,"filters":{"module":"writing","recordId":7001}}
 contextJson {"askScene":"ARTICLE_TITLE","objectRef":{"module":"writing","recordId":7001}}
 
 Output:
@@ -84,7 +84,7 @@ role USER
 operatorUserId 1001
 targetUserId 1001
 originalQuery 某篇文章標題
-intentJson {"success":true,"capability":"STRUCTUREDQUERY","queryMode":"STRUCTUREDQUERY","targetScope":"SELF","targetUserId":1001,"filters":{}}
+intentJson {"success":true,"capability":"STRUCTURED_QUERY","queryMode":"STRUCTURED_QUERY","targetScope":"SELF","targetUserId":1001,"filters":{}}
 contextJson {"askScene":"ARTICLE_TITLE","objectRef":{}}
 
 Output:

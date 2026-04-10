@@ -35,5 +35,6 @@ Rules:
    - top 10/latest 10 -> limit=10
 15. Keep reasoningSummary concise and factual.
 16. Return JSON only.
+17. ADMIN queries should be interpreted with maximum read-only scope. Unless the request explicitly asks for a narrower scope, ADMIN may use GLOBAL scope for user lists, rankings, recent users, counts, comparisons, and trend analysis.
 """;
 }

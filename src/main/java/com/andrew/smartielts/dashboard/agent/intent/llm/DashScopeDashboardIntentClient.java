@@ -1,10 +1,6 @@
 package com.andrew.smartielts.dashboard.agent.intent.llm;
 
-import com.andrew.smartielts.dashboard.agent.intent.DashboardIntentFewShotConstants;
-import com.andrew.smartielts.dashboard.agent.intent.DashboardIntentPromptConstants;
-import com.andrew.smartielts.dashboard.agent.intent.DashboardIntentPromptTemplates;
-import com.andrew.smartielts.dashboard.agent.intent.DashboardIntentResponseFormatConstants;
-import com.andrew.smartielts.dashboard.agent.intent.DashboardIntentSchemaConstants;
+import com.andrew.smartielts.dashboard.agent.intent.*;
 import com.andrew.smartielts.dashboard.agent.intent.dto.DashboardIntentParseRequest;
 import com.andrew.smartielts.dashboard.agent.intent.dto.DashboardIntentParseResult;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -14,11 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -28,11 +20,11 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DashScopeDashboardLlmClient implements DashboardLlmClient {
+public class DashScopeDashboardIntentClient implements DashboardLlmClient {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
-    private final com.andrew.smartielts.dashboard.agent.intent.DashboardIntentLlmProperties llmProperties;
+    private final DashboardIntentLlmProperties llmProperties;
 
     @Override
     public DashboardIntentParseResult parseIntent(DashboardIntentParseRequest request) {
@@ -41,6 +33,7 @@ public class DashScopeDashboardLlmClient implements DashboardLlmClient {
         ChatCompletionsRequest payload = new ChatCompletionsRequest();
         payload.setModel(llmProperties.getModel());
         payload.setTemperature(0.0);
+        payload.setEnableThinking(false);
         payload.setMessages(List.of(
                 new ChatMessage("system", buildSystemPrompt()),
                 new ChatMessage("user", buildUserPrompt(request))
@@ -52,13 +45,8 @@ public class DashScopeDashboardLlmClient implements DashboardLlmClient {
         headers.setBearerAuth(llmProperties.getApiKey());
 
         HttpEntity<ChatCompletionsRequest> entity = new HttpEntity<>(payload, headers);
-
         ResponseEntity<ChatCompletionsResponse> response = restTemplate.exchange(
-                url,
-                HttpMethod.POST,
-                entity,
-                ChatCompletionsResponse.class
-        );
+                url, HttpMethod.POST, entity, ChatCompletionsResponse.class);
 
         ChatCompletionsResponse body = response.getBody();
         if (body == null || body.getChoices() == null || body.getChoices().isEmpty()) {
@@ -74,9 +62,7 @@ public class DashScopeDashboardLlmClient implements DashboardLlmClient {
         }
 
         try {
-            DashboardIntentParseResult result =
-                    objectMapper.readValue(content, DashboardIntentParseResult.class);
-
+            DashboardIntentParseResult result = objectMapper.readValue(content, DashboardIntentParseResult.class);
             normalizeResult(request, result);
             return result;
         } catch (JsonProcessingException e) {
@@ -87,20 +73,16 @@ public class DashScopeDashboardLlmClient implements DashboardLlmClient {
 
     private String buildSystemPrompt() {
         return DashboardIntentPromptConstants.DASHSCOPE_INTENT_SYSTEM_PROMPT
-                + "\n\n"
                 + DashboardIntentFewShotConstants.DASHSCOPE_INTENT_FEW_SHOTS;
     }
 
     private String buildUserPrompt(DashboardIntentParseRequest request) {
         String contextJson;
         try {
-            contextJson = objectMapper.writeValueAsString(
-                    request.getContext() == null ? Map.of() : request.getContext()
-            );
+            contextJson = objectMapper.writeValueAsString(request.getContext() == null ? Map.of() : request.getContext());
         } catch (JsonProcessingException e) {
             contextJson = "{}";
         }
-
         return DashboardIntentPromptTemplates.DASHSCOPE_INTENT_USER_PROMPT_TEMPLATE.formatted(
                 safeString(request.getRole()),
                 String.valueOf(request.getOperatorUserId()),
@@ -124,29 +106,17 @@ public class DashScopeDashboardLlmClient implements DashboardLlmClient {
     @SuppressWarnings("unchecked")
     private Map<String, Object> readSchemaAsMap() {
         try {
-            return objectMapper.readValue(
-                    DashboardIntentSchemaConstants.DASHSCOPE_INTENT_JSON_SCHEMA,
-                    Map.class
-            );
+            return objectMapper.readValue(DashboardIntentSchemaConstants.DASHSCOPE_INTENT_JSON_SCHEMA, Map.class);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Invalid dashboard intent schema constant", e);
         }
     }
 
     private void normalizeResult(DashboardIntentParseRequest request, DashboardIntentParseResult result) {
-        if (result.getFilters() == null) {
-            result.setFilters(Map.of());
-        }
-        if (result.getSuggestions() == null) {
-            result.setSuggestions(List.of());
-        }
-        if (result.getConfidence() == null) {
-            result.setConfidence(0.0D);
-        }
-        if (result.getSuccess() == null) {
-            result.setSuccess(Boolean.TRUE);
-        }
-
+        if (result.getFilters() == null) result.setFilters(Map.of());
+        if (result.getSuggestions() == null) result.setSuggestions(List.of());
+        if (result.getConfidence() == null) result.setConfidence(0.0D);
+        if (result.getSuccess() == null) result.setSuccess(Boolean.TRUE);
         if ("USER".equalsIgnoreCase(request.getRole()) && result.getTargetUserId() == null) {
             result.setTargetUserId(request.getOperatorUserId());
         }
@@ -167,6 +137,10 @@ public class DashScopeDashboardLlmClient implements DashboardLlmClient {
     static class ChatCompletionsRequest {
         private String model;
         private Double temperature;
+
+        @JsonProperty("enable_thinking")
+        private Boolean enableThinking;
+
         private List<ChatMessage> messages;
 
         @JsonProperty("response_format")

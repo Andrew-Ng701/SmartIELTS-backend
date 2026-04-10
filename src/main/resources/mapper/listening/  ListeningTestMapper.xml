@@ -10,6 +10,7 @@
         <result property="audioUrl" column="audio_url"/>
         <result property="totalScore" column="total_score"/>
         <result property="audioObjectKey" column="audio_object_key"/>
+        <result property="transcriptText" column="transcript_text"/>
         <result property="createdTime" column="created_time"/>
         <result property="isDeleted" column="is_deleted"/>
     </resultMap>
@@ -23,6 +24,7 @@
             audio_url,
             total_score,
             audio_object_key,
+            transcript_text,
             created_time,
             is_deleted
         ) values (
@@ -30,40 +32,81 @@
                      #{audioUrl},
                      #{totalScore},
                      #{audioObjectKey},
+                     #{transcriptText},
                      #{createdTime},
                      0
                  )
     </insert>
 
     <select id="findActiveById" resultMap="ListeningTestResultMap">
-        select id, title, audio_url, total_score, audio_object_key, created_time, is_deleted
+        select
+            id,
+            title,
+            audio_url,
+            total_score,
+            audio_object_key,
+            transcript_text,
+            created_time,
+            is_deleted
         from listening_test
         where id = #{id}
           and is_deleted = 0
     </select>
 
     <select id="findAnyById" resultMap="ListeningTestResultMap">
-        select id, title, audio_url, total_score, audio_object_key, created_time, is_deleted
+        select
+            id,
+            title,
+            audio_url,
+            total_score,
+            audio_object_key,
+            transcript_text,
+            created_time,
+            is_deleted
         from listening_test
         where id = #{id}
     </select>
 
     <select id="findAllActive" resultMap="ListeningTestResultMap">
-        select id, title, audio_url, total_score, audio_object_key, created_time, is_deleted
+        select
+            id,
+            title,
+            audio_url,
+            total_score,
+            audio_object_key,
+            transcript_text,
+            created_time,
+            is_deleted
         from listening_test
         where is_deleted = 0
         order by id desc
     </select>
 
     <select id="findAllDeleted" resultMap="ListeningTestResultMap">
-        select id, title, audio_url, total_score, audio_object_key, created_time, is_deleted
+        select
+            id,
+            title,
+            audio_url,
+            total_score,
+            audio_object_key,
+            transcript_text,
+            created_time,
+            is_deleted
         from listening_test
         where is_deleted = 1
         order by id desc
     </select>
 
     <select id="findAllIncludingDeleted" resultMap="ListeningTestResultMap">
-        select id, title, audio_url, total_score, audio_object_key, created_time, is_deleted
+        select
+            id,
+            title,
+            audio_url,
+            total_score,
+            audio_object_key,
+            transcript_text,
+            created_time,
+            is_deleted
         from listening_test
         order by id desc
     </select>
@@ -74,7 +117,8 @@
         set title = #{title},
             audio_url = #{audioUrl},
             total_score = #{totalScore},
-            audio_object_key = #{audioObjectKey}
+            audio_object_key = #{audioObjectKey},
+            transcript_text = #{transcriptText}
         where id = #{id}
     </update>
 

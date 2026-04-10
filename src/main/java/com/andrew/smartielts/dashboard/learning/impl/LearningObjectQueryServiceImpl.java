@@ -2,6 +2,7 @@ package com.andrew.smartielts.dashboard.learning.impl;
 
 import com.andrew.smartielts.dashboard.learning.LearningObjectQueryService;
 import com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO;
+import com.andrew.smartielts.dashboard.learning.dto.ModuleLearningContextDTO;
 import com.andrew.smartielts.dashboard.learning.dto.UserAttemptDTO;
 import com.andrew.smartielts.dashboard.learning.mapper.LearningObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -78,6 +79,26 @@ public class LearningObjectQueryServiceImpl implements LearningObjectQueryServic
             case "reading" -> learningObjectMapper.locateReadingQuestionByNumber(userId, recordId, questionNumber);
             default -> null;
         };
+    }
+
+    @Override
+    public ModuleLearningContextDTO getListeningContext(Long userId, Long recordId, Long questionId) {
+        return learningObjectMapper.selectListeningContext(userId, recordId, questionId);
+    }
+
+    @Override
+    public ModuleLearningContextDTO getReadingContext(Long userId, Long recordId, Long questionId) {
+        return learningObjectMapper.selectReadingContext(userId, recordId, questionId);
+    }
+
+    @Override
+    public ModuleLearningContextDTO getWritingContext(Long userId, Long recordId) {
+        return learningObjectMapper.selectWritingContext(userId, recordId);
+    }
+
+    @Override
+    public ModuleLearningContextDTO getSpeakingContext(Long userId, Long recordId) {
+        return learningObjectMapper.selectSpeakingContext(userId, recordId);
     }
 
     private String normalizeModule(String module) {

@@ -35,21 +35,36 @@ public class DashboardStructuredAiQueryServiceImpl implements DashboardStructure
                                               DashboardIntentParseResult intent,
                                               Map<String, Object> context) {
 
+        long startedAt = System.currentTimeMillis();
+
+        log.info("dashboard.ai.sql stage=EXECUTE_START role={} operatorUserId={} targetUserId={} query={} capability={} filters={}",
+                role,
+                operatorUserId,
+                targetUserId,
+                safe(originalQuery),
+                intent == null || intent.getCapability() == null ? null : intent.getCapability().name(),
+                intent == null ? null : intent.getFilters());
+
         long sqlStartedAt = System.currentTimeMillis();
+        log.info("dashboard.ai.sql stage=SQL_GENERATION_START role={} operatorUserId={} targetUserId={}",
+                role, operatorUserId, targetUserId);
+
         DashboardSqlGenerationResult sqlPlan = dashboardSqlGenerationService.generate(
                 role, operatorUserId, targetUserId, originalQuery, intent, context
         );
-        log.info("dashboard.ai.sql stage=SQL_GENERATED role={} operatorUserId={} targetUserId={} elapsedMs={} success={} queryPurpose={}",
+
+        log.info("dashboard.ai.sql stage=SQL_GENERATED role={} operatorUserId={} targetUserId={} elapsedMs={} success={} queryPurpose={} expectedColumns={}",
                 role,
                 operatorUserId,
                 targetUserId,
                 System.currentTimeMillis() - sqlStartedAt,
                 sqlPlan != null && Boolean.TRUE.equals(sqlPlan.getSuccess()),
-                sqlPlan == null ? null : sqlPlan.getQueryPurpose());
+                sqlPlan == null ? null : sqlPlan.getQueryPurpose(),
+                sqlPlan == null ? null : sqlPlan.getExpectedColumns());
 
         if (sqlPlan == null || !Boolean.TRUE.equals(sqlPlan.getSuccess()) || isBlank(sqlPlan.getSql())) {
-            log.warn("dashboard.ai.sql stage=SQL_GENERATION_FAILED role={} operatorUserId={} targetUserId={} query={} reason={}",
-                    role, operatorUserId, targetUserId, safe(originalQuery),
+            log.warn("dashboard.ai.sql stage=SQL_GENERATION_FAILED role={} operatorUserId={} targetUserId={} totalElapsedMs={} query={} reason={}",
+                    role, operatorUserId, targetUserId, System.currentTimeMillis() - startedAt, safe(originalQuery),
                     sqlPlan == null ? "sqlPlan is null" : safe(sqlPlan.getReasoningSummary()));
 
             return DashboardAssistantResponse.builder()
@@ -68,9 +83,13 @@ public class DashboardStructuredAiQueryServiceImpl implements DashboardStructure
         }
 
         long queryStartedAt = System.currentTimeMillis();
+        log.info("dashboard.ai.sql stage=QUERY_EXECUTE_START role={} operatorUserId={} targetUserId={} sql={} params={}",
+                role, operatorUserId, targetUserId, safe(sqlPlan.getSql()), sqlPlan.getParams());
+
         List<Map<String, Object>> rows = executeRows(
                 role, operatorUserId, targetUserId, originalQuery, intent, sqlPlan
         );
+
         log.info("dashboard.ai.sql stage=ROWS_FETCHED role={} operatorUserId={} targetUserId={} elapsedMs={} rowCount={}",
                 role,
                 operatorUserId,
@@ -80,15 +99,22 @@ public class DashboardStructuredAiQueryServiceImpl implements DashboardStructure
 
         try {
             long composeStartedAt = System.currentTimeMillis();
+            log.info("dashboard.ai.sql stage=LOCAL_COMPOSE_START role={} operatorUserId={} targetUserId={} rowCount={}",
+                    role, operatorUserId, targetUserId, rows == null ? 0 : rows.size());
+
             DashboardAnswerComposeResult composed = composeAnswer(
                     role, operatorUserId, targetUserId, originalQuery, intent, rows, sqlPlan
             );
+
             log.info("dashboard.ai.sql stage=LOCAL_COMPOSE_COMPLETED role={} operatorUserId={} targetUserId={} elapsedMs={} suggestionCount={}",
                     role,
                     operatorUserId,
                     targetUserId,
                     System.currentTimeMillis() - composeStartedAt,
                     composed == null || composed.getSuggestions() == null ? 0 : composed.getSuggestions().size());
+
+            log.info("dashboard.ai.sql stage=EXECUTE_DONE role={} operatorUserId={} targetUserId={} totalElapsedMs={} answerMode=AI_SQL",
+                    role, operatorUserId, targetUserId, System.currentTimeMillis() - startedAt);
 
             return DashboardAssistantResponse.builder()
                     .answer(composed.getAnswer())
@@ -97,10 +123,17 @@ public class DashboardStructuredAiQueryServiceImpl implements DashboardStructure
                     .suggestions(safeList(composed.getSuggestions()))
                     .build();
         } catch (Exception e) {
+            log.error("dashboard.ai.sql stage=LOCAL_COMPOSE_FAILED role={} operatorUserId={} targetUserId={} totalElapsedMs={} message={}",
+                    role, operatorUserId, targetUserId, System.currentTimeMillis() - startedAt, e.getMessage(), e);
+
             long fallbackStartedAt = System.currentTimeMillis();
+            log.info("dashboard.ai.sql stage=FALLBACK_REVIEW_START role={} operatorUserId={} targetUserId={}",
+                    role, operatorUserId, targetUserId);
+
             Map<String, Object> reviewed = dashboardSqlGenerationService.reviewAndAnswer(
                     role, operatorUserId, targetUserId, originalQuery, intent, sqlPlan, rows
             );
+
             log.info("dashboard.ai.sql stage=FALLBACK_REVIEW_COMPLETED role={} operatorUserId={} targetUserId={} elapsedMs={} suggestionCount={}",
                     role,
                     operatorUserId,
@@ -114,6 +147,9 @@ public class DashboardStructuredAiQueryServiceImpl implements DashboardStructure
             if (reviewedMeta instanceof Map<?, ?> map) {
                 map.forEach((k, v) -> mergedMeta.put(String.valueOf(k), v));
             }
+
+            log.info("dashboard.ai.sql stage=EXECUTE_DONE role={} operatorUserId={} targetUserId={} totalElapsedMs={} answerMode=AI_SQL_FALLBACK",
+                    role, operatorUserId, targetUserId, System.currentTimeMillis() - startedAt);
 
             return DashboardAssistantResponse.builder()
                     .answer(asString(reviewed.get("answer")))

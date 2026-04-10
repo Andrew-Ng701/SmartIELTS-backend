@@ -4,9 +4,8 @@ import lombok.Data;
 
 @Data
 public class DashboardAskObjectRef {
-
-    private String module;       // listening / reading / writing / speaking
-    private String objectType;   // test / passage / question / record / session
+    private String module;
+    private String objectType;
     private Long testId;
     private Long passageId;
     private Long questionId;

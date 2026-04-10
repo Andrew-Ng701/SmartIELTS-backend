@@ -17,9 +17,14 @@ public class LearningObjectDTO {
     private Long testId;
     private Long passageId;
     private Long questionId;
+    private Long recordId;
 
     private String title;
+    private String testTitle;
+    private String passageTitle;
+
     private String content;
+    private String passageContent;
     private String questionText;
     private String correctAnswer;
     private String explanation;
@@ -27,9 +32,15 @@ public class LearningObjectDTO {
     private Integer questionNumber;
     private String questionType;
     private String answerMode;
-
     private List<String> options;
     private List<String> acceptedAnswers;
+
+    private String cueCard;
+    private String transcriptText;
+    private String audioUrl;
+    private String audioObjectKey;
+    private String imageUrl;
+    private String taskType;
 
     private Map<String, Object> ext;
 }

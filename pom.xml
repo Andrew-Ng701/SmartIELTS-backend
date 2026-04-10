@@ -100,6 +100,24 @@
             </exclusions>
         </dependency>
 
+        <!-- Spring Boot Starter Data Redis (包含 RedisTemplate) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- Jackson 用於 JSON 序列化 (Spring Boot 通常已內建，但建議確保存在) -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <!-- 連接池支援 (可選，但建議在生產環境使用) -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-pool2</artifactId>
+        </dependency>
+
         <!-- Gson -->
         <dependency>
             <groupId>com.google.code.gson</groupId>

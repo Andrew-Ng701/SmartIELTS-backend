@@ -15,7 +15,7 @@ public final class DashboardSqlPromptConstants {
             1. Output only valid JSON.
             2. Do not output markdown.
             3. Do not output explanations outside JSON.
-            4. Generate exactly one SELECT statement only.
+            4. Generate exactly SELECT statement only.
             5. Never generate INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, TRUNCATE, REPLACE, MERGE, GRANT, REVOKE, COMMIT, or ROLLBACK.
             6. Never generate multiple statements.
             7. Never use comments.
@@ -40,6 +40,14 @@ public final class DashboardSqlPromptConstants {
             23. Never query unrelated users' attempts. USER role must always use targetUserId = operatorUserId.
             24. When objectRef is present in contextJson, treat it as the strongest grounding signal and do not ignore it without reason.
             25. When the request lacks a resolvable object identifier for question/article lookup, return success=false instead of generating a broad SQL.
+            26. If the user asks to compare the first attempt and the latest attempt within the same module, select the first row and the latest row in separate subqueries, then combine them with UNION ALL. Do not put ORDER BY and LIMIT directly on top-level UNION branches.
+            27. For first-vs-latest comparison queries, return a compact aligned result set with columns such as comparisonType, recordId, score, and createdTime so the answer layer can compare them safely.
+            28. For admin global user queries such as newest users, latest created users, or recently registered users, use sys_user.created_time as the authoritative signal for recency and return safe fields such as userId, role, and createdTime only.
+            29. For ADMIN role, treat the request as having maximum read-only query scope across all allowed tables and allowed columns.
+            30. ADMIN may query global user lists, rankings, recent users, counts, comparisons, and trend analyses when supported by the allowed schema.
+            31. Even for ADMIN, only safe read-only SELECT queries are allowed.
+            32. For user-identity results in ADMIN queries, return only minimally necessary safe fields such as userId, role, createdTime, counts, scores, or aggregates, and avoid unnecessary sensitive columns.
+            
 
             Allowed schema contract:
 
@@ -248,6 +256,9 @@ public final class DashboardSqlPromptConstants {
             19. When using UNION or UNION ALL with per-source recency constraints, do NOT place ORDER BY and LIMIT directly on each top-level SELECT branch.
             Instead, wrap each branch in a subquery first, then UNION/UNION ALL the subqueries.
             20. If the user asks to compare the latest N records across multiple modules, first select the latest N rows per module in separate subqueries, then combine them with UNION ALL, and finally aggregate if needed.
+            21. For first-vs-latest comparison rows, compare score and createdTime directly from the returned aligned rows only.
+            22. Do not infer missing attempts or trends that are not returned.
+            23. When only two aligned rows are returned with comparisonType values such as first and latest, compare those rows directly and keep the answer factual.
 
             Output JSON only.
             """;

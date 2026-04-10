@@ -8,10 +8,12 @@ import java.util.Map;
 
 @Data
 public class DashboardSqlReviewRequest {
+
     private String role;
     private Long operatorUserId;
     private Long targetUserId;
     private String originalQuery;
+    private String responseLanguage;
     private DashboardIntentParseResult intent;
     private DashboardSqlGenerationResult sqlPlan;
     private List<Map<String, Object>> rows;

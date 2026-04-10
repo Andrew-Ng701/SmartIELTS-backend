@@ -23,12 +23,12 @@ import com.andrew.smartielts.listening.service.user.UserListeningService;
 import com.andrew.smartielts.utils.SecurityUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,19 +37,23 @@ import java.util.Objects;
 @Service
 public class UserListeningServiceImpl implements UserListeningService {
 
-    @Autowired
-    private ListeningTestMapper listeningTestMapper;
-
-    @Autowired
-    private ListeningQuestionMapper listeningQuestionMapper;
-
-    @Autowired
-    private ListeningRecordMapper listeningRecordMapper;
-
-    @Autowired
-    private ListeningAnswerRecordMapper listeningAnswerRecordMapper;
-
+    private final ListeningTestMapper listeningTestMapper;
+    private final ListeningQuestionMapper listeningQuestionMapper;
+    private final ListeningRecordMapper listeningRecordMapper;
+    private final ListeningAnswerRecordMapper listeningAnswerRecordMapper;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public UserListeningServiceImpl(
+            ListeningTestMapper listeningTestMapper,
+            ListeningQuestionMapper listeningQuestionMapper,
+            ListeningRecordMapper listeningRecordMapper,
+            ListeningAnswerRecordMapper listeningAnswerRecordMapper
+    ) {
+        this.listeningTestMapper = listeningTestMapper;
+        this.listeningQuestionMapper = listeningQuestionMapper;
+        this.listeningRecordMapper = listeningRecordMapper;
+        this.listeningAnswerRecordMapper = listeningAnswerRecordMapper;
+    }
 
     @Override
     public List<ListeningTest> listTests() {
@@ -65,25 +69,20 @@ public class UserListeningServiceImpl implements UserListeningService {
 
         List<ListeningQuestion> questions = listeningQuestionMapper.findActiveByTestId(testId);
         List<ListeningQuestionVO> questionVOList = new ArrayList<>();
-
         for (ListeningQuestion question : questions) {
-            ListeningQuestionVO vo = new ListeningQuestionVO();
-            vo.setId(question.getId());
-            vo.setSectionNumber(question.getSectionNumber());
-            vo.setQuestionNumber(question.getQuestionNumber());
-            vo.setQuestionType(question.getQuestionType());
-            vo.setAnswerMode(question.getAnswerMode());
-            vo.setQuestionText(question.getQuestionText());
-            vo.setOptionsJson(question.getOptionsJson());
-            vo.setDisplayOrder(question.getDisplayOrder());
-            vo.setScore(question.getScore());
+            ListeningQuestionVO vo = toQuestionVO(question);
             questionVOList.add(vo);
         }
+
+        questionVOList.sort(Comparator
+                .comparing(ListeningQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                .thenComparing(ListeningQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo)));
 
         ListeningTestDetailVO detailVO = new ListeningTestDetailVO();
         detailVO.setId(test.getId());
         detailVO.setTitle(test.getTitle());
         detailVO.setAudioUrl(test.getAudioUrl());
+        detailVO.setTranscriptText(test.getTranscriptText());
         detailVO.setTotalScore(test.getTotalScore());
         detailVO.setQuestions(questionVOList);
         return detailVO;
@@ -110,7 +109,7 @@ public class UserListeningServiceImpl implements UserListeningService {
         listeningRecordMapper.insert(record);
 
         Map<Long, ListeningAnswerDTO> answerMap = new HashMap<>();
-        if (dto.getAnswers() != null) {
+        if (dto != null && dto.getAnswers() != null) {
             for (ListeningAnswerDTO answerDTO : dto.getAnswers()) {
                 answerMap.put(answerDTO.getQuestionId(), answerDTO);
             }
@@ -118,8 +117,11 @@ public class UserListeningServiceImpl implements UserListeningService {
 
         int totalScore = 0;
         List<ListeningAnswerResultVO> answerResults = new ArrayList<>();
+        List<ListeningQuestionVO> questionVOList = new ArrayList<>();
 
         for (ListeningQuestion question : allQuestions) {
+            questionVOList.add(toQuestionVO(question));
+
             ListeningAnswerDTO userInput = answerMap.get(question.getId());
             String userAnswer = userInput != null ? userInput.getAnswer() : null;
             List<String> userAnswers = userInput != null ? userInput.getAnswers() : null;
@@ -128,10 +130,12 @@ public class UserListeningServiceImpl implements UserListeningService {
             int score = correct ? question.getScore() : 0;
             totalScore += score;
 
+            String storedUserAnswer = buildStoredUserAnswer(userAnswer, userAnswers);
+
             ListeningAnswerRecord answerRecord = new ListeningAnswerRecord();
             answerRecord.setRecordId(record.getId());
             answerRecord.setQuestionId(question.getId());
-            answerRecord.setUserAnswer(buildStoredUserAnswer(userAnswer, userAnswers));
+            answerRecord.setUserAnswer(storedUserAnswer);
             answerRecord.setIsCorrect(correct ? 1 : 0);
             answerRecord.setScore(score);
             listeningAnswerRecordMapper.insert(answerRecord);
@@ -143,7 +147,7 @@ public class UserListeningServiceImpl implements UserListeningService {
             resultVO.setAnswerMode(question.getAnswerMode());
             resultVO.setQuestionText(question.getQuestionText());
             resultVO.setOptionsJson(question.getOptionsJson());
-            resultVO.setUserAnswer(buildStoredUserAnswer(userAnswer, userAnswers));
+            resultVO.setUserAnswer(storedUserAnswer);
             resultVO.setCorrectAnswer(buildDisplayCorrectAnswer(question));
             resultVO.setIsCorrect(correct ? 1 : 0);
             resultVO.setScore(score);
@@ -153,13 +157,22 @@ public class UserListeningServiceImpl implements UserListeningService {
         listeningRecordMapper.updateTotalScore(record.getId(), totalScore);
         record.setTotalScore(totalScore);
 
+        questionVOList.sort(Comparator
+                .comparing(ListeningQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                .thenComparing(ListeningQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo)));
+
+        answerResults.sort(Comparator
+                .comparing(ListeningAnswerResultVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo)));
+
         ListeningRecordDetailVO detailVO = new ListeningRecordDetailVO();
         detailVO.setRecordId(record.getId());
         detailVO.setTestId(record.getTestId());
         detailVO.setTestTitle(test.getTitle());
         detailVO.setAudioUrl(test.getAudioUrl());
+        detailVO.setTranscriptText(test.getTranscriptText());
         detailVO.setTotalScore(record.getTotalScore());
         detailVO.setCreatedTime(record.getCreatedTime());
+        detailVO.setQuestions(questionVOList);
         detailVO.setAnswers(answerResults);
         return detailVO;
     }
@@ -167,7 +180,6 @@ public class UserListeningServiceImpl implements UserListeningService {
     @Override
     public PageResult<ListeningRecordVO> pageActiveRecords(Long userId, UserListeningRecordPageQuery query) {
         UserListeningRecordPageQuery safeQuery = query == null ? new UserListeningRecordPageQuery() : query;
-
         RecordQueryValidator.validate(
                 safeQuery.getPageNum(),
                 safeQuery.getPageSize(),
@@ -190,13 +202,11 @@ public class UserListeningServiceImpl implements UserListeningService {
 
         List<ListeningRecord> records = listeningRecordMapper.pageUserActive(userId, safeQuery, offset, pageSize);
         List<ListeningRecordVO> voList = new ArrayList<>();
-
         if (records != null) {
             for (ListeningRecord record : records) {
                 voList.add(toRecordVO(record));
             }
         }
-
         return new PageResult<>(voList, total, pageNum, pageSize);
     }
 
@@ -216,13 +226,11 @@ public class UserListeningServiceImpl implements UserListeningService {
 
         List<ListeningRecord> records = listeningRecordMapper.pageUserDeleted(userId, safeQuery, offset, pageSize);
         List<ListeningRecordVO> voList = new ArrayList<>();
-
         if (records != null) {
             for (ListeningRecord record : records) {
                 voList.add(toRecordVO(record));
             }
         }
-
         return new PageResult<>(voList, total, pageNum, pageSize);
     }
 
@@ -236,8 +244,8 @@ public class UserListeningServiceImpl implements UserListeningService {
         ListeningTest test = listeningTestMapper.findAnyById(record.getTestId());
         List<ListeningQuestion> questions = listeningQuestionMapper.findAnyByTestId(record.getTestId());
         List<ListeningAnswerRecord> answerRecords = listeningAnswerRecordMapper.findByRecordId(recordId);
-        List<ListeningAnswerResultVO> answerResults = new ArrayList<>();
 
+        List<ListeningAnswerResultVO> answerResults = new ArrayList<>();
         for (ListeningAnswerRecord answerRecord : answerRecords) {
             ListeningQuestion question = listeningQuestionMapper.findAnyById(answerRecord.getQuestionId());
 
@@ -257,24 +265,22 @@ public class UserListeningServiceImpl implements UserListeningService {
 
         List<ListeningQuestionVO> questionVOList = new ArrayList<>();
         for (ListeningQuestion question : questions) {
-            ListeningQuestionVO vo = new ListeningQuestionVO();
-            vo.setId(question.getId());
-            vo.setSectionNumber(question.getSectionNumber());
-            vo.setQuestionNumber(question.getQuestionNumber());
-            vo.setQuestionType(question.getQuestionType());
-            vo.setAnswerMode(question.getAnswerMode());
-            vo.setQuestionText(question.getQuestionText());
-            vo.setOptionsJson(question.getOptionsJson());
-            vo.setDisplayOrder(question.getDisplayOrder());
-            vo.setScore(question.getScore());
-            questionVOList.add(vo);
+            questionVOList.add(toQuestionVO(question));
         }
+
+        questionVOList.sort(Comparator
+                .comparing(ListeningQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                .thenComparing(ListeningQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo)));
+
+        answerResults.sort(Comparator
+                .comparing(ListeningAnswerResultVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo)));
 
         ListeningRecordDetailVO detailVO = new ListeningRecordDetailVO();
         detailVO.setRecordId(record.getId());
         detailVO.setTestId(record.getTestId());
         detailVO.setTestTitle(test != null ? test.getTitle() : null);
         detailVO.setAudioUrl(test != null ? test.getAudioUrl() : null);
+        detailVO.setTranscriptText(test != null ? test.getTranscriptText() : null);
         detailVO.setTotalScore(record.getTotalScore());
         detailVO.setCreatedTime(record.getCreatedTime());
         detailVO.setQuestions(questionVOList);
@@ -317,6 +323,20 @@ public class UserListeningServiceImpl implements UserListeningService {
     private String getTestTitle(Long testId) {
         ListeningTest test = listeningTestMapper.findAnyById(testId);
         return test != null ? test.getTitle() : null;
+    }
+
+    private ListeningQuestionVO toQuestionVO(ListeningQuestion question) {
+        ListeningQuestionVO vo = new ListeningQuestionVO();
+        vo.setId(question.getId());
+        vo.setSectionNumber(question.getSectionNumber());
+        vo.setQuestionNumber(question.getQuestionNumber());
+        vo.setQuestionType(question.getQuestionType());
+        vo.setAnswerMode(question.getAnswerMode());
+        vo.setQuestionText(question.getQuestionText());
+        vo.setOptionsJson(question.getOptionsJson());
+        vo.setDisplayOrder(question.getDisplayOrder());
+        vo.setScore(question.getScore());
+        return vo;
     }
 
     private int normalizePageNum(Integer pageNum) {
@@ -366,7 +386,6 @@ public class UserListeningServiceImpl implements UserListeningService {
         if (userAnswers == null || userAnswers.isEmpty()) {
             return false;
         }
-
         List<String> correctList = parseJsonArray(question.getAcceptedAnswersJson());
         if (correctList.isEmpty()) {
             correctList = parseCsv(question.getCorrectAnswer());

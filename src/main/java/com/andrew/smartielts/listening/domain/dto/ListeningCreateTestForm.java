@@ -9,4 +9,5 @@ public class ListeningCreateTestForm {
     private String title;
     private Integer totalScore;
     private MultipartFile file;
+    private String transcriptText;
 }

@@ -48,11 +48,13 @@ public class DashboardSqlGenerationServiceImpl implements DashboardSqlGeneration
                                                DashboardIntentParseResult intent,
                                                DashboardSqlGenerationResult sqlPlan,
                                                List<Map<String, Object>> rows) {
+
         DashboardSqlReviewRequest request = new DashboardSqlReviewRequest();
         request.setRole(role);
         request.setOperatorUserId(operatorUserId);
         request.setTargetUserId(targetUserId);
         request.setOriginalQuery(originalQuery);
+        request.setResponseLanguage(detectResponseLanguage(originalQuery));
         request.setIntent(intent);
         request.setSqlPlan(sqlPlan);
         request.setRows(rows);
@@ -83,8 +85,27 @@ public class DashboardSqlGenerationServiceImpl implements DashboardSqlGeneration
             meta.putIfAbsent("queryPurpose", sqlPlan.getQueryPurpose());
         }
         reviewed.put("meta", meta);
-
         return reviewed;
+    }
+
+    private String detectResponseLanguage(String query) {
+        if (query == null || query.isBlank()) {
+            return "zh-Hant";
+        }
+
+        int chineseCount = 0;
+        int englishCount = 0;
+
+        for (int i = 0; i < query.length(); i++) {
+            char ch = query.charAt(i);
+            if (ch >= '\u4E00' && ch <= '\u9FFF') {
+                chineseCount++;
+            } else if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z')) {
+                englishCount++;
+            }
+        }
+
+        return englishCount > chineseCount ? "en" : "zh-Hant";
     }
 
     private String safeAnswer(String answer, List<Map<String, Object>> rows) {

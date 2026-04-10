@@ -72,6 +72,8 @@ aliyun:
         model: ${WRITING_SCORE_AI_MODEL:qwen3.5-flash}
         connect-timeout-ms: 100000000
         read-timeout-ms: 30000000
+    listening-asr:
+      enabled: ${ALIYUN_DASHBOARD_LISTENING_ASR_ENABLED:true}
 
   writing-score-ai:
     model: ${WRITING_SCORE_AI_MODEL:qwen3.5-flash}

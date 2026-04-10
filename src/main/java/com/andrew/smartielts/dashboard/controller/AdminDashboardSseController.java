@@ -42,13 +42,8 @@ public class AdminDashboardSseController {
                         .name("start")
                         .data(Map.of("message", "dashboard request started")));
 
-                DashboardAssistantResponse response = dashboardIntentExecutionFacade.ask(
-                        "ADMIN",
-                        operatorUserId,
-                        request.getTargetUserId(),
-                        request.getQuery(),
-                        request.getContext()
-                );
+                DashboardAssistantResponse response = dashboardIntentExecutionFacade
+                        .ask("ADMIN", operatorUserId, request.getTargetUserId(), request);
 
                 emitter.send(SseEmitter.event()
                         .name("intentResolved")

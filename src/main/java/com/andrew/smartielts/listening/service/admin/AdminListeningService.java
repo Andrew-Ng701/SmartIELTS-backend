@@ -10,6 +10,7 @@ import com.andrew.smartielts.listening.domain.query.admin.AdminListeningRecordPa
 import com.andrew.smartielts.listening.domain.vo.ListeningRecordDetailVO;
 import com.andrew.smartielts.listening.domain.vo.ListeningRecordVO;
 import com.andrew.smartielts.listening.domain.vo.ListeningTestDetailVO;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -17,11 +18,13 @@ public interface AdminListeningService {
 
     ListeningTest createTest(ListeningCreateTestForm form);
 
+    ListeningTest updateTest(Long id, ListeningTestDTO dto);
+
+    ListeningTest updateTestAudio(Long id, MultipartFile file, String title, Integer totalScore, String transcriptText);
+
     List<ListeningTest> listTests();
 
     ListeningTestDetailVO getTestDetail(Long testId);
-
-    ListeningTest updateTest(Long id, ListeningTestDTO dto);
 
     void deleteTest(Long id);
 

@@ -1,7 +1,6 @@
 package com.andrew.smartielts.dashboard.query.llm;
 
 import com.andrew.smartielts.dashboard.agent.intent.DashboardIntentLlmProperties;
-import com.andrew.smartielts.dashboard.agent.intent.dto.DashboardIntentParseResult;
 import com.andrew.smartielts.dashboard.query.DashboardSqlFewShotConstants;
 import com.andrew.smartielts.dashboard.query.DashboardSqlPromptConstants;
 import com.andrew.smartielts.dashboard.query.DashboardSqlPromptTemplates;
@@ -47,6 +46,7 @@ public class DashScopeDashboardSqlLlmClient implements DashboardSqlLlmClient {
             ChatCompletionsRequest payload = new ChatCompletionsRequest();
             payload.setModel(llmProperties.getModel());
             payload.setTemperature(0.0);
+            payload.setEnableThinking(false);
             payload.setMessages(List.of(
                     new ChatMessage("system", buildSqlSystemPrompt()),
                     new ChatMessage("user", buildSqlUserPrompt(request))
@@ -84,6 +84,7 @@ public class DashScopeDashboardSqlLlmClient implements DashboardSqlLlmClient {
             ChatCompletionsRequest payload = new ChatCompletionsRequest();
             payload.setModel(llmProperties.getModel());
             payload.setTemperature(0.0);
+            payload.setEnableThinking(false);
             payload.setMessages(List.of(
                     new ChatMessage("system", buildReviewSystemPrompt()),
                     new ChatMessage("user", buildReviewUserPrompt(request))
@@ -135,10 +136,24 @@ public class DashScopeDashboardSqlLlmClient implements DashboardSqlLlmClient {
     }
 
     private String buildReviewUserPrompt(DashboardSqlReviewRequest request) {
-        return DashboardSqlPromptTemplates.DASHSCOPE_SQL_REVIEW_USER_PROMPT_TEMPLATE.formatted(
+        return """
+            Review the current SQL-backed dashboard answer.
+
+            role: %s
+            operatorUserId: %s
+            targetUserId: %s
+            responseLanguage: %s
+            originalQuery: %s
+            intentJson: %s
+            sqlPlanJson: %s
+            rowsJson: %s
+
+            Return JSON only.
+            """.formatted(
                 safe(request.getRole()),
                 String.valueOf(request.getOperatorUserId()),
                 String.valueOf(request.getTargetUserId()),
+                safe(request.getResponseLanguage()),
                 safe(request.getOriginalQuery()),
                 toJson(request.getIntent() == null ? Map.of() : request.getIntent()),
                 toJson(request.getSqlPlan() == null ? Map.of() : request.getSqlPlan()),
@@ -321,6 +336,10 @@ public class DashScopeDashboardSqlLlmClient implements DashboardSqlLlmClient {
     static class ChatCompletionsRequest {
         private String model;
         private Double temperature;
+
+        @JsonProperty("enable_thinking")
+        private Boolean enableThinking;
+
         private List<ChatMessage> messages;
 
         @JsonProperty("response_format")

@@ -34,6 +34,7 @@ public class DashScopeDashboardAnswerRewriteClient implements DashboardAnswerRew
         ChatCompletionsRequest payload = new ChatCompletionsRequest();
         payload.setModel(llmProperties.getModel());
         payload.setTemperature(0.2);
+        payload.setEnableThinking(false);
         payload.setMessages(List.of(
                 new ChatMessage("system", DashboardAnswerRewritePromptConstants.SYSTEM_PROMPT),
                 new ChatMessage("user", buildUserPrompt(request))
@@ -46,8 +47,7 @@ public class DashScopeDashboardAnswerRewriteClient implements DashboardAnswerRew
 
         HttpEntity<ChatCompletionsRequest> entity = new HttpEntity<>(payload, headers);
         ResponseEntity<ChatCompletionsResponse> response = dashboardIntentRestTemplate.exchange(
-                url, HttpMethod.POST, entity, ChatCompletionsResponse.class
-        );
+                url, HttpMethod.POST, entity, ChatCompletionsResponse.class);
 
         ChatCompletionsResponse body = response.getBody();
         if (body == null || body.getChoices() == null || body.getChoices().isEmpty()) {
@@ -64,9 +64,7 @@ public class DashScopeDashboardAnswerRewriteClient implements DashboardAnswerRew
 
         try {
             DashboardAnswerRewriteResult result = objectMapper.readValue(content, DashboardAnswerRewriteResult.class);
-            if (result.getSuggestions() == null) {
-                result.setSuggestions(List.of());
-            }
+            if (result.getSuggestions() == null) result.setSuggestions(List.of());
             return result;
         } catch (JsonProcessingException e) {
             log.error("Failed to parse dashboard answer rewrite JSON: {}", content, e);
@@ -78,14 +76,17 @@ public class DashScopeDashboardAnswerRewriteClient implements DashboardAnswerRew
         try {
             return """
                 Rewrite the dashboard answer.
+
                 role: %s
                 responseLanguage: %s
                 originalQuery: %s
                 capability: %s
-                filters: %s
+                filtersJson: %s
                 factualSummary: %s
-                data: %s
-                suggestions: %s
+                dataJson: %s
+                suggestionsJson: %s
+
+                Return JSON only.
                 """.formatted(
                     safeString(request.getRole()),
                     safeString(request.getResponseLanguage()),
@@ -103,7 +104,7 @@ public class DashScopeDashboardAnswerRewriteClient implements DashboardAnswerRew
 
     private ResponseFormat buildResponseFormat() {
         JsonSchema jsonSchema = new JsonSchema();
-        jsonSchema.setName("dashboard_answer_rewrite");
+        jsonSchema.setName("dashboardanswerrewrite");
         jsonSchema.setSchema(Map.of(
                 "type", "object",
                 "additionalProperties", false,
@@ -135,7 +136,12 @@ public class DashScopeDashboardAnswerRewriteClient implements DashboardAnswerRew
     static class ChatCompletionsRequest {
         private String model;
         private Double temperature;
+
+        @JsonProperty("enable_thinking")
+        private Boolean enableThinking;
+
         private List<ChatMessage> messages;
+
         @JsonProperty("response_format")
         private ResponseFormat responseFormat;
     }
@@ -150,6 +156,7 @@ public class DashScopeDashboardAnswerRewriteClient implements DashboardAnswerRew
     @Data
     static class ResponseFormat {
         private String type;
+
         @JsonProperty("json_schema")
         private JsonSchema jsonSchema;
     }
