@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.andrew.smartielts.listening.mapper.ListeningAudioMapper">
+
+    <resultMap id="ListeningAudioResultMap" type="com.andrew.smartielts.listening.domain.pojo.ListeningAudio">
+        <id column="id" property="id"/>
+        <result column="test_id" property="testId"/>
+        <result column="part_group_id" property="partGroupId"/>
+        <result column="audio_scope" property="audioScope"/>
+        <result column="title" property="title"/>
+        <result column="audio_url" property="audioUrl"/>
+        <result column="audio_object_key" property="audioObjectKey"/>
+        <result column="transcript_text" property="transcriptText"/>
+        <result column="is_deleted" property="isDeleted"/>
+        <result column="created_time" property="createdTime"/>
+        <result column="updated_time" property="updatedTime"/>
+    </resultMap>
+
+    <sql id="BaseColumnList">
+        id,
+        test_id,
+        part_group_id,
+        audio_scope,
+        title,
+        audio_url,
+        audio_object_key,
+        transcript_text,
+        is_deleted,
+        created_time,
+        updated_time
+    </sql>
+
+    <insert id="insertListeningAudio"
+            parameterType="com.andrew.smartielts.listening.domain.pojo.ListeningAudio"
+            useGeneratedKeys="true"
+            keyProperty="id"
+            keyColumn="id">
+        INSERT INTO listening_audio (
+            test_id,
+            part_group_id,
+            audio_scope,
+            title,
+            audio_url,
+            audio_object_key,
+            transcript_text,
+            is_deleted,
+            created_time,
+            updated_time
+        ) VALUES (
+                     #{testId},
+                     #{partGroupId},
+                     #{audioScope},
+                     #{title},
+                     #{audioUrl},
+                     #{audioObjectKey},
+                     #{transcriptText},
+                     0,
+                     NOW(),
+                     NOW()
+                 )
+    </insert>
+
+    <select id="findById" resultMap="ListeningAudioResultMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_audio
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
+
+    <select id="findTestAudioByTestId" resultMap="ListeningAudioResultMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_audio
+        WHERE test_id = #{testId}
+        AND audio_scope = 'test'
+        ORDER BY id ASC
+        LIMIT 1
+    </select>
+
+    <select id="findByTestId" resultMap="ListeningAudioResultMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_audio
+        WHERE test_id = #{testId}
+        ORDER BY CASE audio_scope WHEN 'test' THEN 0 ELSE 1 END, id ASC
+    </select>
+
+    <select id="findByPartGroupId" resultMap="ListeningAudioResultMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_audio
+        WHERE part_group_id = #{partGroupId}
+        ORDER BY id ASC
+    </select>
+
+    <update id="updateListeningAudio"
+            parameterType="com.andrew.smartielts.listening.domain.pojo.ListeningAudio">
+        UPDATE listening_audio
+        SET test_id = #{testId},
+            part_group_id = #{partGroupId},
+            audio_scope = #{audioScope},
+            title = #{title},
+            audio_url = #{audioUrl},
+            audio_object_key = #{audioObjectKey},
+            transcript_text = #{transcriptText},
+            updated_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM listening_audio
+        WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByTestId">
+        DELETE FROM listening_audio
+        WHERE test_id = #{testId}
+    </delete>
+
+    <delete id="deleteByPartGroupId">
+        DELETE FROM listening_audio
+        WHERE part_group_id = #{partGroupId}
+    </delete>
+
+</mapper>

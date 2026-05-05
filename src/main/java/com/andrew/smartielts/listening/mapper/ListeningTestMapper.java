@@ -8,7 +8,8 @@ import java.util.List;
 
 @Mapper
 public interface ListeningTestMapper {
-    void insertListeningTest(ListeningTest test);
+
+    int insertListeningTest(ListeningTest test);
 
     ListeningTest findActiveById(@Param("id") Long id);
 
@@ -20,9 +21,9 @@ public interface ListeningTestMapper {
 
     List<ListeningTest> findAllIncludingDeleted();
 
-    void updateListeningTest(ListeningTest test);
+    int updateListeningTest(ListeningTest test);
 
-    void softDeleteById(@Param("id") Long id);
+    int softDeleteById(@Param("id") Long id);
 
-    void restoreById(@Param("id") Long id);
+    int restoreById(@Param("id") Long id);
 }

@@ -1,7 +1,7 @@
-package com.andrew.smartielts.common.service;
+package com.andrew.smartielts.common.image.service;
 
-import com.andrew.smartielts.common.domain.dto.BizImageResourceDTO;
-import com.andrew.smartielts.common.domain.pojo.BizImageResource;
+import com.andrew.smartielts.common.image.domain.dto.BizImageResourceDTO;
+import com.andrew.smartielts.common.image.domain.pojo.BizImageResource;
 
 import java.util.List;
 import java.util.Map;

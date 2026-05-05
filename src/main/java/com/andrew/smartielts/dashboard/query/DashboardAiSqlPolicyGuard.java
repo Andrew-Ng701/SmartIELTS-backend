@@ -1,76 +1,66 @@
 package com.andrew.smartielts.dashboard.query;
 
+import com.andrew.smartielts.dashboard.constants.DashboardTableNameConstants;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 public class DashboardAiSqlPolicyGuard {
 
-    private static final Set<String> ALLOWED_TABLE_TOKENS = Set.of(
-            "sys_user",
-            "listening_test", "listening_question", "listening_record", "listening_answer_record",
-            "reading_test", "reading_passage", "reading_question", "reading_record", "reading_answer_record",
-            "writing_question", "writing_record",
-            "speaking_question", "speaking_record", "speaking_session"
-    );
+    private static final Set<String> ALLOWED_TABLE_TOKENS = Set.copyOf(DashboardTableNameConstants.ALL_TABLES);
+
+    private static final Pattern TABLE_PATTERN =
+            Pattern.compile("\\b(?:from|join)\\s+([a-z_][a-z0-9_]*)\\b", Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern MUTATION_PATTERN =
+            Pattern.compile("\\b(insert|update|delete|drop|alter|truncate|create|replace|merge|grant|revoke)\\b",
+                    Pattern.CASE_INSENSITIVE);
 
     public void validate(String sql, SecureDashboardQueryRequest request) {
         if (sql == null || sql.isBlank()) {
             throw new IllegalArgumentException("SQL cannot be blank");
         }
-        if (request == null) {
-            throw new IllegalArgumentException("Request cannot be null");
+
+        String normalizedSql = normalize(sql);
+        if (!normalizedSql.startsWith("select")) {
+            throw new AccessDeniedException("Only SELECT SQL is allowed");
         }
 
-        String normalized = sql.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+        if (MUTATION_PATTERN.matcher(normalizedSql).find()) {
+            throw new AccessDeniedException("Mutation SQL is not allowed");
+        }
 
-        validateSqlShape(normalized);
+        Set<String> referencedTables = extractReferencedTables(normalizedSql);
+        if (referencedTables.isEmpty()) {
+            throw new AccessDeniedException("No supported table found in AI SQL");
+        }
 
-        if ("USER".equalsIgnoreCase(request.getRole())) {
-            validateUserSql(normalized);
-        }
-        if (usesUserRecordTable(normalized) && request.getTargetUserId() == null) {
-            throw new AccessDeniedException("Target user is required when querying user records");
-        }
-    }
-
-    private void validateSqlShape(String sql) {
-        if (!sql.startsWith("select") && !sql.startsWith("with")) {
-            throw new IllegalArgumentException("AI dashboard SQL must start with SELECT or WITH");
-        }
-        if (!sql.startsWith("with") && !sql.contains(" from ")) {
-            throw new IllegalArgumentException("AI dashboard SQL must contain FROM");
-        }
-        if (!containsAllowedTable(sql)) {
-            throw new IllegalArgumentException("AI dashboard SQL must reference an allowed dashboard table");
-        }
-        if (sql.matches("(?is)^select\\s+['\"]?\\w+['\"]?\\s+as\\s+module\\s*,\\s*limit\\s+[:?\\w]+\\s*$")) {
-            throw new IllegalArgumentException("AI dashboard SQL is incomplete");
+        for (String table : referencedTables) {
+            if (!ALLOWED_TABLE_TOKENS.contains(table)) {
+                throw new AccessDeniedException("AI SQL references unsupported table: " + table);
+            }
         }
     }
 
-    private boolean containsAllowedTable(String sql) {
-        return ALLOWED_TABLE_TOKENS.stream().anyMatch(sql::contains);
-    }
-
-    private void validateUserSql(String sql) {
-        if (usesUserRecordTable(sql) && !containsTargetUserBinding(sql)) {
-            throw new AccessDeniedException("User-scoped SQL must bind targetUserId");
+    private Set<String> extractReferencedTables(String sql) {
+        Set<String> result = new LinkedHashSet<>();
+        Matcher matcher = TABLE_PATTERN.matcher(sql);
+        while (matcher.find()) {
+            String table = matcher.group(1);
+            if (table != null && !table.isBlank()) {
+                result.add(table.trim().toLowerCase(Locale.ROOT));
+            }
         }
+        return result;
     }
 
-    private boolean containsTargetUserBinding(String sql) {
-        return sql.contains(":target_userid")
-                || sql.contains("target_userid");
-    }
-
-    private boolean usesUserRecordTable(String sql) {
-        return sql.contains("listening_record")
-                || sql.contains("reading_record")
-                || sql.contains("writing_record")
-                || sql.contains("speaking_record");
+    private String normalize(String sql) {
+        return sql == null ? "" : sql.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
     }
 }

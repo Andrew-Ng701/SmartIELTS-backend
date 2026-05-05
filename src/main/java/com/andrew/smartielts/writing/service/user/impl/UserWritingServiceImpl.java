@@ -1,11 +1,11 @@
 package com.andrew.smartielts.writing.service.user.impl;
 
-import com.andrew.smartielts.common.domain.pojo.BizImageResource;
+import com.andrew.smartielts.common.image.domain.pojo.BizImageResource;
 import com.andrew.smartielts.common.page.PageResult;
-import com.andrew.smartielts.common.service.BizImageResourceService;
+import com.andrew.smartielts.common.image.service.BizImageResourceService;
 import com.andrew.smartielts.common.storage.BucketType;
 import com.andrew.smartielts.common.storage.UploadResult;
-import com.andrew.smartielts.common.storage.service.StorageService;
+import com.andrew.smartielts.common.storage.service.OssStorageService;
 import com.andrew.smartielts.utils.SecurityUtils;
 import com.andrew.smartielts.writing.ai.AiWritingScore;
 import com.andrew.smartielts.writing.ai.service.AiWritingScoringService;
@@ -61,7 +61,7 @@ public class UserWritingServiceImpl implements UserWritingService {
     private final WritingRecordMapper writingRecordMapper;
     private final WritingRecordAttachmentMapper writingRecordAttachmentMapper;
     private final WritingSubmissionValidator writingSubmissionValidator;
-    private final StorageService storageService;
+    private final OssStorageService ossStorageService;
     private final OcrService ocrService;
     private final PdfTextExtractor pdfTextExtractor;
     private final AiWritingScoringService aiWritingScoringService;
@@ -71,7 +71,7 @@ public class UserWritingServiceImpl implements UserWritingService {
                                   WritingRecordMapper writingRecordMapper,
                                   WritingRecordAttachmentMapper writingRecordAttachmentMapper,
                                   WritingSubmissionValidator writingSubmissionValidator,
-                                  StorageService storageService,
+                                  OssStorageService ossStorageService,
                                   OcrService ocrService,
                                   PdfTextExtractor pdfTextExtractor,
                                   AiWritingScoringService aiWritingScoringService,
@@ -80,7 +80,7 @@ public class UserWritingServiceImpl implements UserWritingService {
         this.writingRecordMapper = writingRecordMapper;
         this.writingRecordAttachmentMapper = writingRecordAttachmentMapper;
         this.writingSubmissionValidator = writingSubmissionValidator;
-        this.storageService = storageService;
+        this.ossStorageService = ossStorageService;
         this.ocrService = ocrService;
         this.pdfTextExtractor = pdfTextExtractor;
         this.aiWritingScoringService = aiWritingScoringService;
@@ -301,7 +301,7 @@ public class UserWritingServiceImpl implements UserWritingService {
                 continue;
             }
 
-            UploadResult upload = storageService.upload(
+            UploadResult upload = ossStorageService.upload(
                     image,
                     BucketType.WRITING_RECORD,
                     buildWritingRecordBizPath(record.getId())
@@ -339,7 +339,7 @@ public class UserWritingServiceImpl implements UserWritingService {
             throw new RuntimeException("pdf is empty");
         }
 
-        UploadResult upload = storageService.upload(
+        UploadResult upload = ossStorageService.upload(
                 pdf,
                 BucketType.WRITING_RECORD,
                 buildWritingRecordBizPath(record.getId())

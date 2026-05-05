@@ -6,14 +6,14 @@ import com.aliyun.oss.model.PutObjectRequest;
 import com.andrew.smartielts.common.storage.BucketType;
 import com.andrew.smartielts.common.storage.OssProperties;
 import com.andrew.smartielts.common.storage.UploadResult;
-import com.andrew.smartielts.common.storage.service.StorageService;
+import com.andrew.smartielts.common.storage.service.OssStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
 @Service
-public class OssStorageServiceImpl implements StorageService {
+public class OssStorageServiceImpl implements OssStorageService {
 
     private final OssProperties ossProperties;
 

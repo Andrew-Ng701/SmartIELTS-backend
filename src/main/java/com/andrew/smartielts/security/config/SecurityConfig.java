@@ -1,6 +1,7 @@
 package com.andrew.smartielts.security.config;
 
 import com.andrew.smartielts.security.filter.JwtAuthenticationFilter;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +26,6 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    HandlerMappingIntrospector introspector) throws Exception {
-
         MvcRequestMatcher.Builder mvc =
                 new MvcRequestMatcher.Builder(introspector).servletPath("/api");
 
@@ -34,6 +34,7 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers(
                                 mvc.pattern("/auth/login"),
                                 mvc.pattern("/auth/register"),

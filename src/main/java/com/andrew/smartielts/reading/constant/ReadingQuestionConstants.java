@@ -80,33 +80,7 @@ public final class ReadingQuestionConstants {
                 .replace(' ', '_')
                 .toUpperCase();
 
-        return switch (normalized_question_type) {
-            case "MULTIPLECHOICESINGLE", "MULTIPLE_CHOICE_SINGLE", "MCQ_SINGLE", "SINGLE_CHOICE" ->
-                    QUESTION_TYPE_MULTIPLE_CHOICE_SINGLE;
-            case "MULTIPLECHOICEMULTI", "MULTIPLE_CHOICE_MULTI", "MCQ_MULTI", "MULTI_CHOICE" ->
-                    QUESTION_TYPE_MULTIPLE_CHOICE_MULTI;
-            case "TRUEFALSENOTGIVEN", "TRUE_FALSE_NOT_GIVEN" ->
-                    QUESTION_TYPE_TRUE_FALSE_NOT_GIVEN;
-            case "YESNONOTGIVEN", "YES_NO_NOT_GIVEN" ->
-                    QUESTION_TYPE_YES_NO_NOT_GIVEN;
-            case "MATCHING", "MATCH" ->
-                    QUESTION_TYPE_MATCHING;
-            case "HEADINGMATCHING", "HEADING_MATCHING" ->
-                    QUESTION_TYPE_HEADING_MATCHING;
-            case "SUMMARYCOMPLETION", "SUMMARY_COMPLETION", "SUMMARY" ->
-                    QUESTION_TYPE_SUMMARY_COMPLETION;
-            case "SENTENCECOMPLETION", "SENTENCE_COMPLETION", "SENTENCE" ->
-                    QUESTION_TYPE_SENTENCE_COMPLETION;
-            case "SHORTANSWER", "SHORT_ANSWER" ->
-                    QUESTION_TYPE_SHORT_ANSWER;
-            case "TABLECOMPLETION", "TABLE_COMPLETION", "TABLE" ->
-                    QUESTION_TYPE_TABLE_COMPLETION;
-            case "FLOWCHARTCOMPLETION", "FLOW_CHART_COMPLETION", "FLOW_CHART" ->
-                    QUESTION_TYPE_FLOW_CHART_COMPLETION;
-            case "DIAGRAMLABELCOMPLETION", "DIAGRAM_LABEL_COMPLETION", "DIAGRAM_LABEL", "DIAGRAM" ->
-                    QUESTION_TYPE_DIAGRAM_LABEL_COMPLETION;
-            default -> normalized_question_type;
-        };
+        return normalized_question_type;
     }
 
     public static String resolve_answer_mode_by_question_type(String question_type, String answer_mode) {

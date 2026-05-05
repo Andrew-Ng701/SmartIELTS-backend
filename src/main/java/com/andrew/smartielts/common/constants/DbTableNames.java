@@ -8,11 +8,9 @@ public final class DbTableNames {
     public static final String BIZ_IMAGE_RESOURCE = "biz_image_resource";
 
     public static final String LISTENING_TEST = "listening_test";
+    public static final String LISTENING_AUDIO = "listening_audio";
     public static final String LISTENING_PART_GROUP = "listening_part_group";
-    public static final String LISTENING_MATERIAL = "listening_material";
     public static final String LISTENING_QUESTION = "listening_question";
-    public static final String LISTENING_QUESTION_ANSWER_RULE = "listening_question_answer_rule";
-    public static final String LISTENING_TEST_TIMER = "listening_test_timer";
     public static final String LISTENING_RECORD = "listening_record";
     public static final String LISTENING_ANSWER_RECORD = "listening_answer_record";
 
@@ -21,7 +19,6 @@ public final class DbTableNames {
     public static final String READING_PASSAGE = "reading_passage";
     public static final String READING_QUESTION = "reading_question";
     public static final String READING_QUESTION_ANSWER_RULE = "reading_question_answer_rule";
-    public static final String READING_TEST_TIMER = "reading_test_timer";
     public static final String READING_RECORD = "reading_record";
     public static final String READING_ANSWER_RECORD = "reading_answer_record";
 

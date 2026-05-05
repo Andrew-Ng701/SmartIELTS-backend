@@ -1,4 +1,4 @@
-package com.andrew.smartielts.common.domain.dto;
+package com.andrew.smartielts.common.image.domain.dto;
 
 import lombok.Data;
 

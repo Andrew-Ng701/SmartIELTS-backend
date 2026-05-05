@@ -1,7 +1,6 @@
 package com.andrew.smartielts.reading.domain.vo;
 
 import com.andrew.smartielts.common.domain.pojo.TestPartGroup;
-import com.andrew.smartielts.common.domain.pojo.TestTimerConfig;
 import lombok.Data;
 
 import java.util.List;
@@ -12,7 +11,11 @@ public class ReadingTestDetailVO {
     private String title;
     private Integer totalScore;
 
-    private TestTimerConfig timerConfig;
+    private String timerMode;
+    private Integer totalSeconds;
+    private Integer autoSubmit;
+    private Integer allowPause;
+
     private List<TestPartGroup> partGroups;
     private List<ReadingPassageVO> passages;
 }

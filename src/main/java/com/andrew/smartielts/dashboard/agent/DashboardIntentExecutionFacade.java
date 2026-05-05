@@ -23,10 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.andrew.smartielts.dashboard.agent.ask.DashboardAskConstants.*;
 
@@ -36,7 +33,9 @@ import static com.andrew.smartielts.dashboard.agent.ask.DashboardAskConstants.*;
 public class DashboardIntentExecutionFacade {
 
     private static final String ROLE_USER = "USER";
+    private static final String RESPONSE_LANGUAGE_YUE_HANT = "yue-Hant";
     private static final String RESPONSE_LANGUAGE_ZH_HANT = "zh-Hant";
+    private static final String RESPONSE_LANGUAGE_ZH_HANS = "zh-Hans";
     private static final String RESPONSE_LANGUAGE_EN = "en";
     private static final String CAPABILITY_PRELOADED_DIRECT = "PRELOADED_DIRECT";
     private static final String CAPABILITY_STRUCTURED_QUERY = "STRUCTURED_QUERY";
@@ -72,7 +71,7 @@ public class DashboardIntentExecutionFacade {
 
         if (mergedPayload == null) {
             String pageName = nonBlank(extractPageName(safeRequest.getClientContext()),
-                    ROLE_USER.equalsIgnoreCase(role) ? "useroverview" : "adminoverview");
+                    ROLE_USER.equalsIgnoreCase(role) ? "user_overview" : "admin_overview");
 
             DashboardAskPreloadedPayload cachedPayload = dashboardPreloadService.getCached(
                     role, operatorUserId, resolvedTargetUserId, pageName, safeRequest.getObjectRef()
@@ -128,9 +127,26 @@ public class DashboardIntentExecutionFacade {
                     ? composed.getSuggestions()
                     : safeList(decision.getSuggestions());
 
+            Object responseData = buildDirectAnswerData(safeRequest, mergedPayload, learningContext, mergedContext);
+            if (responseData instanceof Map<?, ?> rawMap) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> cleaned = new LinkedHashMap<>((Map<String, Object>) rawMap);
+
+                Object qc = cleaned.get("questionContext");
+                if (qc instanceof Map<?, ?> qcMap) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> qcCleaned = new LinkedHashMap<>((Map<String, Object>) qcMap);
+                    qcCleaned.remove("preloaded_payload");
+                    qcCleaned.remove("preloadedPayload");
+                    cleaned.put("questionContext", qcCleaned);
+                }
+
+                responseData = cleaned;
+            }
+
             return DashboardAssistantResponse.builder()
                     .answer(finalAnswer)
-                    .data(buildDirectAnswerData(safeRequest, mergedPayload, learningContext, mergedContext))
+                    .data(responseData)
                     .suggestions(finalSuggestions)
                     .meta(mergeMeta(
                             mapOfNullable(
@@ -141,7 +157,7 @@ public class DashboardIntentExecutionFacade {
                                     META_KEY_USED_PRELOAD, mergedPayload != null,
                                     META_KEY_PRELOAD_SOURCE, preloadSource,
                                     META_KEY_ELAPSED_MS, System.currentTimeMillis() - startedAt,
-                                    META_KEY_REVIEW_SUMMARY, safeString(decision.getReviewSummary())
+                                    META_KEY_REVIEW_SUMMARY,  resolveLocalizedReviewSummary(safeRequest, decision, false)
                             ),
                             decision.getMeta()
                     ))
@@ -166,7 +182,7 @@ public class DashboardIntentExecutionFacade {
                                     META_KEY_PRELOAD_SOURCE, preloadSource,
                                     META_KEY_ELAPSED_MS, System.currentTimeMillis() - startedAt,
                                     META_KEY_ACTION, safeString(decision.getAction()),
-                                    META_KEY_REVIEW_SUMMARY, safeString(decision.getReviewSummary())
+                                    META_KEY_REVIEW_SUMMARY, resolveLocalizedReviewSummary(safeRequest, decision, false)
                             ),
                             decision.getMeta()
                     ))
@@ -177,9 +193,27 @@ public class DashboardIntentExecutionFacade {
             DashboardAnswerComposeResult composed = composeDirectAnswer(
                     role, operatorUserId, resolvedTargetUserId, safeRequest, mergedPayload, learningContext, mergedContext
             );
+
+            Object responseData = buildDirectAnswerData(safeRequest, mergedPayload, learningContext, mergedContext);
+            if (responseData instanceof Map<?, ?> rawMap) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> cleaned = new LinkedHashMap<>((Map<String, Object>) rawMap);
+
+                Object qc = cleaned.get("questionContext");
+                if (qc instanceof Map<?, ?> qcMap) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> qcCleaned = new LinkedHashMap<>((Map<String, Object>) qcMap);
+                    qcCleaned.remove("preloaded_payload");
+                    qcCleaned.remove("preloadedPayload");
+                    cleaned.put("questionContext", qcCleaned);
+                }
+
+                responseData = cleaned;
+            }
+
             return DashboardAssistantResponse.builder()
                     .answer(nonBlank(composed == null ? null : composed.getAnswer(), "我先根據目前快照整理可用資訊。"))
-                    .data(buildDirectAnswerData(safeRequest, mergedPayload, learningContext, mergedContext))
+                    .data(responseData)
                     .suggestions(composed == null ? new ArrayList<>() : safeList(composed.getSuggestions()))
                     .meta(mapOfNullable(
                             META_KEY_ANSWER_MODE, ANSWER_MODE_TEMPLATE_DIRECT,
@@ -187,7 +221,7 @@ public class DashboardIntentExecutionFacade {
                             META_KEY_USED_PRELOAD, mergedPayload != null,
                             META_KEY_PRELOAD_SOURCE, preloadSource,
                             META_KEY_ELAPSED_MS, System.currentTimeMillis() - startedAt,
-                            META_KEY_REVIEW_SUMMARY, "Redis snapshot is sufficient enough to avoid database fallback."
+                            META_KEY_REVIEW_SUMMARY, resolveLocalizedReviewSummary(safeRequest, decision, true)
                     ))
                     .build();
         }
@@ -211,7 +245,7 @@ public class DashboardIntentExecutionFacade {
                                 "clientContext", safeRequest.getClientContext(),
                                 "learningContext", learningContext,
                                 "questionContext", resolveQuestionContext(mergedPayload, mergedContext),
-                                "decisionReviewSummary", decision.getReviewSummary(),
+                                "decisionReviewSummary", resolveLocalizedReviewSummary(safeRequest, decision, false),
                                 "requiredDataScopes", safeList(decision.getRequiredDataScopes()),
                                 META_KEY_ANSWER_MODE, ANSWER_MODE_FALLBACK_SQL,
                                 META_KEY_ACTION, nonBlank(decision.getAction(), ACTION_GENERATE_SQL),
@@ -301,7 +335,6 @@ public class DashboardIntentExecutionFacade {
         putIfPresent(result, "clientContext", request == null ? null : request.getClientContext());
         putIfPresent(result, "questionContext", questionContext);
         putIfPresent(result, "learningContext", learningContext);
-        putIfPresent(result, "preloadedPayload", preloadedPayload);
 
         if (preloadedPayload != null) {
             putIfPresent(result, "overview", preloadedPayload.getOverview());
@@ -310,7 +343,6 @@ public class DashboardIntentExecutionFacade {
             putIfPresent(result, "moduleStats", preloadedPayload.getModuleStats());
             putIfPresent(result, "recentQuestions", preloadedPayload.getRecentQuestions());
             putIfPresent(result, "recentPassages", preloadedPayload.getRecentPassages());
-            putIfPresent(result, "aggregates", preloadedPayload.getAggregates());
         }
 
         return result.isEmpty() ? null : result;
@@ -394,11 +426,21 @@ public class DashboardIntentExecutionFacade {
 
     private String resolveResponseLanguage(DashboardAskRequest request) {
         if (request != null && request.getClientContext() != null && notBlank(request.getClientContext().getLocale())) {
-            String locale = request.getClientContext().getLocale().trim().toLowerCase();
-            if (locale.startsWith("zh")) {
+            String locale = request.getClientContext().getLocale().trim().toLowerCase(Locale.ROOT).replace('_', '-');
+
+            if (locale.startsWith("yue")) {
+                return RESPONSE_LANGUAGE_YUE_HANT;
+            }
+            if (locale.startsWith("zh-cn") || locale.startsWith("zh-sg") || locale.contains("hans")) {
+                return RESPONSE_LANGUAGE_ZH_HANS;
+            }
+            if (locale.startsWith("zh-hk") || locale.startsWith("zh-tw") || locale.startsWith("zh-mo")
+                    || locale.contains("hant") || locale.startsWith("zh")) {
                 return RESPONSE_LANGUAGE_ZH_HANT;
             }
-            return RESPONSE_LANGUAGE_EN;
+            if (locale.startsWith("en")) {
+                return RESPONSE_LANGUAGE_EN;
+            }
         }
         return detectResponseLanguage(request == null ? null : request.getQuery());
     }
@@ -428,6 +470,86 @@ public class DashboardIntentExecutionFacade {
             result.putAll(overlay);
         }
         return result;
+    }
+
+    private String resolveLocalizedReviewSummary(DashboardAskRequest request,
+                                                 DashboardAskDecisionResult decision,
+                                                 boolean redisDirectFallback) {
+        String language = resolveResponseLanguage(request);
+        String rawSummary = safeString(decision == null ? null : decision.getReviewSummary());
+        String localizedSummary = localizeReviewSummary(rawSummary, language);
+
+        if (notBlank(localizedSummary)) {
+            return localizedSummary;
+        }
+
+        if (redisDirectFallback) {
+            return fallbackRedisReviewSummary(language);
+        }
+
+        return fallbackGenericReviewSummary(language);
+    }
+
+    private String localizeReviewSummary(String summary, String language) {
+        if (!notBlank(summary)) {
+            return null;
+        }
+
+        if (RESPONSE_LANGUAGE_EN.equalsIgnoreCase(language)) {
+            return summary;
+        }
+
+        switch (summary) {
+            case "The request query is blank.":
+                return chineseByLanguage(language, "查詢內容為空。", "查询内容为空。");
+            case "The request appears outside supported dashboard scope.":
+                return chineseByLanguage(language, "此查詢超出目前支援的 dashboard 範圍。", "此查询超出当前支持的 dashboard 范围。");
+            case "The request is understandable but missing a critical identifier.":
+                return chineseByLanguage(language, "目前已理解你的查詢，但缺少關鍵識別條件。", "当前已理解你的查询，但缺少关键识别条件。");
+            case "Current object-level question context appears sufficient for a direct answer.":
+                return chineseByLanguage(language, "目前的題目層級上下文已足夠直接回答。", "当前的题目级上下文已足够直接回答。");
+            case "Current local context is not sufficient for a direct answer, fallback to structured query.":
+                return chineseByLanguage(language, "目前本地上下文不足以直接回答，需改用結構化查詢。", "当前本地上下文不足以直接回答，需要改用结构化查询。");
+            case "Redis snapshot is sufficient enough to avoid database fallback.":
+                return chineseByLanguage(language, "目前 Redis 快照已足夠支援回答，無需回退到資料庫查詢。", "当前 Redis 快照已足够支持回答，无需回退到数据库查询。");
+            case "ask decision returned null":
+                return chineseByLanguage(language, "決策服務未返回結果，已回退到預設處理流程。", "决策服务未返回结果，已回退到默认处理流程。");
+            case "No data returned from backend.":
+                return chineseByLanguage(language, "後端目前未返回可用資料。", "后端当前未返回可用数据。");
+            case "Current progress summary only contains overall averages, not comparison-ready data.":
+                return chineseByLanguage(language, "目前的進度摘要只有整體平均值，尚不足以進行比較分析。", "当前进度摘要只有整体平均值，暂不足以进行比较分析。");
+            case "The query appears to ask for recent data but current filters do not constrain recency.":
+                return chineseByLanguage(language, "查詢看起來需要最近資料，但目前篩選條件尚未限制時間範圍。", "查询看起来需要最近数据，但当前筛选条件尚未限制时间范围。");
+            case "Current data is acceptable for answer generation.":
+                return chineseByLanguage(language, "目前資料足以生成答案。", "当前数据足以生成答案。");
+            default:
+                return summary;
+        }
+    }
+
+    private String fallbackRedisReviewSummary(String language) {
+        if (RESPONSE_LANGUAGE_EN.equalsIgnoreCase(language)) {
+            return "The current preloaded snapshot is sufficient for a direct answer, so no additional database query is required.";
+        }
+        return chineseByLanguage(language,
+                "目前預加載快照已足夠直接回答，無需再進行資料庫查詢。",
+                "当前预加载快照已足够直接回答，无需再进行数据库查询。");
+    }
+
+    private String fallbackGenericReviewSummary(String language) {
+        if (RESPONSE_LANGUAGE_EN.equalsIgnoreCase(language)) {
+            return "The request has been understood and the final answer is being prepared.";
+        }
+        return chineseByLanguage(language,
+                "系統已理解你的問題，正在整理最終答案。",
+                "系统已理解你的问题，正在整理最终答案。");
+    }
+
+    private String chineseByLanguage(String language, String traditional, String simplified) {
+        if (RESPONSE_LANGUAGE_ZH_HANS.equalsIgnoreCase(language)) {
+            return simplified;
+        }
+        return traditional;
     }
 
     private Map<String, Object> mergeMeta(Map<String, Object> base, Map<String, Object> ext) {

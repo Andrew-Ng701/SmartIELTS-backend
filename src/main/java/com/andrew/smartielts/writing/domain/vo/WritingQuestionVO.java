@@ -1,6 +1,6 @@
 package com.andrew.smartielts.writing.domain.vo;
 
-import com.andrew.smartielts.common.domain.pojo.BizImageResource;
+import com.andrew.smartielts.common.image.domain.pojo.BizImageResource;
 import lombok.Data;
 
 import java.time.LocalDateTime;

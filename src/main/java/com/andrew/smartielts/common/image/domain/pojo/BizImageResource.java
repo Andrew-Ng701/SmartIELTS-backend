@@ -1,4 +1,4 @@
-package com.andrew.smartielts.common.domain.pojo;
+package com.andrew.smartielts.common.image.domain.pojo;
 
 import lombok.Data;
 

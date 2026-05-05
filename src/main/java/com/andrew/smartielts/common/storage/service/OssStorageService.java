@@ -4,7 +4,7 @@ import com.andrew.smartielts.common.storage.BucketType;
 import com.andrew.smartielts.common.storage.UploadResult;
 import org.springframework.web.multipart.MultipartFile;
 
-public interface StorageService {
+public interface OssStorageService {
     UploadResult upload(MultipartFile file, BucketType bucketType, String bizPath);
     void delete(BucketType bucketType, String objectKey);
 }

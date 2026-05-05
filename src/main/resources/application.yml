@@ -52,9 +52,9 @@ aliyun:
       writing-record:
         bucket-name: ${ALIYUN_OSS_BUCKET_WRITING_RECORD}
         domain: ${ALIYUN_OSS_DOMAIN_WRITING_RECORD}
-      listening-recording:
-        bucket-name: ${ALIYUN_OSS_BUCKET_LISTENING_RECORDING}
-        domain: ${ALIYUN_OSS_DOMAIN_LISTENING_RECORDING}
+      listening-audio:
+        bucket-name: ${ALIYUN_OSS_BUCKET_LISTENING_AUDIO}
+        domain: ${ALIYUN_OSS_DOMAIN_LISTENING_AUDIO}
       speaking-audio:
         bucket-name: ${ALIYUN_OSS_BUCKET_SPEAKING_AUDIO}
         domain: ${ALIYUN_OSS_DOMAIN_SPEAKING_AUDIO}

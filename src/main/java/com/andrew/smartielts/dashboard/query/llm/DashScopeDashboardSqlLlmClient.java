@@ -105,13 +105,13 @@ public class DashScopeDashboardSqlLlmClient implements DashboardSqlLlmClient {
     }
 
     private String buildSqlSystemPrompt() {
-        return DashboardSqlPromptConstants.DASH_SCOPE_SQL_GENERATION_SYSTEM_PROMPT
+        return DashboardSqlPromptConstants.SYSTEM_PROMPT
                 + "\n"
-                + DashboardSqlFewShotConstants.DASH_SCOPE_SQL_GENERATION_FEW_SHOT;
+                + DashboardSqlFewShotConstants.DASHSCOPE_SQL_GENERATION_FEW_SHOT;
     }
 
     private String buildReviewSystemPrompt() {
-        return DashboardSqlPromptConstants.DASH_SCOPE_SQL_GENERATION_SYSTEM_PROMPT;
+        return DashboardSqlPromptConstants.SYSTEM_PROMPT;
     }
 
     private String buildSqlUserPrompt(DashboardSqlGenerationRequest request) {

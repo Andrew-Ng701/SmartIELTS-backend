@@ -1,5 +1,6 @@
 package com.andrew.smartielts.listening.domain.vo;
 
+import com.andrew.smartielts.listening.domain.pojo.ListeningAudio;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -11,8 +12,9 @@ public class ListeningRecordDetailVO {
     private Long recordId;
     private Long testId;
     private String testTitle;
-    private String audioUrl;
-    private String transcriptText;
+    private ListeningAudio testAudio;
+    private List<ListeningPartVO> parts;
+    private List<ListeningAudio> partGroupAudios;
     private Integer totalScore;
     private LocalDateTime createdTime;
     private List<ListeningQuestionVO> questions;

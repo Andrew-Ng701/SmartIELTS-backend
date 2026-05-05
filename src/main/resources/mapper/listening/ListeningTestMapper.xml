@@ -2,137 +2,125 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
 <mapper namespace="com.andrew.smartielts.listening.mapper.ListeningTestMapper">
 
     <resultMap id="ListeningTestResultMap" type="com.andrew.smartielts.listening.domain.pojo.ListeningTest">
         <id property="id" column="id"/>
         <result property="title" column="title"/>
-        <result property="audioUrl" column="audio_url"/>
         <result property="totalScore" column="total_score"/>
-        <result property="audioObjectKey" column="audio_object_key"/>
-        <result property="transcriptText" column="transcript_text"/>
         <result property="createdTime" column="created_time"/>
+        <result property="updatedTime" column="updated_time"/>
         <result property="isDeleted" column="is_deleted"/>
+        <result property="timerMode" column="timer_mode"/>
+        <result property="totalSeconds" column="total_seconds"/>
+        <result property="autoSubmit" column="auto_submit"/>
+        <result property="allowPause" column="allow_pause"/>
     </resultMap>
+
+    <sql id="BaseColumnList">
+        id,
+        title,
+        total_score,
+        created_time,
+        updated_time,
+        is_deleted,
+        timer_mode,
+        total_seconds,
+        auto_submit,
+        allow_pause
+    </sql>
 
     <insert id="insertListeningTest"
             parameterType="com.andrew.smartielts.listening.domain.pojo.ListeningTest"
             useGeneratedKeys="true"
-            keyProperty="id">
-        insert into listening_test (
+            keyProperty="id"
+            keyColumn="id">
+        INSERT INTO listening_test (
             title,
-            audio_url,
             total_score,
-            audio_object_key,
-            transcript_text,
             created_time,
-            is_deleted
-        ) values (
+            updated_time,
+            is_deleted,
+            timer_mode,
+            total_seconds,
+            auto_submit,
+            allow_pause
+        ) VALUES (
                      #{title},
-                     #{audioUrl},
                      #{totalScore},
-                     #{audioObjectKey},
-                     #{transcriptText},
                      #{createdTime},
-                     0
+                     #{updatedTime},
+                     #{isDeleted},
+                     #{timerMode},
+                     #{totalSeconds},
+                     #{autoSubmit},
+                     #{allowPause}
                  )
     </insert>
 
     <select id="findActiveById" resultMap="ListeningTestResultMap">
-        select
-            id,
-            title,
-            audio_url,
-            total_score,
-            audio_object_key,
-            transcript_text,
-            created_time,
-            is_deleted
-        from listening_test
-        where id = #{id}
-          and is_deleted = 0
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_test
+        WHERE id = #{id}
+        AND is_deleted = 0
+        LIMIT 1
     </select>
 
     <select id="findAnyById" resultMap="ListeningTestResultMap">
-        select
-            id,
-            title,
-            audio_url,
-            total_score,
-            audio_object_key,
-            transcript_text,
-            created_time,
-            is_deleted
-        from listening_test
-        where id = #{id}
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_test
+        WHERE id = #{id}
+        LIMIT 1
     </select>
 
     <select id="findAllActive" resultMap="ListeningTestResultMap">
-        select
-            id,
-            title,
-            audio_url,
-            total_score,
-            audio_object_key,
-            transcript_text,
-            created_time,
-            is_deleted
-        from listening_test
-        where is_deleted = 0
-        order by id desc
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_test
+        WHERE is_deleted = 0
+        ORDER BY id DESC
     </select>
 
     <select id="findAllDeleted" resultMap="ListeningTestResultMap">
-        select
-            id,
-            title,
-            audio_url,
-            total_score,
-            audio_object_key,
-            transcript_text,
-            created_time,
-            is_deleted
-        from listening_test
-        where is_deleted = 1
-        order by id desc
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_test
+        WHERE is_deleted = 1
+        ORDER BY id DESC
     </select>
 
     <select id="findAllIncludingDeleted" resultMap="ListeningTestResultMap">
-        select
-            id,
-            title,
-            audio_url,
-            total_score,
-            audio_object_key,
-            transcript_text,
-            created_time,
-            is_deleted
-        from listening_test
-        order by id desc
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_test
+        ORDER BY id DESC
     </select>
 
     <update id="updateListeningTest"
             parameterType="com.andrew.smartielts.listening.domain.pojo.ListeningTest">
-        update listening_test
-        set title = #{title},
-            audio_url = #{audioUrl},
+        UPDATE listening_test
+        SET title = #{title},
             total_score = #{totalScore},
-            audio_object_key = #{audioObjectKey},
-            transcript_text = #{transcriptText}
-        where id = #{id}
+            updated_time = #{updatedTime},
+            timer_mode = #{timerMode},
+            total_seconds = #{totalSeconds},
+            auto_submit = #{autoSubmit},
+            allow_pause = #{allowPause}
+        WHERE id = #{id}
     </update>
 
     <update id="softDeleteById">
-        update listening_test
-        set is_deleted = 1
-        where id = #{id}
-          and is_deleted = 0
+        UPDATE listening_test
+        SET is_deleted = 1,
+            updated_time = NOW()
+        WHERE id = #{id}
+          AND is_deleted = 0
     </update>
 
     <update id="restoreById">
-        update listening_test
-        set is_deleted = 0
-        where id = #{id}
-          and is_deleted = 1
+        UPDATE listening_test
+        SET is_deleted = 0,
+            updated_time = NOW()
+        WHERE id = #{id}
+          AND is_deleted = 1
     </update>
+
 </mapper>

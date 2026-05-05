@@ -1,6 +1,6 @@
-package com.andrew.smartielts.common.mapper;
+package com.andrew.smartielts.common.image.mapper;
 
-import com.andrew.smartielts.common.domain.pojo.BizImageResource;
+import com.andrew.smartielts.common.image.domain.pojo.BizImageResource;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -17,6 +17,6 @@ public interface BizImageResourceMapper {
     List<BizImageResource> findActiveByTargets(@Param("targetType") String targetType,
                                                @Param("targetIds") List<Long> targetIds);
 
-    int softDeleteByTarget(@Param("targetType") String targetType,
-                           @Param("targetId") Long targetId);
+    int deleteByTarget(@Param("targetType") String targetType,
+                       @Param("targetId") Long targetId);
 }

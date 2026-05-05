@@ -1,10 +1,12 @@
 package com.andrew.smartielts.listening.mapper;
 
 import com.andrew.smartielts.common.domain.pojo.TestPartGroup;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
+@Mapper
 public interface ListeningPartGroupMapper {
 
     int insertListeningPartGroup(TestPartGroup partGroup);

@@ -3,7 +3,6 @@ package com.andrew.smartielts.reading.service.user.impl;
 import com.andrew.smartielts.common.constants.RecordQueryValidator;
 import com.andrew.smartielts.common.domain.pojo.QuestionAnswerRule;
 import com.andrew.smartielts.common.domain.pojo.TestPartGroup;
-import com.andrew.smartielts.common.domain.pojo.TestTimerConfig;
 import com.andrew.smartielts.common.page.PageResult;
 import com.andrew.smartielts.common.support.QuestionAnswerRuleJudgeSupport;
 import com.andrew.smartielts.reading.domain.dto.ReadingAnswerDTO;
@@ -30,7 +29,6 @@ import com.andrew.smartielts.reading.mapper.ReadingQuestionMapper;
 import com.andrew.smartielts.reading.mapper.ReadingRecordMapper;
 import com.andrew.smartielts.reading.mapper.ReadingTestMapper;
 import com.andrew.smartielts.reading.service.admin.ReadingPartGroupService;
-import com.andrew.smartielts.reading.service.admin.ReadingTestTimerService;
 import com.andrew.smartielts.reading.service.user.UserReadingService;
 import com.andrew.smartielts.utils.SecurityUtils;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -53,259 +51,248 @@ import java.util.UUID;
 @Service
 public class UserReadingServiceImpl implements UserReadingService {
 
-    private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
-    private static final String STATUS_PAUSED = "PAUSED";
-    private static final String STATUS_SUBMITTED = "SUBMITTED";
-    private static final String STATUS_AUTO_SUBMITTED = "AUTO_SUBMITTED";
+    private static final String STATUS_IN_PROGRESS = "in_progress";
+    private static final String STATUS_PAUSED = "paused";
+    private static final String STATUS_SUBMITTED = "submitted";
+    private static final String STATUS_AUTO_SUBMITTED = "auto_submitted";
 
-    private static final String TIMER_MODE_NONE = "NONE";
-    private static final String TIMER_MODE_TEST_LEVEL = "TEST_LEVEL";
-    private static final String TIMER_MODE_PART_LEVEL = "PART_LEVEL";
+    private static final String TIMER_MODE_TEST_LEVEL = "test_level";
+    private static final int DEFAULT_TOTAL_SECONDS = 3600;
+    private static final int DEFAULT_AUTO_SUBMIT = 1;
+    private static final int DEFAULT_ALLOW_PAUSE = 0;
 
-    private final ReadingTestMapper reading_test_mapper;
-    private final ReadingPassageMapper reading_passage_mapper;
-    private final ReadingQuestionMapper reading_question_mapper;
-    private final ReadingRecordMapper reading_record_mapper;
-    private final ReadingAnswerRecordMapper reading_answer_record_mapper;
-    private final ReadingQuestionAnswerRuleMapper reading_question_answer_rule_mapper;
-    private final ReadingTestTimerService reading_test_timer_service;
-    private final ReadingPartGroupService reading_part_group_service;
-    private final QuestionAnswerRuleJudgeSupport judge_support;
-    private final ObjectMapper object_mapper = new ObjectMapper();
+    private final ReadingTestMapper readingTestMapper;
+    private final ReadingPassageMapper readingPassageMapper;
+    private final ReadingQuestionMapper readingQuestionMapper;
+    private final ReadingRecordMapper readingRecordMapper;
+    private final ReadingAnswerRecordMapper readingAnswerRecordMapper;
+    private final ReadingQuestionAnswerRuleMapper readingQuestionAnswerRuleMapper;
+    private final ReadingPartGroupService readingPartGroupService;
+    private final QuestionAnswerRuleJudgeSupport judgeSupport;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public UserReadingServiceImpl(ReadingTestMapper reading_test_mapper,
-                                  ReadingPassageMapper reading_passage_mapper,
-                                  ReadingQuestionMapper reading_question_mapper,
-                                  ReadingRecordMapper reading_record_mapper,
-                                  ReadingAnswerRecordMapper reading_answer_record_mapper,
-                                  ReadingQuestionAnswerRuleMapper reading_question_answer_rule_mapper,
-                                  ReadingTestTimerService reading_test_timer_service,
-                                  ReadingPartGroupService reading_part_group_service,
-                                  QuestionAnswerRuleJudgeSupport judge_support) {
-        this.reading_test_mapper = reading_test_mapper;
-        this.reading_passage_mapper = reading_passage_mapper;
-        this.reading_question_mapper = reading_question_mapper;
-        this.reading_record_mapper = reading_record_mapper;
-        this.reading_answer_record_mapper = reading_answer_record_mapper;
-        this.reading_question_answer_rule_mapper = reading_question_answer_rule_mapper;
-        this.reading_test_timer_service = reading_test_timer_service;
-        this.reading_part_group_service = reading_part_group_service;
-        this.judge_support = judge_support;
+    public UserReadingServiceImpl(ReadingTestMapper readingTestMapper,
+                                  ReadingPassageMapper readingPassageMapper,
+                                  ReadingQuestionMapper readingQuestionMapper,
+                                  ReadingRecordMapper readingRecordMapper,
+                                  ReadingAnswerRecordMapper readingAnswerRecordMapper,
+                                  ReadingQuestionAnswerRuleMapper readingQuestionAnswerRuleMapper,
+                                  ReadingPartGroupService readingPartGroupService,
+                                  QuestionAnswerRuleJudgeSupport judgeSupport) {
+        this.readingTestMapper = readingTestMapper;
+        this.readingPassageMapper = readingPassageMapper;
+        this.readingQuestionMapper = readingQuestionMapper;
+        this.readingRecordMapper = readingRecordMapper;
+        this.readingAnswerRecordMapper = readingAnswerRecordMapper;
+        this.readingQuestionAnswerRuleMapper = readingQuestionAnswerRuleMapper;
+        this.readingPartGroupService = readingPartGroupService;
+        this.judgeSupport = judgeSupport;
     }
 
     @Override
     public List<ReadingTest> listTests() {
-        return reading_test_mapper.findAllActive();
+        return readingTestMapper.findAllActive();
     }
 
     @Override
-    public ReadingTestDetailVO getTestDetail(Long test_id) {
-        ReadingTest test = reading_test_mapper.findActiveById(test_id);
+    public ReadingTestDetailVO getTestDetail(Long testId) {
+        ReadingTest test = readingTestMapper.findActiveById(testId);
         if (test == null) {
             throw new RuntimeException("Reading test not found");
         }
 
-        List<ReadingPassage> passages = reading_passage_mapper.findActiveByTestId(test_id);
+        List<ReadingPassage> passages = readingPassageMapper.findActiveByTestId(testId);
 
-        ReadingTestDetailVO detail_vo = new ReadingTestDetailVO();
-        detail_vo.setId(test.getId());
-        detail_vo.setTitle(test.getTitle());
-        detail_vo.setTotalScore(test.getTotalScore());
-        detail_vo.setTimerConfig(reading_test_timer_service.getByTestId(test_id));
-        detail_vo.setPartGroups(reading_part_group_service.listActiveByTestId(test_id));
-        detail_vo.setPassages(build_passage_vo_list(passages, true));
-        return detail_vo;
+        ReadingTestDetailVO detailVo = new ReadingTestDetailVO();
+        detailVo.setId(test.getId());
+        detailVo.setTitle(test.getTitle());
+        detailVo.setTotalScore(test.getTotalScore());
+        detailVo.setTimerMode(normalizeTimerMode(test.getTimerMode()));
+        detailVo.setTotalSeconds(resolveReadingTimeLimitSeconds(test));
+        detailVo.setAutoSubmit(defaultFlag(test.getAutoSubmit(), DEFAULT_AUTO_SUBMIT));
+        detailVo.setAllowPause(defaultFlag(test.getAllowPause(), DEFAULT_ALLOW_PAUSE));
+        detailVo.setPartGroups(readingPartGroupService.listActiveByTestId(testId));
+        detailVo.setPassages(buildPassageVoList(passages, true));
+        return detailVo;
     }
 
     @Override
     @Transactional
-    public ReadingSessionVO start(Long test_id) {
-        Long user_id = SecurityUtils.getCurrentUserId();
+    public ReadingSessionVO start(Long testId) {
+        Long userId = SecurityUtils.getCurrentUserId();
 
-        ReadingTest test = reading_test_mapper.findActiveById(test_id);
+        ReadingTest test = readingTestMapper.findActiveById(testId);
         if (test == null) {
             throw new RuntimeException("Reading test not found");
         }
 
-        ReadingRecord existing_record = reading_record_mapper.findInProgressByTestIdForUser(test_id, user_id);
-        TestTimerConfig timer_config = reading_test_timer_service.getByTestId(test_id);
-
-        if (existing_record != null) {
-            return to_session_vo(existing_record, timer_config);
+        ReadingRecord existingRecord = readingRecordMapper.findInProgressByTestIdForUser(testId, userId);
+        if (existingRecord != null) {
+            return toSessionVo(existingRecord, test);
         }
 
         LocalDateTime now = LocalDateTime.now();
-
         ReadingRecord record = new ReadingRecord();
-        record.setUserId(user_id);
-        record.setTestId(test_id);
-        record.setSessionId(generate_session_id());
+        record.setUserId(userId);
+        record.setTestId(testId);
+        record.setSessionId(generateSessionId());
         record.setStartedTime(now);
         record.setSubmittedTime(null);
-        record.setTimeLimitSeconds(resolve_reading_time_limit_seconds(test_id, timer_config));
+        record.setTimeLimitSeconds(resolveReadingTimeLimitSeconds(test));
         record.setTimeSpentSeconds(0);
-        record.setTotalScore(0);
         record.setRecordStatus(STATUS_IN_PROGRESS);
+        record.setTotalScore(0);
         record.setCreatedTime(now);
         record.setIsDeleted(0);
 
-        reading_record_mapper.insertReadingRecord(record);
-        return to_session_vo(record, timer_config);
+        readingRecordMapper.insertReadingRecord(record);
+        return toSessionVo(record, test);
     }
 
     @Override
-    public ReadingSessionVO getSession(String session_id, Long user_id) {
-        ReadingRecord record = get_reading_session_record(session_id, user_id);
-        TestTimerConfig timer_config = reading_test_timer_service.getByTestId(record.getTestId());
-        return to_session_vo(record, timer_config);
+    public ReadingSessionVO getSession(String sessionId, Long userId) {
+        ReadingRecord record = getReadingSessionRecord(sessionId, userId);
+        ReadingTest test = readingTestMapper.findAnyById(record.getTestId());
+        return toSessionVo(record, test);
     }
 
     @Override
     @Transactional
-    public ReadingSessionVO pause(String session_id, Long user_id, ReadingSessionActionDTO dto) {
-        ReadingRecord record = get_reading_session_record(session_id, user_id);
-
-        if (!is_status_in_progress(record.getRecordStatus())) {
+    public ReadingSessionVO pause(String sessionId, Long userId, ReadingSessionActionDTO dto) {
+        ReadingRecord record = getReadingSessionRecord(sessionId, userId);
+        if (!isStatusInProgress(record.getRecordStatus())) {
             throw new RuntimeException("Reading session is not in progress");
         }
 
-        TestTimerConfig timer_config = reading_test_timer_service.getByTestId(record.getTestId());
-        if (timer_config == null || !enabled(timer_config.getAllowPause())) {
+        ReadingTest test = readingTestMapper.findAnyById(record.getTestId());
+        if (test == null) {
+            throw new RuntimeException("Reading test not found");
+        }
+        if (!enabled(test.getAllowPause(), DEFAULT_ALLOW_PAUSE)) {
             throw new RuntimeException("Pause is not allowed for this reading test");
         }
 
-        int time_spent_seconds = calculate_current_time_spent(
-                record,
-                dto == null ? null : dto.getClientTimeSpentSeconds()
-        );
-
-        record.setTimeSpentSeconds(time_spent_seconds);
+        int timeSpentSeconds = calculateCurrentTimeSpent(record, dto == null ? null : dto.getClientTimeSpentSeconds());
+        record.setTimeSpentSeconds(timeSpentSeconds);
         record.setRecordStatus(STATUS_PAUSED);
-        reading_record_mapper.updateSessionState(record);
+        readingRecordMapper.updateSessionState(record);
 
-        return to_session_vo(record, timer_config);
+        return toSessionVo(record, test);
     }
 
     @Override
     @Transactional
-    public ReadingSessionVO resume(String session_id, Long user_id) {
-        ReadingRecord record = get_reading_session_record(session_id, user_id);
-
-        if (!is_status_paused(record.getRecordStatus())) {
+    public ReadingSessionVO resume(String sessionId, Long userId) {
+        ReadingRecord record = getReadingSessionRecord(sessionId, userId);
+        if (!isStatusPaused(record.getRecordStatus())) {
             throw new RuntimeException("Reading session is not paused");
         }
 
-        TestTimerConfig timer_config = reading_test_timer_service.getByTestId(record.getTestId());
-        if (timer_config == null || !enabled(timer_config.getAllowPause())) {
+        ReadingTest test = readingTestMapper.findAnyById(record.getTestId());
+        if (test == null) {
+            throw new RuntimeException("Reading test not found");
+        }
+        if (!enabled(test.getAllowPause(), DEFAULT_ALLOW_PAUSE)) {
             throw new RuntimeException("Pause is not allowed for this reading test");
         }
 
         LocalDateTime now = LocalDateTime.now();
-        int time_spent_seconds = record.getTimeSpentSeconds() == null ? 0 : record.getTimeSpentSeconds();
-
-        record.setStartedTime(now.minusSeconds(time_spent_seconds));
+        int timeSpentSeconds = record.getTimeSpentSeconds() == null ? 0 : Math.max(record.getTimeSpentSeconds(), 0);
+        record.setStartedTime(now.minusSeconds(timeSpentSeconds));
         record.setRecordStatus(STATUS_IN_PROGRESS);
-        reading_record_mapper.updateSessionState(record);
+        readingRecordMapper.updateSessionState(record);
 
-        return to_session_vo(record, timer_config);
+        return toSessionVo(record, test);
     }
 
     @Override
     @Transactional
-    public ReadingRecordDetailVO submit(Long test_id, ReadingSubmitDTO dto) {
-        Long user_id = SecurityUtils.getCurrentUserId();
+    public ReadingRecordDetailVO submit(Long testId, ReadingSubmitDTO dto) {
+        Long userId = SecurityUtils.getCurrentUserId();
 
-        ReadingTest test = reading_test_mapper.findActiveById(test_id);
+        ReadingTest test = readingTestMapper.findActiveById(testId);
         if (test == null) {
             throw new RuntimeException("Reading test not found");
         }
 
-        List<ReadingPassage> passages = reading_passage_mapper.findActiveByTestId(test_id);
-        List<ReadingQuestion> all_questions = new ArrayList<>();
+        List<ReadingPassage> passages = readingPassageMapper.findActiveByTestId(testId);
+        List<ReadingQuestion> allQuestions = new ArrayList<>();
         if (passages != null) {
             for (ReadingPassage passage : passages) {
                 if (passage == null || passage.getId() == null) {
                     continue;
                 }
-                List<ReadingQuestion> question_list = reading_question_mapper.findActiveByPassageId(passage.getId());
-                if (question_list != null) {
-                    all_questions.addAll(question_list);
+                List<ReadingQuestion> questionList = readingQuestionMapper.findActiveByPassageId(passage.getId());
+                if (questionList != null) {
+                    allQuestions.addAll(questionList);
                 }
             }
         }
 
-        TestTimerConfig timer_config = reading_test_timer_service.getByTestId(test_id);
         LocalDateTime now = LocalDateTime.now();
-
         ReadingRecord record;
-        String session_id = dto == null ? null : trim_to_null(dto.getSessionId());
+        String sessionId = dto == null ? null : trimToNull(dto.getSessionId());
 
-        if (session_id != null) {
-            record = get_reading_session_record(session_id, user_id);
-            if (!Objects.equals(record.getTestId(), test_id)) {
+        if (sessionId != null) {
+            record = getReadingSessionRecord(sessionId, userId);
+            if (!Objects.equals(record.getTestId(), testId)) {
                 throw new RuntimeException("Reading session does not belong to test");
             }
-            if (is_status_submitted(record.getRecordStatus()) || is_status_auto_submitted(record.getRecordStatus())) {
+            if (isStatusSubmitted(record.getRecordStatus()) || isStatusAutoSubmitted(record.getRecordStatus())) {
                 throw new RuntimeException("Reading session already submitted");
             }
         } else {
             record = new ReadingRecord();
-            record.setUserId(user_id);
-            record.setTestId(test_id);
-            record.setSessionId(generate_session_id());
-            record.setCreatedTime(now);
-            record.setIsDeleted(0);
-            record.setTotalScore(0);
-            record.setRecordStatus(STATUS_IN_PROGRESS);
-            record.setTimeLimitSeconds(resolve_reading_time_limit_seconds(test_id, timer_config));
-            record.setTimeSpentSeconds(0);
+            record.setUserId(userId);
+            record.setTestId(testId);
+            record.setSessionId(generateSessionId());
             record.setStartedTime(now);
             record.setSubmittedTime(null);
-            reading_record_mapper.insertReadingRecord(record);
+            record.setTimeLimitSeconds(resolveReadingTimeLimitSeconds(test));
+            record.setTimeSpentSeconds(0);
+            record.setRecordStatus(STATUS_IN_PROGRESS);
+            record.setTotalScore(0);
+            record.setCreatedTime(now);
+            record.setIsDeleted(0);
+            readingRecordMapper.insertReadingRecord(record);
         }
 
-        int time_spent_seconds = calculate_current_time_spent(
-                record,
-                dto == null ? null : dto.getTimeSpentSeconds()
-        );
+        int timeSpentSeconds = calculateCurrentTimeSpent(record, dto == null ? null : dto.getTimeSpentSeconds());
         if (dto != null && dto.getTimeSpentSeconds() != null && dto.getTimeSpentSeconds() >= 0) {
-            time_spent_seconds = Math.max(time_spent_seconds, dto.getTimeSpentSeconds());
+            timeSpentSeconds = Math.max(timeSpentSeconds, dto.getTimeSpentSeconds());
         }
 
-        Integer time_limit_seconds = record.getTimeLimitSeconds();
-        if (time_limit_seconds == null) {
-            time_limit_seconds = resolve_reading_time_limit_seconds(test_id, timer_config);
+        Integer timeLimitSeconds = record.getTimeLimitSeconds();
+        if (timeLimitSeconds == null) {
+            timeLimitSeconds = resolveReadingTimeLimitSeconds(test);
         }
 
-        LocalDateTime started_time = dto != null && dto.getStartedTime() != null
+        LocalDateTime startedTime = dto != null && dto.getStartedTime() != null
                 ? dto.getStartedTime()
-                : resolve_started_time(record.getStartedTime(), now, time_spent_seconds);
+                : resolveStartedTime(record.getStartedTime(), now, timeSpentSeconds);
 
-        boolean timeout = is_timeout(time_limit_seconds, time_spent_seconds);
-        boolean auto_submitted = dto != null
-                && dto.getAutoSubmitted() != null
-                && dto.getAutoSubmitted() == 1;
-        boolean final_auto_submitted = auto_submitted || (timeout && is_auto_submit_enabled(timer_config));
+        boolean timeout = isTimeout(timeLimitSeconds, timeSpentSeconds);
+        boolean autoSubmitted = dto != null && dto.getAutoSubmitted() != null && dto.getAutoSubmitted() == 1;
+        boolean finalAutoSubmitted = autoSubmitted || (timeout && isAutoSubmitEnabled(test));
 
-        Map<Long, ReadingAnswerDTO> answer_map = build_answer_input_map(dto == null ? null : dto.getAnswers());
+        Map<Long, ReadingAnswerDTO> answerMap = buildAnswerInputMap(dto == null ? null : dto.getAnswers());
 
-        int total_score = 0;
-        List<ReadingAnswerResultVO> answer_result_list = new ArrayList<>();
-
-        for (ReadingQuestion question : all_questions) {
+        int totalScore = 0;
+        List<ReadingAnswerResultVO> answerResultList = new ArrayList<>();
+        for (ReadingQuestion question : allQuestions) {
             if (question == null || question.getId() == null) {
                 continue;
             }
 
-            ReadingAnswerDTO answer_dto = answer_map.get(question.getId());
-            List<String> raw_answers = normalize_raw_list(
-                    answer_dto == null ? null : answer_dto.getAnswer(),
-                    answer_dto == null ? null : answer_dto.getAnswers()
+            ReadingAnswerDTO answerDto = answerMap.get(question.getId());
+            List<String> rawAnswers = normalizeRawList(
+                    answerDto == null ? null : answerDto.getAnswer(),
+                    answerDto == null ? null : answerDto.getAnswers()
             );
 
-            List<QuestionAnswerRule> rules = reading_question_answer_rule_mapper.findByQuestionId(question.getId());
-            var grade_result = judge_support.grade(
-                    raw_answers,
+            List<QuestionAnswerRule> rules = readingQuestionAnswerRuleMapper.findByQuestionId(question.getId());
+            QuestionAnswerRuleJudgeSupport.GradeResult gradeResult = judgeSupport.grade(
+                    rawAnswers,
                     question.getAnswerMode(),
                     question.getCorrectAnswer(),
                     question.getAcceptedAnswersJson(),
@@ -316,138 +303,133 @@ public class UserReadingServiceImpl implements UserReadingService {
                     question.getScore()
             );
 
-            int score = grade_result.getEarnedScore();
-            total_score += score;
+            int score = gradeResult.getEarnedScore();
+            totalScore += score;
 
-            ReadingAnswerRecord answer_record = new ReadingAnswerRecord();
-            answer_record.setRecordId(record.getId());
-            answer_record.setQuestionId(question.getId());
-            answer_record.setPartGroupId(question.getPartGroupId());
-            answer_record.setUserAnswer(grade_result.getStoredUserAnswer());
-            answer_record.setNormalizedAnswer(grade_result.getNormalizedUserAnswer());
-            answer_record.setRawAnswersJson(grade_result.getRawAnswersJson());
-            answer_record.setIsCorrect(grade_result.isCorrect() ? 1 : 0);
-            answer_record.setScore(score);
-            reading_answer_record_mapper.insertReadingAnswerRecord(answer_record);
+            ReadingAnswerRecord answerRecord = new ReadingAnswerRecord();
+            answerRecord.setRecordId(record.getId());
+            answerRecord.setQuestionId(question.getId());
+            answerRecord.setPartGroupId(question.getPartGroupId());
+            answerRecord.setUserAnswer(gradeResult.getStoredUserAnswer());
+            answerRecord.setNormalizedAnswer(gradeResult.getNormalizedUserAnswer());
+            answerRecord.setRawAnswersJson(gradeResult.getRawAnswersJson());
+            answerRecord.setIsCorrect(gradeResult.isCorrect() ? 1 : 0);
+            answerRecord.setScore(score);
+            readingAnswerRecordMapper.insertReadingAnswerRecord(answerRecord);
 
-            ReadingAnswerResultVO result_vo = new ReadingAnswerResultVO();
-            result_vo.setQuestionId(question.getId());
-            result_vo.setQuestionText(question.getQuestionText());
-            result_vo.setQuestionType(question.getQuestionType());
-            result_vo.setAnswerMode(question.getAnswerMode());
-            result_vo.setOptionsJson(question.getOptionsJson());
-            result_vo.setUserAnswer(grade_result.getStoredUserAnswer());
-            result_vo.setCorrectAnswer(grade_result.getDisplayCorrectAnswer());
-            result_vo.setIsCorrect(grade_result.isCorrect() ? 1 : 0);
-            result_vo.setScore(score);
-            answer_result_list.add(result_vo);
+            ReadingAnswerResultVO resultVo = new ReadingAnswerResultVO();
+            resultVo.setQuestionId(question.getId());
+            resultVo.setQuestionText(question.getQuestionText());
+            resultVo.setQuestionType(question.getQuestionType());
+            resultVo.setAnswerMode(question.getAnswerMode());
+            resultVo.setOptionsJson(question.getOptionsJson());
+            resultVo.setUserAnswer(gradeResult.getStoredUserAnswer());
+            resultVo.setCorrectAnswer(gradeResult.getDisplayCorrectAnswer());
+            resultVo.setIsCorrect(gradeResult.isCorrect() ? 1 : 0);
+            resultVo.setScore(score);
+            answerResultList.add(resultVo);
         }
 
-        record.setStartedTime(started_time);
+        record.setStartedTime(startedTime);
         record.setSubmittedTime(now);
-        record.setTimeLimitSeconds(time_limit_seconds);
-        record.setTimeSpentSeconds(resolve_submitted_time_spent_seconds(
-                dto == null ? null : dto.getTimeSpentSeconds(),
-                started_time,
-                now
-        ));
-        record.setTotalScore(total_score);
-        record.setRecordStatus(final_auto_submitted ? STATUS_AUTO_SUBMITTED : STATUS_SUBMITTED);
+        record.setTimeLimitSeconds(timeLimitSeconds);
+        record.setTimeSpentSeconds(resolveSubmittedTimeSpentSeconds(dto == null ? null : dto.getTimeSpentSeconds(), startedTime, now));
+        record.setTotalScore(totalScore);
+        record.setRecordStatus(finalAutoSubmitted ? STATUS_AUTO_SUBMITTED : STATUS_SUBMITTED);
 
-        reading_record_mapper.updateSessionState(record);
-        reading_record_mapper.updateTotalScore(record.getId(), total_score);
+        readingRecordMapper.updateSessionState(record);
+        readingRecordMapper.updateTotalScore(record.getId(), totalScore);
 
-        ReadingRecordDetailVO detail_vo = new ReadingRecordDetailVO();
-        detail_vo.setRecordId(record.getId());
-        detail_vo.setTestId(record.getTestId());
-        detail_vo.setTestTitle(test.getTitle());
-        detail_vo.setTotalScore(record.getTotalScore());
-        detail_vo.setCreatedTime(record.getCreatedTime());
-        detail_vo.setPassages(build_passage_vo_list(passages, true));
-        detail_vo.setAnswers(answer_result_list);
-        return detail_vo;
+        ReadingRecordDetailVO detailVo = new ReadingRecordDetailVO();
+        detailVo.setRecordId(record.getId());
+        detailVo.setTestId(record.getTestId());
+        detailVo.setTestTitle(test.getTitle());
+        detailVo.setTotalScore(totalScore);
+        detailVo.setCreatedTime(record.getCreatedTime());
+        detailVo.setPassages(buildPassageVoList(passages, true));
+        detailVo.setAnswers(answerResultList);
+        return detailVo;
     }
 
     @Override
-    public PageResult<ReadingRecordVO> pageActiveRecords(Long user_id, UserReadingRecordPageQuery query) {
-        UserReadingRecordPageQuery safe_query = query == null ? new UserReadingRecordPageQuery() : query;
-
+    public PageResult<ReadingRecordVO> pageActiveRecords(Long userId, UserReadingRecordPageQuery query) {
+        UserReadingRecordPageQuery safeQuery = query == null ? new UserReadingRecordPageQuery() : query;
         RecordQueryValidator.validate(
-                safe_query.getPageNum(),
-                safe_query.getPageSize(),
-                user_id,
-                safe_query.getTestId(),
-                safe_query.getMinScore(),
-                safe_query.getMaxScore(),
-                safe_query.getStartTime(),
-                safe_query.getEndTime()
+                safeQuery.getPageNum(),
+                safeQuery.getPageSize(),
+                userId,
+                safeQuery.getTestId(),
+                safeQuery.getMinScore(),
+                safeQuery.getMaxScore(),
+                safeQuery.getStartTime(),
+                safeQuery.getEndTime()
         );
 
-        int page_num = normalize_page_num(safe_query.getPageNum());
-        int page_size = normalize_page_size(safe_query.getPageSize());
-        int offset = (page_num - 1) * page_size;
+        int pageNum = normalizePageNum(safeQuery.getPageNum());
+        int pageSize = normalizePageSize(safeQuery.getPageSize());
+        int offset = (pageNum - 1) * pageSize;
 
-        Long total = reading_record_mapper.countUserActive(user_id, safe_query);
-        if (total == null || total <= 0L) {
-            return new PageResult<>(new ArrayList<>(), 0L, page_num, page_size);
+        Long total = readingRecordMapper.countUserActive(userId, safeQuery);
+        if (total == null || total == 0L) {
+            return new PageResult<>(new ArrayList<>(), 0L, pageNum, pageSize);
         }
 
-        List<ReadingRecord> records = reading_record_mapper.pageUserActive(user_id, safe_query, offset, page_size);
-        List<ReadingRecordVO> vo_list = new ArrayList<>();
+        List<ReadingRecord> records = readingRecordMapper.pageUserActive(userId, safeQuery, offset, pageSize);
+        List<ReadingRecordVO> voList = new ArrayList<>();
         if (records != null) {
             for (ReadingRecord record : records) {
-                if (record == null) {
-                    continue;
+                if (record != null) {
+                    voList.add(toRecordVo(record));
                 }
-                vo_list.add(to_record_vo(record));
             }
         }
-        return new PageResult<>(vo_list, total, page_num, page_size);
+
+        return new PageResult<>(voList, total, pageNum, pageSize);
     }
 
     @Override
-    public PageResult<ReadingRecordVO> pageDeletedRecords(Long user_id, UserReadingDeletedRecordPageQuery query) {
-        UserReadingDeletedRecordPageQuery safe_query = query == null ? new UserReadingDeletedRecordPageQuery() : query;
+    public PageResult<ReadingRecordVO> pageDeletedRecords(Long userId, UserReadingDeletedRecordPageQuery query) {
+        UserReadingDeletedRecordPageQuery safeQuery = query == null ? new UserReadingDeletedRecordPageQuery() : query;
 
-        int page_num = normalize_page_num(safe_query.getPageNum());
-        int page_size = normalize_page_size(safe_query.getPageSize());
-        int offset = (page_num - 1) * page_size;
+        int pageNum = normalizePageNum(safeQuery.getPageNum());
+        int pageSize = normalizePageSize(safeQuery.getPageSize());
+        int offset = (pageNum - 1) * pageSize;
 
-        Long total = reading_record_mapper.countUserDeleted(user_id, safe_query);
-        if (total == null || total <= 0L) {
-            return new PageResult<>(new ArrayList<>(), 0L, page_num, page_size);
+        Long total = readingRecordMapper.countUserDeleted(userId, safeQuery);
+        if (total == null || total == 0L) {
+            return new PageResult<>(new ArrayList<>(), 0L, pageNum, pageSize);
         }
 
-        List<ReadingRecord> records = reading_record_mapper.pageUserDeleted(user_id, safe_query, offset, page_size);
-        List<ReadingRecordVO> vo_list = new ArrayList<>();
+        List<ReadingRecord> records = readingRecordMapper.pageUserDeleted(userId, safeQuery, offset, pageSize);
+        List<ReadingRecordVO> voList = new ArrayList<>();
         if (records != null) {
             for (ReadingRecord record : records) {
-                if (record == null) {
-                    continue;
+                if (record != null) {
+                    voList.add(toRecordVo(record));
                 }
-                vo_list.add(to_record_vo(record));
             }
         }
-        return new PageResult<>(vo_list, total, page_num, page_size);
+
+        return new PageResult<>(voList, total, pageNum, pageSize);
     }
 
     @Override
-    public ReadingRecordDetailVO getRecord(Long record_id, Long user_id) {
-        ReadingRecord record = reading_record_mapper.findAnyByIdForUser(record_id, user_id);
+    public ReadingRecordDetailVO getRecord(Long recordId, Long userId) {
+        ReadingRecord record = readingRecordMapper.findAnyByIdForUser(recordId, userId);
         if (record == null) {
             throw new RuntimeException("Reading record not found");
         }
 
-        ReadingTest test = reading_test_mapper.findAnyById(record.getTestId());
+        ReadingTest test = readingTestMapper.findAnyById(record.getTestId());
         if (test == null) {
             throw new RuntimeException("Reading test not found");
         }
 
-        List<ReadingPassage> passages = reading_passage_mapper.findAnyByTestId(record.getTestId());
-        List<ReadingAnswerRecord> answer_records = reading_answer_record_mapper.findByRecordId(record_id);
+        List<ReadingPassage> passages = readingPassageMapper.findAnyByTestId(record.getTestId());
+        List<ReadingAnswerRecord> answerRecords = readingAnswerRecordMapper.findByRecordId(recordId);
 
-        List<ReadingPassageVO> passage_vo_list = new ArrayList<>();
-        List<ReadingAnswerResultVO> answer_vo_list = new ArrayList<>();
+        List<ReadingPassageVO> passageVoList = new ArrayList<>();
+        List<ReadingAnswerResultVO> answerVoList = new ArrayList<>();
 
         if (passages != null) {
             for (ReadingPassage passage : passages) {
@@ -455,99 +437,100 @@ public class UserReadingServiceImpl implements UserReadingService {
                     continue;
                 }
 
-                ReadingPassageVO passage_vo = new ReadingPassageVO();
-                passage_vo.setId(passage.getId());
-                passage_vo.setPartGroupId(passage.getPartGroupId());
-                passage_vo.setPassageNo(passage.getPassageNo());
-                passage_vo.setTitle(passage.getTitle());
-                passage_vo.setContent(passage.getContent());
-                passage_vo.setMaterialType(passage.getMaterialType());
-                passage_vo.setDisplayOrder(passage.getDisplayOrder());
+                ReadingPassageVO passageVo = new ReadingPassageVO();
+                passageVo.setId(passage.getId());
+                passageVo.setPartGroupId(passage.getPartGroupId());
+                passageVo.setPassageNo(passage.getPassageNo());
+                passageVo.setTitle(passage.getTitle());
+                passageVo.setContent(passage.getContent());
+                passageVo.setMaterialType(passage.getMaterialType());
+                passageVo.setDisplayOrder(passage.getDisplayOrder());
 
-                List<ReadingQuestion> question_list = reading_question_mapper.findAnyByPassageId(passage.getId());
-                List<ReadingQuestionVO> question_vo_list = new ArrayList<>();
+                List<ReadingQuestion> questionList = readingQuestionMapper.findAnyByPassageId(passage.getId());
+                List<ReadingQuestionVO> questionVoList = new ArrayList<>();
 
-                if (question_list != null) {
-                    for (ReadingQuestion question : question_list) {
+                if (questionList != null) {
+                    for (ReadingQuestion question : questionList) {
                         if (question == null) {
                             continue;
                         }
 
-                        question_vo_list.add(to_question_vo(question));
+                        questionVoList.add(toQuestionVo(question));
 
-                        ReadingAnswerRecord matched = find_matched_answer(answer_records, question.getId());
-
-                        ReadingAnswerResultVO answer_vo = new ReadingAnswerResultVO();
-                        answer_vo.setQuestionId(question.getId());
-                        answer_vo.setQuestionText(question.getQuestionText());
-                        answer_vo.setQuestionType(question.getQuestionType());
-                        answer_vo.setAnswerMode(question.getAnswerMode());
-                        answer_vo.setOptionsJson(question.getOptionsJson());
-                        answer_vo.setCorrectAnswer(build_display_correct_answer(question));
+                        ReadingAnswerRecord matched = findMatchedAnswer(answerRecords, question.getId());
+                        ReadingAnswerResultVO answerVo = new ReadingAnswerResultVO();
+                        answerVo.setQuestionId(question.getId());
+                        answerVo.setQuestionText(question.getQuestionText());
+                        answerVo.setQuestionType(question.getQuestionType());
+                        answerVo.setAnswerMode(question.getAnswerMode());
+                        answerVo.setOptionsJson(question.getOptionsJson());
+                        answerVo.setCorrectAnswer(buildDisplayCorrectAnswer(question));
 
                         if (matched != null) {
-                            answer_vo.setUserAnswer(matched.getUserAnswer());
-                            answer_vo.setIsCorrect(matched.getIsCorrect());
-                            answer_vo.setScore(matched.getScore());
+                            answerVo.setUserAnswer(matched.getUserAnswer());
+                            answerVo.setIsCorrect(matched.getIsCorrect());
+                            answerVo.setScore(matched.getScore());
                         } else {
-                            answer_vo.setUserAnswer(null);
-                            answer_vo.setIsCorrect(0);
-                            answer_vo.setScore(0);
+                            answerVo.setUserAnswer(null);
+                            answerVo.setIsCorrect(0);
+                            answerVo.setScore(0);
                         }
-                        answer_vo_list.add(answer_vo);
+                        answerVoList.add(answerVo);
                     }
                 }
 
-                question_vo_list.sort(Comparator
-                        .comparing(ReadingQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
-                        .thenComparing(ReadingQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo))
-                        .thenComparing(ReadingQuestionVO::getId, Comparator.nullsLast(Long::compareTo)));
+                questionVoList.sort(
+                        Comparator.comparing(ReadingQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                                .thenComparing(ReadingQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo))
+                                .thenComparing(ReadingQuestionVO::getId, Comparator.nullsLast(Long::compareTo))
+                );
 
-                passage_vo.setQuestions(question_vo_list);
-                passage_vo_list.add(passage_vo);
+                passageVo.setQuestions(questionVoList);
+                passageVoList.add(passageVo);
             }
         }
 
-        passage_vo_list.sort(Comparator
-                .comparing(ReadingPassageVO::getPassageNo, Comparator.nullsLast(Integer::compareTo))
-                .thenComparing(ReadingPassageVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
-                .thenComparing(ReadingPassageVO::getId, Comparator.nullsLast(Long::compareTo)));
+        passageVoList.sort(
+                Comparator.comparing(ReadingPassageVO::getPassageNo, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingPassageVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingPassageVO::getId, Comparator.nullsLast(Long::compareTo))
+        );
 
-        ReadingRecordDetailVO detail_vo = new ReadingRecordDetailVO();
-        detail_vo.setRecordId(record.getId());
-        detail_vo.setTestId(record.getTestId());
-        detail_vo.setTestTitle(test.getTitle());
-        detail_vo.setTotalScore(record.getTotalScore());
-        detail_vo.setCreatedTime(record.getCreatedTime());
-        detail_vo.setPassages(passage_vo_list);
-        detail_vo.setAnswers(answer_vo_list);
-        return detail_vo;
+        ReadingRecordDetailVO detailVo = new ReadingRecordDetailVO();
+        detailVo.setRecordId(record.getId());
+        detailVo.setTestId(test.getId());
+        detailVo.setTestTitle(test.getTitle());
+        detailVo.setTotalScore(record.getTotalScore());
+        detailVo.setCreatedTime(record.getCreatedTime());
+        detailVo.setPassages(passageVoList);
+        detailVo.setAnswers(answerVoList);
+        return detailVo;
     }
 
     @Override
     @Transactional
-    public void deleteRecord(Long record_id, Long user_id) {
-        ReadingRecord record = reading_record_mapper.findAnyByIdForUser(record_id, user_id);
+    public void deleteRecord(Long recordId, Long userId) {
+        ReadingRecord record = readingRecordMapper.findAnyByIdForUser(recordId, userId);
         if (record == null) {
             throw new RuntimeException("Reading record not found");
         }
-        reading_record_mapper.softDeleteByIdForUser(record_id, user_id);
+        readingRecordMapper.softDeleteByIdForUser(recordId, userId);
     }
 
     @Override
     @Transactional
-    public void restoreRecord(Long record_id, Long user_id) {
-        ReadingRecord record = reading_record_mapper.findAnyByIdForUser(record_id, user_id);
+    public void restoreRecord(Long recordId, Long userId) {
+        ReadingRecord record = readingRecordMapper.findAnyByIdForUser(recordId, userId);
         if (record == null) {
             throw new RuntimeException("Reading record not found");
         }
-        reading_record_mapper.restoreByIdForUser(record_id, user_id);
+        readingRecordMapper.restoreByIdForUser(recordId, userId);
     }
 
-    private List<ReadingPassageVO> build_passage_vo_list(List<ReadingPassage> passages, boolean active_only) {
-        List<ReadingPassageVO> passage_vo_list = new ArrayList<>();
+    private List<ReadingPassageVO> buildPassageVoList(List<ReadingPassage> passages, boolean activeOnly) {
+        List<ReadingPassageVO> passageVoList = new ArrayList<>();
         if (passages == null) {
-            return passage_vo_list;
+            return passageVoList;
         }
 
         for (ReadingPassage passage : passages) {
@@ -555,97 +538,47 @@ public class UserReadingServiceImpl implements UserReadingService {
                 continue;
             }
 
-            ReadingPassageVO passage_vo = new ReadingPassageVO();
-            passage_vo.setId(passage.getId());
-            passage_vo.setPartGroupId(passage.getPartGroupId());
-            passage_vo.setPassageNo(passage.getPassageNo());
-            passage_vo.setTitle(passage.getTitle());
-            passage_vo.setContent(passage.getContent());
-            passage_vo.setMaterialType(passage.getMaterialType());
-            passage_vo.setDisplayOrder(passage.getDisplayOrder());
+            ReadingPassageVO passageVo = new ReadingPassageVO();
+            passageVo.setId(passage.getId());
+            passageVo.setPartGroupId(passage.getPartGroupId());
+            passageVo.setPassageNo(passage.getPassageNo());
+            passageVo.setTitle(passage.getTitle());
+            passageVo.setContent(passage.getContent());
+            passageVo.setMaterialType(passage.getMaterialType());
+            passageVo.setDisplayOrder(passage.getDisplayOrder());
 
-            List<ReadingQuestion> question_list = active_only
-                    ? reading_question_mapper.findActiveByPassageId(passage.getId())
-                    : reading_question_mapper.findAnyByPassageId(passage.getId());
+            List<ReadingQuestion> questions = activeOnly
+                    ? readingQuestionMapper.findActiveByPassageId(passage.getId())
+                    : readingQuestionMapper.findAnyByPassageId(passage.getId());
 
-            List<ReadingQuestionVO> question_vo_list = new ArrayList<>();
-            if (question_list != null) {
-                for (ReadingQuestion question : question_list) {
-                    if (question == null) {
-                        continue;
+            List<ReadingQuestionVO> questionVoList = new ArrayList<>();
+            if (questions != null) {
+                for (ReadingQuestion question : questions) {
+                    if (question != null) {
+                        questionVoList.add(toQuestionVo(question));
                     }
-                    question_vo_list.add(to_question_vo(question));
                 }
             }
 
-            question_vo_list.sort(Comparator
-                    .comparing(ReadingQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
-                    .thenComparing(ReadingQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo))
-                    .thenComparing(ReadingQuestionVO::getId, Comparator.nullsLast(Long::compareTo)));
+            questionVoList.sort(
+                    Comparator.comparing(ReadingQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                            .thenComparing(ReadingQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo))
+                            .thenComparing(ReadingQuestionVO::getId, Comparator.nullsLast(Long::compareTo))
+            );
 
-            passage_vo.setQuestions(question_vo_list);
-            passage_vo_list.add(passage_vo);
+            passageVo.setQuestions(questionVoList);
+            passageVoList.add(passageVo);
         }
 
-        passage_vo_list.sort(Comparator
-                .comparing(ReadingPassageVO::getPassageNo, Comparator.nullsLast(Integer::compareTo))
-                .thenComparing(ReadingPassageVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
-                .thenComparing(ReadingPassageVO::getId, Comparator.nullsLast(Long::compareTo)));
-
-        return passage_vo_list;
+        passageVoList.sort(
+                Comparator.comparing(ReadingPassageVO::getPassageNo, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingPassageVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingPassageVO::getId, Comparator.nullsLast(Long::compareTo))
+        );
+        return passageVoList;
     }
 
-    private Map<Long, ReadingAnswerDTO> build_answer_input_map(List<ReadingAnswerDTO> answer_list) {
-        Map<Long, ReadingAnswerDTO> answer_map = new LinkedHashMap<>();
-        if (answer_list == null) {
-            return answer_map;
-        }
-
-        for (ReadingAnswerDTO answer_dto : answer_list) {
-            if (answer_dto == null || answer_dto.getQuestionId() == null) {
-                continue;
-            }
-            answer_map.put(answer_dto.getQuestionId(), answer_dto);
-        }
-        return answer_map;
-    }
-
-    private List<String> normalize_raw_list(String answer, List<String> answers) {
-        List<String> result = new ArrayList<>();
-
-        if (answers != null) {
-            for (String item : answers) {
-                String normalized_item = trim_to_null(item);
-                if (normalized_item != null) {
-                    result.add(normalized_item);
-                }
-            }
-        }
-
-        String single_answer = trim_to_null(answer);
-        if (single_answer != null && result.isEmpty()) {
-            result.add(single_answer);
-        } else if (single_answer != null && !result.contains(single_answer)) {
-            result.add(single_answer);
-        }
-
-        return result;
-    }
-
-    private ReadingAnswerRecord find_matched_answer(List<ReadingAnswerRecord> answer_records, Long question_id) {
-        if (answer_records == null || answer_records.isEmpty() || question_id == null) {
-            return null;
-        }
-
-        for (ReadingAnswerRecord answer_record : answer_records) {
-            if (answer_record != null && Objects.equals(answer_record.getQuestionId(), question_id)) {
-                return answer_record;
-            }
-        }
-        return null;
-    }
-
-    private ReadingQuestionVO to_question_vo(ReadingQuestion question) {
+    private ReadingQuestionVO toQuestionVo(ReadingQuestion question) {
         ReadingQuestionVO vo = new ReadingQuestionVO();
         vo.setId(question.getId());
         vo.setPassageId(question.getPassageId());
@@ -666,12 +599,12 @@ public class UserReadingServiceImpl implements UserReadingService {
         vo.setAnswerRules(
                 question.getId() == null
                         ? new ArrayList<>()
-                        : reading_question_answer_rule_mapper.findByQuestionId(question.getId())
+                        : readingQuestionAnswerRuleMapper.findByQuestionId(question.getId())
         );
         return vo;
     }
 
-    private ReadingRecordVO to_record_vo(ReadingRecord record) {
+    private ReadingRecordVO toRecordVo(ReadingRecord record) {
         ReadingRecordVO vo = new ReadingRecordVO();
         vo.setId(record.getId());
         vo.setUserId(record.getUserId());
@@ -680,18 +613,18 @@ public class UserReadingServiceImpl implements UserReadingService {
         vo.setCreatedTime(record.getCreatedTime());
         vo.setIsDeleted(record.getIsDeleted());
 
-        ReadingTest test = reading_test_mapper.findAnyById(record.getTestId());
-        vo.setTestTitle(test != null ? test.getTitle() : null);
+        ReadingTest test = readingTestMapper.findAnyById(record.getTestId());
+        vo.setTestTitle(test == null ? null : test.getTitle());
         return vo;
     }
 
-    private ReadingRecord get_reading_session_record(String session_id, Long user_id) {
-        String normalized_session_id = trim_to_null(session_id);
-        if (normalized_session_id == null) {
+    private ReadingRecord getReadingSessionRecord(String sessionId, Long userId) {
+        String normalizedSessionId = trimToNull(sessionId);
+        if (normalizedSessionId == null) {
             throw new RuntimeException("sessionId is required");
         }
 
-        ReadingRecord record = reading_record_mapper.findBySessionIdForUser(normalized_session_id, user_id);
+        ReadingRecord record = readingRecordMapper.findBySessionIdForUser(normalizedSessionId, userId);
         if (record == null) {
             throw new RuntimeException("Reading session not found");
         }
@@ -701,7 +634,7 @@ public class UserReadingServiceImpl implements UserReadingService {
         return record;
     }
 
-    private ReadingSessionVO to_session_vo(ReadingRecord record, TestTimerConfig timer_config) {
+    private ReadingSessionVO toSessionVo(ReadingRecord record, ReadingTest test) {
         ReadingSessionVO vo = new ReadingSessionVO();
         vo.setRecordId(record.getId());
         vo.setTestId(record.getTestId());
@@ -711,193 +644,110 @@ public class UserReadingServiceImpl implements UserReadingService {
         vo.setSubmittedTime(record.getSubmittedTime());
         vo.setTimeLimitSeconds(record.getTimeLimitSeconds());
 
-        int time_spent_seconds = calculate_current_time_spent(record, null);
-        vo.setTimeSpentSeconds(time_spent_seconds);
-        vo.setRemainingSeconds(calculate_remaining_seconds(record.getTimeLimitSeconds(), time_spent_seconds));
-        vo.setAllowPause(timer_config == null ? 0 : timer_config.getAllowPause());
-        vo.setAutoSubmit(timer_config == null ? 1 : timer_config.getAutoSubmit());
+        int timeSpentSeconds = calculateCurrentTimeSpent(record, null);
+        vo.setTimeSpentSeconds(timeSpentSeconds);
+        vo.setRemainingSeconds(calculateRemainingSeconds(record.getTimeLimitSeconds(), timeSpentSeconds));
+        vo.setAllowPause(test == null ? DEFAULT_ALLOW_PAUSE : defaultFlag(test.getAllowPause(), DEFAULT_ALLOW_PAUSE));
+        vo.setAutoSubmit(test == null ? DEFAULT_AUTO_SUBMIT : defaultFlag(test.getAutoSubmit(), DEFAULT_AUTO_SUBMIT));
         return vo;
     }
 
-    private int calculate_current_time_spent(ReadingRecord record, Integer client_time_spent_seconds) {
-        if (record == null) {
-            return client_time_spent_seconds != null && client_time_spent_seconds >= 0 ? client_time_spent_seconds : 0;
+    private Map<Long, ReadingAnswerDTO> buildAnswerInputMap(List<ReadingAnswerDTO> answers) {
+        if (answers == null || answers.isEmpty()) {
+            return Collections.emptyMap();
         }
 
-        int stored = record.getTimeSpentSeconds() == null ? 0 : record.getTimeSpentSeconds();
-        String status = record.getRecordStatus();
-
-        if (is_status_paused(status) || is_status_submitted(status) || is_status_auto_submitted(status)) {
-            return merge_client_time_spent(stored, client_time_spent_seconds);
-        }
-
-        if (record.getStartedTime() == null) {
-            return merge_client_time_spent(stored, client_time_spent_seconds);
-        }
-
-        long elapsed = Duration.between(record.getStartedTime(), LocalDateTime.now()).getSeconds();
-        int server_spent = (int) Math.max(elapsed, 0);
-        return Math.max(server_spent, merge_client_time_spent(stored, client_time_spent_seconds));
-    }
-
-    private int merge_client_time_spent(int stored, Integer client_time_spent_seconds) {
-        if (client_time_spent_seconds == null || client_time_spent_seconds < 0) {
-            return stored;
-        }
-        return Math.max(stored, client_time_spent_seconds);
-    }
-
-    private Integer calculate_remaining_seconds(Integer limit_seconds, Integer spent_seconds) {
-        if (limit_seconds == null || limit_seconds <= 0) {
-            return null;
-        }
-        int safe_spent_seconds = spent_seconds == null ? 0 : spent_seconds;
-        return Math.max(limit_seconds - safe_spent_seconds, 0);
-    }
-
-    private Integer resolve_reading_time_limit_seconds(Long test_id, TestTimerConfig timer_config) {
-        if (timer_config == null) {
-            return null;
-        }
-
-        String timer_mode = normalize_token(timer_config.getTimerMode());
-        if (timer_mode == null || TIMER_MODE_NONE.equals(timer_mode)) {
-            return null;
-        }
-
-        if (TIMER_MODE_TEST_LEVEL.equals(timer_mode) || "TESTLEVEL".equals(timer_mode)) {
-            return timer_config.getTotalSeconds();
-        }
-
-        if (TIMER_MODE_PART_LEVEL.equals(timer_mode) || "PARTLEVEL".equals(timer_mode)) {
-            List<TestPartGroup> part_groups = reading_part_group_service.listActiveByTestId(test_id);
-            if (part_groups == null || part_groups.isEmpty()) {
-                return null;
+        Map<Long, ReadingAnswerDTO> answerMap = new LinkedHashMap<>();
+        for (ReadingAnswerDTO answerDto : answers) {
+            if (answerDto == null || answerDto.getQuestionId() == null) {
+                continue;
             }
+            answerMap.put(answerDto.getQuestionId(), answerDto);
+        }
+        return answerMap;
+    }
 
-            int total_seconds = part_groups.stream()
-                    .filter(Objects::nonNull)
-                    .map(TestPartGroup::getTimeLimitSeconds)
-                    .filter(Objects::nonNull)
-                    .filter(value -> value > 0)
-                    .reduce(0, Integer::sum);
-
-            return total_seconds > 0 ? total_seconds : null;
+    private List<String> normalizeRawList(String answer, List<String> answers) {
+        List<String> result = new ArrayList<>();
+        if (answers != null) {
+            for (String item : answers) {
+                String normalizedItem = trimToNull(item);
+                if (normalizedItem != null) {
+                    result.add(normalizedItem);
+                }
+            }
         }
 
+        String singleAnswer = trimToNull(answer);
+        if (singleAnswer != null && result.isEmpty()) {
+            result.add(singleAnswer);
+        } else if (singleAnswer != null && !result.contains(singleAnswer)) {
+            result.add(singleAnswer);
+        }
+        return result;
+    }
+
+    private ReadingAnswerRecord findMatchedAnswer(List<ReadingAnswerRecord> answerRecords, Long questionId) {
+        if (answerRecords == null || answerRecords.isEmpty() || questionId == null) {
+            return null;
+        }
+        for (ReadingAnswerRecord answerRecord : answerRecords) {
+            if (answerRecord != null && Objects.equals(answerRecord.getQuestionId(), questionId)) {
+                return answerRecord;
+            }
+        }
         return null;
     }
 
-    private Integer resolve_submitted_time_spent_seconds(Integer provided_time_spent,
-                                                         LocalDateTime started_time,
-                                                         LocalDateTime now) {
-        if (provided_time_spent != null && provided_time_spent >= 0) {
-            return provided_time_spent;
-        }
-        if (started_time != null) {
-            long seconds = Duration.between(started_time, now).getSeconds();
-            return (int) Math.max(seconds, 0);
-        }
-        return 0;
-    }
-
-    private LocalDateTime resolve_started_time(LocalDateTime started_time,
-                                               LocalDateTime now,
-                                               Integer time_spent_seconds) {
-        if (started_time != null) {
-            return started_time;
-        }
-        int safe_seconds = time_spent_seconds == null || time_spent_seconds < 0 ? 0 : time_spent_seconds;
-        return now.minusSeconds(safe_seconds);
-    }
-
-    private boolean is_timeout(Integer time_limit_seconds, Integer time_spent_seconds) {
-        return time_limit_seconds != null
-                && time_limit_seconds > 0
-                && time_spent_seconds != null
-                && time_spent_seconds >= time_limit_seconds;
-    }
-
-    private boolean is_auto_submit_enabled(TestTimerConfig timer_config) {
-        return timer_config != null && enabled(timer_config.getAutoSubmit());
-    }
-
-    private boolean enabled(Integer value) {
-        return value != null && value == 1;
-    }
-
-    private boolean is_status_in_progress(String status) {
-        String normalized_status = normalize_token(status);
-        return STATUS_IN_PROGRESS.equals(normalized_status) || "INPROGRESS".equals(normalized_status);
-    }
-
-    private boolean is_status_paused(String status) {
-        String normalized_status = normalize_token(status);
-        return STATUS_PAUSED.equals(normalized_status);
-    }
-
-    private boolean is_status_submitted(String status) {
-        String normalized_status = normalize_token(status);
-        return STATUS_SUBMITTED.equals(normalized_status);
-    }
-
-    private boolean is_status_auto_submitted(String status) {
-        String normalized_status = normalize_token(status);
-        return STATUS_AUTO_SUBMITTED.equals(normalized_status) || "AUTOSUBMITTED".equals(normalized_status);
-    }
-
-    private String generate_session_id() {
-        return UUID.randomUUID().toString().replace("-", "");
-    }
-
-    private String build_display_correct_answer(ReadingQuestion question) {
+    private String buildDisplayCorrectAnswer(ReadingQuestion question) {
         if (question == null) {
             return null;
         }
 
         List<QuestionAnswerRule> rules = question.getId() == null
                 ? Collections.emptyList()
-                : reading_question_answer_rule_mapper.findByQuestionId(question.getId());
+                : readingQuestionAnswerRuleMapper.findByQuestionId(question.getId());
 
         if (rules != null && !rules.isEmpty()) {
             List<String> values = rules.stream()
                     .filter(Objects::nonNull)
-                    .sorted(Comparator
-                            .comparing(QuestionAnswerRule::getBlankNo, Comparator.nullsLast(Integer::compareTo))
-                            .thenComparing(QuestionAnswerRule::getAnswerGroupNo, Comparator.nullsLast(Integer::compareTo))
-                            .thenComparing(QuestionAnswerRule::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
-                            .thenComparing(QuestionAnswerRule::getId, Comparator.nullsLast(Long::compareTo)))
+                    .sorted(
+                            Comparator.comparing(QuestionAnswerRule::getBlankNo, Comparator.nullsLast(Integer::compareTo))
+                                    .thenComparing(QuestionAnswerRule::getAnswerGroupNo, Comparator.nullsLast(Integer::compareTo))
+                                    .thenComparing(QuestionAnswerRule::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                                    .thenComparing(QuestionAnswerRule::getId, Comparator.nullsLast(Long::compareTo))
+                    )
                     .map(QuestionAnswerRule::getAnswerText)
-                    .map(this::trim_to_null)
+                    .map(this::trimToNull)
                     .filter(Objects::nonNull)
                     .toList();
 
             if (!values.isEmpty()) {
-                return String.join(" / ", new LinkedHashSet<>(values));
+                return String.join(", ", new LinkedHashSet<>(values));
             }
         }
 
-        List<String> accepted_answers = parse_json_string_list(question.getAcceptedAnswersJson());
-        if (!accepted_answers.isEmpty()) {
-            return String.join(" / ", accepted_answers);
+        List<String> acceptedAnswers = parseJsonStringList(question.getAcceptedAnswersJson());
+        if (!acceptedAnswers.isEmpty()) {
+            return String.join(", ", acceptedAnswers);
         }
 
-        return trim_to_null(question.getCorrectAnswer());
+        return trimToNull(question.getCorrectAnswer());
     }
 
-    private List<String> parse_json_string_list(String json_value) {
-        String safe_json_value = trim_to_null(json_value);
-        if (safe_json_value == null) {
+    private List<String> parseJsonStringList(String jsonValue) {
+        String safeJsonValue = trimToNull(jsonValue);
+        if (safeJsonValue == null) {
             return Collections.emptyList();
         }
 
         try {
-            JsonNode root = object_mapper.readTree(safe_json_value);
+            JsonNode root = objectMapper.readTree(safeJsonValue);
             List<String> result = new ArrayList<>();
 
             if (root.isArray()) {
                 for (JsonNode item : root) {
-                    String value = trim_to_null(item == null ? null : item.asText());
+                    String value = trimToNull(item == null ? null : item.asText());
                     if (value != null) {
                         result.add(value);
                     }
@@ -906,42 +756,164 @@ public class UserReadingServiceImpl implements UserReadingService {
             }
 
             if (root.isTextual()) {
-                String value = trim_to_null(root.asText());
+                String value = trimToNull(root.asText());
                 return value == null ? Collections.emptyList() : List.of(value);
             }
         } catch (Exception ignored) {
+            return List.of(safeJsonValue);
         }
 
-        return List.of(safe_json_value);
+        return Collections.emptyList();
     }
 
-    private int normalize_page_num(Integer page_num) {
-        return page_num == null || page_num < 1 ? 1 : page_num;
-    }
-
-    private int normalize_page_size(Integer page_size) {
-        if (page_size == null || page_size < 1) {
-            return 10;
+    private int calculateCurrentTimeSpent(ReadingRecord record, Integer clientTimeSpentSeconds) {
+        if (record == null) {
+            return clientTimeSpentSeconds != null && clientTimeSpentSeconds >= 0 ? clientTimeSpentSeconds : 0;
         }
-        return Math.min(page_size, 100);
+
+        int stored = record.getTimeSpentSeconds() == null ? 0 : record.getTimeSpentSeconds();
+        String status = record.getRecordStatus();
+
+        if (isStatusPaused(status) || isStatusSubmitted(status) || isStatusAutoSubmitted(status)) {
+            return mergeClientTimeSpent(stored, clientTimeSpentSeconds);
+        }
+
+        if (record.getStartedTime() == null) {
+            return mergeClientTimeSpent(stored, clientTimeSpentSeconds);
+        }
+
+        long elapsed = Duration.between(record.getStartedTime(), LocalDateTime.now()).getSeconds();
+        int serverSpent = (int) Math.max(elapsed, 0);
+        return Math.max(serverSpent, mergeClientTimeSpent(stored, clientTimeSpentSeconds));
     }
 
-    private String normalize_token(String value) {
-        String normalized_value = trim_to_null(value);
-        if (normalized_value == null) {
+    private int mergeClientTimeSpent(int stored, Integer clientTimeSpentSeconds) {
+        if (clientTimeSpentSeconds == null || clientTimeSpentSeconds < 0) {
+            return stored;
+        }
+        return Math.max(stored, clientTimeSpentSeconds);
+    }
+
+    private Integer calculateRemainingSeconds(Integer limitSeconds, Integer spentSeconds) {
+        if (limitSeconds == null || limitSeconds <= 0) {
             return null;
         }
-        return normalized_value
-                .replace('-', '_')
-                .replace(' ', '_')
-                .toUpperCase();
+        int safeSpentSeconds = spentSeconds == null ? 0 : spentSeconds;
+        return Math.max(limitSeconds - safeSpentSeconds, 0);
     }
 
-    private String trim_to_null(String value) {
+    private Integer resolveReadingTimeLimitSeconds(ReadingTest test) {
+        if (test == null) {
+            return DEFAULT_TOTAL_SECONDS;
+        }
+        if (test.getTotalSeconds() != null && test.getTotalSeconds() > 0) {
+            return test.getTotalSeconds();
+        }
+        return tokenEquals(test.getTimerMode(), TIMER_MODE_TEST_LEVEL) ? DEFAULT_TOTAL_SECONDS : null;
+    }
+
+    private Integer resolveSubmittedTimeSpentSeconds(Integer providedTimeSpent, LocalDateTime startedTime, LocalDateTime now) {
+        if (providedTimeSpent != null && providedTimeSpent >= 0) {
+            return providedTimeSpent;
+        }
+        if (startedTime != null) {
+            long seconds = Duration.between(startedTime, now).getSeconds();
+            return (int) Math.max(seconds, 0);
+        }
+        return 0;
+    }
+
+    private LocalDateTime resolveStartedTime(LocalDateTime startedTime, LocalDateTime now, Integer timeSpentSeconds) {
+        if (startedTime != null) {
+            return startedTime;
+        }
+        int safeSeconds = timeSpentSeconds == null || timeSpentSeconds < 0 ? 0 : timeSpentSeconds;
+        return now.minusSeconds(safeSeconds);
+    }
+
+    private boolean isTimeout(Integer timeLimitSeconds, Integer timeSpentSeconds) {
+        return timeLimitSeconds != null
+                && timeLimitSeconds > 0
+                && timeSpentSeconds != null
+                && timeSpentSeconds >= timeLimitSeconds;
+    }
+
+    private boolean isAutoSubmitEnabled(ReadingTest test) {
+        return test == null || enabled(test.getAutoSubmit(), DEFAULT_AUTO_SUBMIT);
+    }
+
+    private boolean enabled(Integer value, int defaultValue) {
+        return defaultFlag(value, defaultValue) == 1;
+    }
+
+    private Integer defaultFlag(Integer value, int defaultValue) {
+        return value == null ? defaultValue : value;
+    }
+
+    private String normalizeTimerMode(String timerMode) {
+        return tokenEquals(timerMode, TIMER_MODE_TEST_LEVEL) ? TIMER_MODE_TEST_LEVEL : TIMER_MODE_TEST_LEVEL;
+    }
+
+    private boolean isStatusInProgress(String status) {
+        return tokenEquals(status, STATUS_IN_PROGRESS);
+    }
+
+    private boolean isStatusPaused(String status) {
+        return tokenEquals(status, STATUS_PAUSED);
+    }
+
+    private boolean isStatusSubmitted(String status) {
+        return tokenEquals(status, STATUS_SUBMITTED);
+    }
+
+    private boolean isStatusAutoSubmitted(String status) {
+        return tokenEquals(status, STATUS_AUTO_SUBMITTED);
+    }
+
+    private boolean tokenEquals(String actual, String expected) {
+        String normalizedActual = normalizeToken(actual);
+        String normalizedExpected = normalizeToken(expected);
+        if (Objects.equals(normalizedActual, normalizedExpected)) {
+            return true;
+        }
+        if (normalizedActual == null || normalizedExpected == null) {
+            return false;
+        }
+        return Objects.equals(normalizedActual.replace("_", ""), normalizedExpected.replace("_", ""));
+    }
+
+    private String normalizeToken(String value) {
+        String normalizedValue = trimToNull(value);
+        if (normalizedValue == null) {
+            return null;
+        }
+        return normalizedValue
+                .trim()
+                .replace('-', '_')
+                .replace(' ', '_')
+                .toLowerCase();
+    }
+
+    private int normalizePageNum(Integer pageNum) {
+        return pageNum == null || pageNum < 1 ? 1 : pageNum;
+    }
+
+    private int normalizePageSize(Integer pageSize) {
+        if (pageSize == null || pageSize < 1) {
+            return 10;
+        }
+        return Math.min(pageSize, 100);
+    }
+
+    private String generateSessionId() {
+        return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    private String trimToNull(String value) {
         if (value == null) {
             return null;
         }
-        String trimmed_value = value.trim();
-        return trimmed_value.isEmpty() ? null : trimmed_value;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

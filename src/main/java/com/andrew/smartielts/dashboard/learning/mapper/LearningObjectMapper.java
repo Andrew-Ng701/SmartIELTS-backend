@@ -13,13 +13,17 @@ import java.util.Map;
 public interface LearningObjectMapper {
 
     LearningObjectDTO selectListeningQuestion(@Param("questionId") Long questionId);
+
     LearningObjectDTO selectReadingQuestion(@Param("questionId") Long questionId);
+
     LearningObjectDTO selectSpeakingQuestion(@Param("questionId") Long questionId);
+
     LearningObjectDTO selectWritingQuestion(@Param("questionId") Long questionId);
 
     LearningObjectDTO selectReadingPassage(@Param("passageId") Long passageId);
 
     LearningObjectDTO selectListeningTest(@Param("testId") Long testId);
+
     LearningObjectDTO selectReadingTest(@Param("testId") Long testId);
 
     UserAttemptDTO selectListeningAttempt(@Param("userId") Long userId,

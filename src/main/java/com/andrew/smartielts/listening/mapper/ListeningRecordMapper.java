@@ -42,35 +42,36 @@ public interface ListeningRecordMapper {
                                            @Param("offset") Integer offset,
                                            @Param("limit") Integer limit);
 
-    ListeningRecord findAnyById(Long id);
+    ListeningRecord findAnyById(@Param("id") Long id);
 
     ListeningRecord findAnyByIdForUser(@Param("recordId") Long recordId,
                                        @Param("userId") Long userId);
 
-    void insert(ListeningRecord record);
+    int insert(ListeningRecord record);
 
-    void updateTotalScore(@Param("recordId") Long recordId,
-                          @Param("totalScore") Integer totalScore);
+    int updateTotalScore(@Param("recordId") Long recordId,
+                         @Param("totalScore") Integer totalScore);
 
-    void softDeleteById(Long recordId);
+    int softDeleteById(@Param("recordId") Long recordId);
 
-    void restoreById(Long recordId);
+    int restoreById(@Param("recordId") Long recordId);
 
-    void softDeleteByIdForUser(@Param("recordId") Long recordId,
-                               @Param("userId") Long userId);
+    int softDeleteByIdForUser(@Param("recordId") Long recordId,
+                              @Param("userId") Long userId);
 
-    void restoreByIdForUser(@Param("recordId") Long recordId,
-                            @Param("userId") Long userId);
+    int restoreByIdForUser(@Param("recordId") Long recordId,
+                           @Param("userId") Long userId);
 
     List<ListeningRecord> findRecentActiveByUserId(@Param("userId") Long userId,
                                                    @Param("limit") Integer limit);
 
     BigDecimal selectUserAverageScore(@Param("userId") Long userId);
 
-    ListeningRecord findBySessionIdForUser(@Param("sessionId") String sessionId, @Param("userId") Long userId);
+    ListeningRecord findBySessionIdForUser(@Param("sessionId") String sessionId,
+                                           @Param("userId") Long userId);
 
-    ListeningRecord findInProgressByTestIdForUser(@Param("testId") Long testId, @Param("userId") Long userId);
+    ListeningRecord findInProgressByTestIdForUser(@Param("testId") Long testId,
+                                                  @Param("userId") Long userId);
 
     int updateSessionState(ListeningRecord record);
-
 }

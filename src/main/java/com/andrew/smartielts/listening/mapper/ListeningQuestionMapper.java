@@ -9,7 +9,7 @@ import java.util.List;
 @Mapper
 public interface ListeningQuestionMapper {
 
-    void insertListeningQuestion(ListeningQuestion question);
+    int insertListeningQuestion(ListeningQuestion question);
 
     ListeningQuestion findActiveById(@Param("id") Long id);
 
@@ -19,13 +19,21 @@ public interface ListeningQuestionMapper {
 
     List<ListeningQuestion> findAnyByTestId(@Param("testId") Long testId);
 
-    void updateListeningQuestion(ListeningQuestion question);
+    List<ListeningQuestion> findActiveByPartGroupId(@Param("partGroupId") Long partGroupId);
 
-    void softDeleteById(@Param("id") Long id);
+    List<ListeningQuestion> findAnyByPartGroupId(@Param("partGroupId") Long partGroupId);
 
-    void softDeleteByTestId(@Param("testId") Long testId);
+    int updateListeningQuestion(ListeningQuestion question);
 
-    void restoreById(@Param("id") Long id);
+    int softDeleteById(@Param("id") Long id);
 
-    void restoreByTestId(@Param("testId") Long testId);
+    int softDeleteByTestId(@Param("testId") Long testId);
+
+    int softDeleteByPartGroupId(@Param("partGroupId") Long partGroupId);
+
+    int restoreById(@Param("id") Long id);
+
+    int restoreByTestId(@Param("testId") Long testId);
+
+    int restoreByPartGroupId(@Param("partGroupId") Long partGroupId);
 }

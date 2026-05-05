@@ -1,5 +1,6 @@
 package com.andrew.smartielts.common.domain.pojo;
 
+import com.andrew.smartielts.common.image.domain.pojo.BizImageResource;
 import lombok.Data;
 
 import java.util.List;
@@ -14,6 +15,14 @@ public class TestPartGroup {
     private String instructionText;
     private String groupGuideText;
     private String groupRequirementText;
+    private String questionType;
+    private String answerMode;
+    private String optionsJson;
+    private String acceptedAnswersJson;
+    private String answerRulesJson;
+    private Integer caseInsensitive;
+    private Integer ignoreWhitespace;
+    private Integer ignorePunctuation;
     private Integer questionNoStart;
     private Integer questionNoEnd;
     private Integer displayOrder;

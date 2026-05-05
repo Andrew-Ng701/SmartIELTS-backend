@@ -1,9 +1,9 @@
-package com.andrew.smartielts.common.service.impl;
+package com.andrew.smartielts.common.image.service.impl;
 
-import com.andrew.smartielts.common.domain.dto.BizImageResourceDTO;
-import com.andrew.smartielts.common.domain.pojo.BizImageResource;
-import com.andrew.smartielts.common.mapper.BizImageResourceMapper;
-import com.andrew.smartielts.common.service.BizImageResourceService;
+import com.andrew.smartielts.common.image.domain.dto.BizImageResourceDTO;
+import com.andrew.smartielts.common.image.domain.pojo.BizImageResource;
+import com.andrew.smartielts.common.image.mapper.BizImageResourceMapper;
+import com.andrew.smartielts.common.image.service.BizImageResourceService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,7 +66,10 @@ public class BizImageResourceServiceImpl implements BizImageResourceService {
 
     @Override
     @Transactional
-    public List<BizImageResource> replaceByTarget(String targetType, Long targetId, String bucketType, String bizPath,
+    public List<BizImageResource> replaceByTarget(String targetType,
+                                                  Long targetId,
+                                                  String bucketType,
+                                                  String bizPath,
                                                   List<BizImageResourceDTO> images) {
         if (isBlank(targetType)) {
             throw new RuntimeException("targetType is required");
@@ -81,7 +84,7 @@ public class BizImageResourceServiceImpl implements BizImageResourceService {
             throw new RuntimeException("bizPath is required");
         }
 
-        bizImageResourceMapper.softDeleteByTarget(targetType.trim(), targetId);
+        bizImageResourceMapper.deleteByTarget(targetType.trim(), targetId);
 
         List<BizImageResource> saved = new ArrayList<>();
         if (images == null || images.isEmpty()) {
@@ -96,7 +99,7 @@ public class BizImageResourceServiceImpl implements BizImageResourceService {
 
             String objectKey = trimToNull(dto.getObjectKey());
             String fileUrl = trimToNull(dto.getFileUrl());
-            if (objectKey == null || fileUrl == null) {
+            if (objectKey == null && fileUrl == null) {
                 continue;
             }
 
@@ -133,7 +136,7 @@ public class BizImageResourceServiceImpl implements BizImageResourceService {
         if (targetId == null) {
             throw new RuntimeException("targetId is required");
         }
-        bizImageResourceMapper.softDeleteByTarget(targetType.trim(), targetId);
+        bizImageResourceMapper.deleteByTarget(targetType.trim(), targetId);
     }
 
     private String trimToNull(String value) {

@@ -46,65 +46,65 @@ public class UserListeningController {
     @Operation(summary = "Get listening session")
     @GetMapping("/sessions/{sessionId}")
     public Result<?> getSession(@PathVariable String sessionId) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        return Result.success(userListeningService.getSession(sessionId, user_id));
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(userListeningService.getSession(sessionId, userId));
     }
 
     @Operation(summary = "Pause listening session")
     @PostMapping("/sessions/{sessionId}/pause")
     public Result<?> pause(@PathVariable String sessionId,
                            @RequestBody(required = false) ListeningSessionActionDTO dto) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        return Result.success(userListeningService.pause(sessionId, user_id, dto));
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(userListeningService.pause(sessionId, userId, dto));
     }
 
     @Operation(summary = "Resume listening session")
     @PostMapping("/sessions/{sessionId}/resume")
     public Result<?> resume(@PathVariable String sessionId) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        return Result.success(userListeningService.resume(sessionId, user_id));
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(userListeningService.resume(sessionId, userId));
     }
 
     @Operation(summary = "Submit listening test")
     @PostMapping("/tests/{testId}/submit")
-    public Result<?> submit(@PathVariable Long testId, @RequestBody ListeningSubmitDTO dto) {
+    public Result<?> submit(@PathVariable Long testId, @Valid @RequestBody ListeningSubmitDTO dto) {
         return Result.success(userListeningService.submit(testId, dto));
     }
 
     @Operation(summary = "User listening active records overview")
     @PostMapping("/records/overview")
     public Result<?> pageActiveRecords(@Valid @RequestBody UserListeningRecordPageQuery query) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        return Result.success(userListeningService.pageActiveRecords(user_id, query));
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(userListeningService.pageActiveRecords(userId, query));
     }
 
     @Operation(summary = "User listening deleted records overview")
     @PostMapping("/records/deleted/overview")
     public Result<?> pageDeletedRecords(@Valid @RequestBody UserListeningDeletedRecordPageQuery query) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        return Result.success(userListeningService.pageDeletedRecords(user_id, query));
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(userListeningService.pageDeletedRecords(userId, query));
     }
 
     @Operation(summary = "Get listening record detail")
     @GetMapping("/records/{recordId}")
     public Result<?> getRecord(@PathVariable Long recordId) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        return Result.success(userListeningService.getRecord(recordId, user_id));
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(userListeningService.getRecord(recordId, userId));
     }
 
     @Operation(summary = "Delete my listening record")
     @DeleteMapping("/records/{recordId}")
     public Result<?> deleteRecord(@PathVariable Long recordId) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        userListeningService.deleteRecord(recordId, user_id);
+        Long userId = SecurityUtils.getCurrentUserId();
+        userListeningService.deleteRecord(recordId, userId);
         return Result.success();
     }
 
     @Operation(summary = "Restore my listening record")
     @PutMapping("/records/{recordId}/restore")
     public Result<?> restoreRecord(@PathVariable Long recordId) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        userListeningService.restoreRecord(recordId, user_id);
+        Long userId = SecurityUtils.getCurrentUserId();
+        userListeningService.restoreRecord(recordId, userId);
         return Result.success();
     }
 }

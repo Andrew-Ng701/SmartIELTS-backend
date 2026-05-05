@@ -1,7 +1,6 @@
 package com.andrew.smartielts.reading.domain.dto;
 
 import com.andrew.smartielts.common.domain.pojo.TestPartGroup;
-import com.andrew.smartielts.common.domain.pojo.TestTimerConfig;
 import lombok.Data;
 
 import java.util.List;
@@ -10,6 +9,11 @@ import java.util.List;
 public class ReadingTestDTO {
     private String title;
     private Integer totalScore;
-    private TestTimerConfig timerConfig;
+
+    private String timerMode;
+    private Integer totalSeconds;
+    private Integer autoSubmit;
+    private Integer allowPause;
+
     private List<TestPartGroup> partGroups;
 }

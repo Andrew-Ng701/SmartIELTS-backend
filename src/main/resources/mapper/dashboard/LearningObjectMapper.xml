@@ -5,564 +5,417 @@
 
 <mapper namespace="com.andrew.smartielts.dashboard.learning.mapper.LearningObjectMapper">
 
-    <!-- =========================
-         Question / Passage / Test
-         ========================= -->
-
-    <resultMap id="LISTENING_QUESTION_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO">
-        <id property="id" column="id"/>
-        <result property="module" column="module"/>
-        <result property="objectType" column="object_type"/>
-        <result property="testId" column="test_id"/>
-        <result property="questionId" column="question_id"/>
-        <result property="title" column="title"/>
-        <result property="testTitle" column="test_title"/>
-        <result property="questionText" column="question_text"/>
-        <result property="correctAnswer" column="correct_answer"/>
-        <result property="questionNumber" column="question_number"/>
-        <result property="questionType" column="question_type"/>
-        <result property="answerMode" column="answer_mode"/>
-        <result property="options"
-                column="options_json"
+    <resultMap id="LearningObjectResultMap" type="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO">
+        <id column="id" property="id"/>
+        <result column="module" property="module"/>
+        <result column="object_type" property="objectType"/>
+        <result column="test_id" property="testId"/>
+        <result column="passage_id" property="passageId"/>
+        <result column="question_id" property="questionId"/>
+        <result column="record_id" property="recordId"/>
+        <result column="title" property="title"/>
+        <result column="test_title" property="testTitle"/>
+        <result column="passage_title" property="passageTitle"/>
+        <result column="content" property="content"/>
+        <result column="passage_content" property="passageContent"/>
+        <result column="question_text" property="questionText"/>
+        <result column="correct_answer" property="correctAnswer"/>
+        <result column="explanation" property="explanation"/>
+        <result column="question_number" property="questionNumber"/>
+        <result column="question_type" property="questionType"/>
+        <result column="answer_mode" property="answerMode"/>
+        <result column="options_json"
+                property="options"
                 typeHandler="com.andrew.smartielts.dashboard.learning.typehandler.JsonStringListTypeHandler"/>
-        <result property="acceptedAnswers"
-                column="accepted_answers_json"
+        <result column="accepted_answers_json"
+                property="acceptedAnswers"
                 typeHandler="com.andrew.smartielts.dashboard.learning.typehandler.JsonStringListTypeHandler"/>
-        <result property="transcriptText" column="transcript_text"/>
-        <result property="audioUrl" column="audio_url"/>
-        <result property="audioObjectKey" column="audio_object_key"/>
+        <result column="cue_card" property="cueCard"/>
+        <result column="transcript_text" property="transcriptText"/>
+        <result column="audio_url" property="audioUrl"/>
+        <result column="audio_object_key" property="audioObjectKey"/>
+        <result column="image_url" property="imageUrl"/>
+        <result column="task_type" property="taskType"/>
     </resultMap>
 
-    <resultMap id="READING_QUESTION_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO">
-        <id property="id" column="id"/>
-        <result property="module" column="module"/>
-        <result property="objectType" column="object_type"/>
-        <result property="testId" column="test_id"/>
-        <result property="passageId" column="passage_id"/>
-        <result property="questionId" column="question_id"/>
-        <result property="title" column="title"/>
-        <result property="testTitle" column="test_title"/>
-        <result property="passageTitle" column="passage_title"/>
-        <result property="passageContent" column="passage_content"/>
-        <result property="questionText" column="question_text"/>
-        <result property="correctAnswer" column="correct_answer"/>
-        <result property="questionNumber" column="question_number"/>
-        <result property="questionType" column="question_type"/>
-        <result property="answerMode" column="answer_mode"/>
-        <result property="options"
-                column="options_json"
-                typeHandler="com.andrew.smartielts.dashboard.learning.typehandler.JsonStringListTypeHandler"/>
-        <result property="acceptedAnswers"
-                column="accepted_answers_json"
-                typeHandler="com.andrew.smartielts.dashboard.learning.typehandler.JsonStringListTypeHandler"/>
+    <resultMap id="UserAttemptResultMap" type="com.andrew.smartielts.dashboard.learning.dto.UserAttemptDTO">
+        <id column="record_id" property="recordId"/>
+        <result column="module" property="module"/>
+        <result column="user_id" property="userId"/>
+        <result column="test_id" property="testId"/>
+        <result column="passage_id" property="passageId"/>
+        <result column="question_id" property="questionId"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="user_answer" property="userAnswer"/>
+        <result column="correct" property="correct"/>
+        <result column="score" property="score"/>
+        <result column="total_score" property="totalScore"/>
+        <result column="feedback" property="feedback"/>
+        <result column="ai_feedback" property="aiFeedback"/>
+        <result column="ai_score" property="aiScore"/>
+        <result column="text_content" property="textContent"/>
+        <result column="extracted_text" property="extractedText"/>
+        <result column="transcript" property="transcript"/>
+        <result column="audio_url" property="audioUrl"/>
+        <result column="answer_status" property="answerStatus"/>
+        <result column="ai_status" property="aiStatus"/>
+        <result column="created_time" property="createdTime"/>
     </resultMap>
 
-    <resultMap id="SPEAKING_QUESTION_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO">
-        <id property="id" column="id"/>
-        <result property="module" column="module"/>
-        <result property="objectType" column="object_type"/>
-        <result property="questionId" column="question_id"/>
-        <result property="title" column="title"/>
-        <result property="questionText" column="question_text"/>
-        <result property="questionType" column="question_type"/>
-        <result property="questionNumber" column="question_number"/>
-        <result property="cueCard" column="cue_card"/>
-    </resultMap>
-
-    <resultMap id="WRITING_QUESTION_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO">
-        <id property="id" column="id"/>
-        <result property="module" column="module"/>
-        <result property="objectType" column="object_type"/>
-        <result property="questionId" column="question_id"/>
-        <result property="title" column="title"/>
-        <result property="questionText" column="question_text"/>
-        <result property="imageUrl" column="image_url"/>
-        <result property="taskType" column="task_type"/>
-    </resultMap>
-
-    <resultMap id="READING_PASSAGE_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO">
-        <id property="id" column="id"/>
-        <result property="module" column="module"/>
-        <result property="objectType" column="object_type"/>
-        <result property="testId" column="test_id"/>
-        <result property="passageId" column="passage_id"/>
-        <result property="title" column="title"/>
-        <result property="testTitle" column="test_title"/>
-        <result property="passageTitle" column="passage_title"/>
-        <result property="content" column="content"/>
-        <result property="passageContent" column="passage_content"/>
-    </resultMap>
-
-    <resultMap id="LISTENING_TEST_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO">
-        <id property="id" column="id"/>
-        <result property="module" column="module"/>
-        <result property="objectType" column="object_type"/>
-        <result property="testId" column="test_id"/>
-        <result property="title" column="title"/>
-        <result property="testTitle" column="test_title"/>
-        <result property="transcriptText" column="transcript_text"/>
-        <result property="audioUrl" column="audio_url"/>
-        <result property="audioObjectKey" column="audio_object_key"/>
-    </resultMap>
-
-    <resultMap id="READING_TEST_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO">
-        <id property="id" column="id"/>
-        <result property="module" column="module"/>
-        <result property="objectType" column="object_type"/>
-        <result property="testId" column="test_id"/>
-        <result property="title" column="title"/>
-        <result property="testTitle" column="test_title"/>
-    </resultMap>
-
-    <!-- =========================
-         Attempt
-         ========================= -->
-
-    <resultMap id="LISTENING_ATTEMPT_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.UserAttemptDTO">
-        <id property="recordId" column="record_id"/>
-        <result property="module" column="module"/>
-        <result property="userId" column="user_id"/>
-        <result property="testId" column="test_id"/>
-        <result property="questionId" column="question_id"/>
-        <result property="userAnswer" column="user_answer"/>
-        <result property="correct" column="correct"/>
-        <result property="score" column="score"/>
-        <result property="totalScore" column="total_score"/>
-        <result property="createdTime" column="created_time"/>
-    </resultMap>
-
-    <resultMap id="READING_ATTEMPT_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.UserAttemptDTO">
-        <id property="recordId" column="record_id"/>
-        <result property="module" column="module"/>
-        <result property="userId" column="user_id"/>
-        <result property="testId" column="test_id"/>
-        <result property="passageId" column="passage_id"/>
-        <result property="questionId" column="question_id"/>
-        <result property="userAnswer" column="user_answer"/>
-        <result property="correct" column="correct"/>
-        <result property="score" column="score"/>
-        <result property="totalScore" column="total_score"/>
-        <result property="createdTime" column="created_time"/>
-    </resultMap>
-
-    <resultMap id="SPEAKING_ATTEMPT_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.UserAttemptDTO">
-        <id property="recordId" column="record_id"/>
-        <result property="module" column="module"/>
-        <result property="userId" column="user_id"/>
-        <result property="sessionId" column="session_id"/>
-        <result property="questionId" column="question_id"/>
-        <result property="userAnswer" column="user_answer"/>
-        <result property="transcript" column="transcript"/>
-        <result property="audioUrl" column="audio_url"/>
-        <result property="feedback" column="feedback"/>
-        <result property="aiFeedback" column="ai_feedback"/>
-        <result property="aiScore" column="ai_score"/>
-        <result property="answerStatus" column="answer_status"/>
-        <result property="aiStatus" column="ai_status"/>
-        <result property="createdTime" column="created_time"/>
-    </resultMap>
-
-    <resultMap id="WRITING_ATTEMPT_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.UserAttemptDTO">
-        <id property="recordId" column="record_id"/>
-        <result property="module" column="module"/>
-        <result property="userId" column="user_id"/>
-        <result property="questionId" column="question_id"/>
-        <result property="userAnswer" column="user_answer"/>
-        <result property="textContent" column="text_content"/>
-        <result property="extractedText" column="extracted_text"/>
-        <result property="aiFeedback" column="ai_feedback"/>
-        <result property="aiScore" column="ai_score"/>
-        <result property="aiStatus" column="ai_status"/>
-        <result property="createdTime" column="created_time"/>
-    </resultMap>
-
-    <!-- =========================
-         Module Context
-         ========================= -->
-
-    <resultMap id="LISTENING_CONTEXT_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.ModuleLearningContextDTO">
-        <result property="module" column="module"/>
+    <resultMap id="ModuleLearningContextResultMap" type="com.andrew.smartielts.dashboard.learning.dto.ModuleLearningContextDTO">
+        <result column="module" property="module"/>
+        <result column="ask_scene" property="askScene"/>
 
         <association property="test"
-                     javaType="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO"
-                     notNullColumn="test_id">
-            <id property="id" column="test_id"/>
-            <result property="module" column="test_module"/>
-            <result property="objectType" column="test_object_type"/>
-            <result property="testId" column="test_test_id"/>
-            <result property="title" column="test_title"/>
-            <result property="testTitle" column="test_title"/>
-            <result property="transcriptText" column="test_transcript_text"/>
-            <result property="audioUrl" column="test_audio_url"/>
-            <result property="audioObjectKey" column="test_audio_object_key"/>
-        </association>
-
-        <association property="question"
-                     javaType="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO"
-                     notNullColumn="question_id">
-            <id property="id" column="question_id"/>
-            <result property="module" column="question_module"/>
-            <result property="objectType" column="question_object_type"/>
-            <result property="testId" column="question_test_id"/>
-            <result property="questionId" column="question_question_id"/>
-            <result property="testTitle" column="question_test_title"/>
-            <result property="questionText" column="question_question_text"/>
-            <result property="correctAnswer" column="question_correct_answer"/>
-            <result property="questionNumber" column="question_question_number"/>
-            <result property="questionType" column="question_question_type"/>
-            <result property="answerMode" column="question_answer_mode"/>
-            <result property="transcriptText" column="question_transcript_text"/>
-            <result property="audioUrl" column="question_audio_url"/>
-            <result property="audioObjectKey" column="question_audio_object_key"/>
-            <result property="options"
-                    column="question_options_json"
-                    typeHandler="com.andrew.smartielts.dashboard.learning.typehandler.JsonStringListTypeHandler"/>
-            <result property="acceptedAnswers"
-                    column="question_accepted_answers_json"
-                    typeHandler="com.andrew.smartielts.dashboard.learning.typehandler.JsonStringListTypeHandler"/>
-        </association>
-
-        <association property="userAttempt"
-                     javaType="com.andrew.smartielts.dashboard.learning.dto.UserAttemptDTO"
-                     notNullColumn="attempt_record_id">
-            <id property="recordId" column="attempt_record_id"/>
-            <result property="module" column="attempt_module"/>
-            <result property="userId" column="attempt_user_id"/>
-            <result property="testId" column="attempt_test_id"/>
-            <result property="questionId" column="attempt_question_id"/>
-            <result property="userAnswer" column="attempt_user_answer"/>
-            <result property="correct" column="attempt_correct"/>
-            <result property="score" column="attempt_score"/>
-            <result property="totalScore" column="attempt_total_score"/>
-            <result property="createdTime" column="attempt_created_time"/>
-        </association>
-    </resultMap>
-
-    <resultMap id="READING_CONTEXT_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.ModuleLearningContextDTO">
-        <result property="module" column="module"/>
-
-        <association property="test"
-                     javaType="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO"
-                     notNullColumn="test_id">
-            <id property="id" column="test_id"/>
-            <result property="module" column="test_module"/>
-            <result property="objectType" column="test_object_type"/>
-            <result property="testId" column="test_test_id"/>
-            <result property="title" column="test_title"/>
-            <result property="testTitle" column="test_title"/>
-        </association>
+                     resultMap="LearningObjectResultMap"
+                     columnPrefix="test_"
+                     notNullColumn="test_id"/>
 
         <association property="passage"
-                     javaType="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO"
-                     notNullColumn="passage_id">
-            <id property="id" column="passage_id"/>
-            <result property="module" column="passage_module"/>
-            <result property="objectType" column="passage_object_type"/>
-            <result property="testId" column="passage_test_id"/>
-            <result property="passageId" column="passage_passage_id"/>
-            <result property="title" column="passage_title"/>
-            <result property="passageTitle" column="passage_title"/>
-            <result property="content" column="passage_content"/>
-            <result property="passageContent" column="passage_content"/>
-            <result property="testTitle" column="passage_test_title"/>
-        </association>
+                     resultMap="LearningObjectResultMap"
+                     columnPrefix="passage_"
+                     notNullColumn="passage_id"/>
 
         <association property="question"
-                     javaType="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO"
-                     notNullColumn="question_id">
-            <id property="id" column="question_id"/>
-            <result property="module" column="question_module"/>
-            <result property="objectType" column="question_object_type"/>
-            <result property="testId" column="question_test_id"/>
-            <result property="passageId" column="question_passage_id"/>
-            <result property="questionId" column="question_question_id"/>
-            <result property="testTitle" column="question_test_title"/>
-            <result property="passageTitle" column="question_passage_title"/>
-            <result property="passageContent" column="question_passage_content"/>
-            <result property="questionText" column="question_question_text"/>
-            <result property="correctAnswer" column="question_correct_answer"/>
-            <result property="questionNumber" column="question_question_number"/>
-            <result property="questionType" column="question_question_type"/>
-            <result property="answerMode" column="question_answer_mode"/>
-            <result property="options"
-                    column="question_options_json"
-                    typeHandler="com.andrew.smartielts.dashboard.learning.typehandler.JsonStringListTypeHandler"/>
-            <result property="acceptedAnswers"
-                    column="question_accepted_answers_json"
-                    typeHandler="com.andrew.smartielts.dashboard.learning.typehandler.JsonStringListTypeHandler"/>
-        </association>
+                     resultMap="LearningObjectResultMap"
+                     columnPrefix="question_"
+                     notNullColumn="question_id"/>
 
         <association property="userAttempt"
-                     javaType="com.andrew.smartielts.dashboard.learning.dto.UserAttemptDTO"
-                     notNullColumn="attempt_record_id">
-            <id property="recordId" column="attempt_record_id"/>
-            <result property="module" column="attempt_module"/>
-            <result property="userId" column="attempt_user_id"/>
-            <result property="testId" column="attempt_test_id"/>
-            <result property="passageId" column="attempt_passage_id"/>
-            <result property="questionId" column="attempt_question_id"/>
-            <result property="userAnswer" column="attempt_user_answer"/>
-            <result property="correct" column="attempt_correct"/>
-            <result property="score" column="attempt_score"/>
-            <result property="totalScore" column="attempt_total_score"/>
-            <result property="createdTime" column="attempt_created_time"/>
-        </association>
-    </resultMap>
-
-    <resultMap id="WRITING_CONTEXT_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.ModuleLearningContextDTO">
-        <result property="module" column="module"/>
-
-        <association property="question"
-                     javaType="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO"
-                     notNullColumn="question_id">
-            <id property="id" column="question_id"/>
-            <result property="module" column="question_module"/>
-            <result property="objectType" column="question_object_type"/>
-            <result property="questionId" column="question_question_id"/>
-            <result property="title" column="question_title"/>
-            <result property="questionText" column="question_question_text"/>
-            <result property="imageUrl" column="question_image_url"/>
-            <result property="taskType" column="question_task_type"/>
-        </association>
-
-        <association property="userAttempt"
-                     javaType="com.andrew.smartielts.dashboard.learning.dto.UserAttemptDTO"
-                     notNullColumn="attempt_record_id">
-            <id property="recordId" column="attempt_record_id"/>
-            <result property="module" column="attempt_module"/>
-            <result property="userId" column="attempt_user_id"/>
-            <result property="questionId" column="attempt_question_id"/>
-            <result property="userAnswer" column="attempt_user_answer"/>
-            <result property="textContent" column="attempt_text_content"/>
-            <result property="extractedText" column="attempt_extracted_text"/>
-            <result property="aiFeedback" column="attempt_ai_feedback"/>
-            <result property="aiScore" column="attempt_ai_score"/>
-            <result property="aiStatus" column="attempt_ai_status"/>
-            <result property="createdTime" column="attempt_created_time"/>
-        </association>
-    </resultMap>
-
-    <resultMap id="SPEAKING_CONTEXT_RESULT_MAP"
-               type="com.andrew.smartielts.dashboard.learning.dto.ModuleLearningContextDTO">
-        <result property="module" column="module"/>
-
-        <association property="question"
-                     javaType="com.andrew.smartielts.dashboard.learning.dto.LearningObjectDTO"
-                     notNullColumn="question_id">
-            <id property="id" column="question_id"/>
-            <result property="module" column="question_module"/>
-            <result property="objectType" column="question_object_type"/>
-            <result property="questionId" column="question_question_id"/>
-            <result property="questionText" column="question_question_text"/>
-            <result property="questionType" column="question_question_type"/>
-            <result property="cueCard" column="question_cue_card"/>
-            <result property="title" column="question_title"/>
-            <result property="questionNumber" column="question_question_number"/>
-        </association>
-
-        <association property="userAttempt"
-                     javaType="com.andrew.smartielts.dashboard.learning.dto.UserAttemptDTO"
-                     notNullColumn="attempt_record_id">
-            <id property="recordId" column="attempt_record_id"/>
-            <result property="module" column="attempt_module"/>
-            <result property="userId" column="attempt_user_id"/>
-            <result property="sessionId" column="attempt_session_id"/>
-            <result property="questionId" column="attempt_question_id"/>
-            <result property="userAnswer" column="attempt_user_answer"/>
-            <result property="transcript" column="attempt_transcript"/>
-            <result property="audioUrl" column="attempt_audio_url"/>
-            <result property="feedback" column="attempt_feedback"/>
-            <result property="aiFeedback" column="attempt_ai_feedback"/>
-            <result property="aiScore" column="attempt_ai_score"/>
-            <result property="answerStatus" column="attempt_answer_status"/>
-            <result property="aiStatus" column="attempt_ai_status"/>
-            <result property="createdTime" column="attempt_created_time"/>
-        </association>
+                     resultMap="UserAttemptResultMap"
+                     columnPrefix="user_attempt_"
+                     notNullColumn="user_attempt_record_id"/>
     </resultMap>
 
     <!-- =========================
-         Discrete object queries
+         Question
          ========================= -->
 
-    <select id="selectListeningQuestion" resultMap="LISTENING_QUESTION_RESULT_MAP">
+    <select id="selectListeningQuestion" resultMap="LearningObjectResultMap">
         SELECT
             'listening' AS module,
             'question' AS object_type,
             lq.id AS id,
             lq.test_id AS test_id,
+            lq.part_group_id AS passage_id,
             lq.id AS question_id,
-            lt.title AS title,
+            NULL AS record_id,
+            COALESCE(lpg.title, CONCAT('Listening Question ', lq.question_number)) AS title,
             lt.title AS test_title,
+            lpg.title AS passage_title,
+            lpg.instruction_text AS content,
+            COALESCE(lpg.group_guide_text, lpg.instruction_text) AS passage_content,
             lq.question_text AS question_text,
             lq.correct_answer AS correct_answer,
+            NULL AS explanation,
             lq.question_number AS question_number,
             lq.question_type AS question_type,
             lq.answer_mode AS answer_mode,
             lq.options_json AS options_json,
             lq.accepted_answers_json AS accepted_answers_json,
-            lt.transcript_text AS transcript_text,
-            lt.audio_url AS audio_url,
-            lt.audio_object_key AS audio_object_key
+            NULL AS cue_card,
+            la.transcript_text AS transcript_text,
+            la.audio_url AS audio_url,
+            la.audio_object_key AS audio_object_key,
+            (
+                SELECT bir.file_url
+                FROM biz_image_resource bir
+                WHERE bir.target_type = 'LISTENING_PART_GROUP'
+                  AND bir.target_id = lpg.id
+                  AND bir.is_deleted = 0
+                ORDER BY bir.sort_order ASC, bir.id ASC
+                LIMIT 1
+            ) AS image_url,
+            NULL AS task_type
         FROM listening_question lq
-                 INNER JOIN listening_test lt
-                            ON lt.id = lq.test_id
-                                AND lt.is_deleted = 0
+                 JOIN listening_test lt
+                      ON lt.id = lq.test_id
+                          AND lt.is_deleted = 0
+                 LEFT JOIN listening_part_group lpg
+                           ON lpg.id = lq.part_group_id
+                               AND lpg.is_deleted = 0
+                 LEFT JOIN listening_audio la
+                           ON la.part_group_id = lq.part_group_id
+                               AND la.audio_scope = 'part_group'
+                               AND la.is_deleted = 0
         WHERE lq.id = #{questionId}
           AND lq.is_deleted = 0
-        LIMIT 1
     </select>
 
-    <select id="selectReadingQuestion" resultMap="READING_QUESTION_RESULT_MAP">
+    <select id="selectReadingQuestion" resultMap="LearningObjectResultMap">
         SELECT
             'reading' AS module,
             'question' AS object_type,
             rq.id AS id,
             rp.test_id AS test_id,
-            rp.id AS passage_id,
+            rq.passage_id AS passage_id,
             rq.id AS question_id,
-            rp.title AS title,
+            NULL AS record_id,
+            COALESCE(rq.group_label, rp.title, CONCAT('Reading Question ', rq.question_number)) AS title,
             rt.title AS test_title,
             rp.title AS passage_title,
+            rp.content AS content,
             rp.content AS passage_content,
             rq.question_text AS question_text,
             rq.correct_answer AS correct_answer,
-            rq.display_order AS question_number,
+            NULL AS explanation,
+            rq.question_number AS question_number,
             rq.question_type AS question_type,
             rq.answer_mode AS answer_mode,
             rq.options_json AS options_json,
-            rq.accepted_answers_json AS accepted_answers_json
+            rq.accepted_answers_json AS accepted_answers_json,
+            NULL AS cue_card,
+            NULL AS transcript_text,
+            NULL AS audio_url,
+            NULL AS audio_object_key,
+            (
+                SELECT bir.file_url
+                FROM biz_image_resource bir
+                WHERE bir.target_type = 'READING_PART_GROUP'
+                  AND bir.target_id = rpg.id
+                  AND bir.is_deleted = 0
+                ORDER BY bir.sort_order ASC, bir.id ASC
+                LIMIT 1
+            ) AS image_url,
+            NULL AS task_type
         FROM reading_question rq
-                 INNER JOIN reading_passage rp
-                            ON rp.id = rq.passage_id
-                                AND rp.is_deleted = 0
-                 INNER JOIN reading_test rt
-                            ON rt.id = rp.test_id
-                                AND rt.is_deleted = 0
+                 JOIN reading_passage rp
+                      ON rp.id = rq.passage_id
+                          AND rp.is_deleted = 0
+                 JOIN reading_test rt
+                      ON rt.id = rp.test_id
+                          AND rt.is_deleted = 0
+                 LEFT JOIN reading_part_group rpg
+                           ON rpg.id = rq.part_group_id
+                               AND rpg.is_deleted = 0
         WHERE rq.id = #{questionId}
           AND rq.is_deleted = 0
-        LIMIT 1
     </select>
 
-    <select id="selectSpeakingQuestion" resultMap="SPEAKING_QUESTION_RESULT_MAP">
+    <select id="selectSpeakingQuestion" resultMap="LearningObjectResultMap">
         SELECT
             'speaking' AS module,
             'question' AS object_type,
             sq.id AS id,
+            NULL AS test_id,
+            NULL AS passage_id,
             sq.id AS question_id,
-            sq.topic_key AS title,
+            NULL AS record_id,
+            COALESCE(sq.topic_key, CONCAT(sq.part, ' ', sq.sub_type)) AS title,
+            NULL AS test_title,
+            NULL AS passage_title,
+            sq.cue_card AS content,
+            sq.cue_card AS passage_content,
             sq.question_text AS question_text,
-            sq.sub_type AS question_type,
+            NULL AS correct_answer,
+            NULL AS explanation,
             sq.display_order AS question_number,
-            sq.cue_card AS cue_card
+            sq.sub_type AS question_type,
+            'SPEECH' AS answer_mode,
+            NULL AS options_json,
+            NULL AS accepted_answers_json,
+            sq.cue_card AS cue_card,
+            NULL AS transcript_text,
+            NULL AS audio_url,
+            NULL AS audio_object_key,
+            NULL AS image_url,
+            sq.part AS task_type
         FROM speaking_question sq
         WHERE sq.id = #{questionId}
           AND sq.is_deleted = 0
-        LIMIT 1
+          AND sq.active = 1
     </select>
 
-    <select id="selectWritingQuestion" resultMap="WRITING_QUESTION_RESULT_MAP">
+    <select id="selectWritingQuestion" resultMap="LearningObjectResultMap">
         SELECT
             'writing' AS module,
             'question' AS object_type,
             wq.id AS id,
+            NULL AS test_id,
+            NULL AS passage_id,
             wq.id AS question_id,
-            wq.title AS title,
-            wq.description AS question_text,
-            wq.image_url AS image_url,
+            NULL AS record_id,
+            COALESCE(wq.title, CONCAT('Writing ', wq.task_type)) AS title,
+            NULL AS test_title,
+            NULL AS passage_title,
+            wq.description AS content,
+            wq.description AS passage_content,
+            COALESCE(wq.title, wq.description) AS question_text,
+            NULL AS correct_answer,
+            NULL AS explanation,
+            NULL AS question_number,
+            wq.task_type AS question_type,
+            'ESSAY' AS answer_mode,
+            NULL AS options_json,
+            NULL AS accepted_answers_json,
+            NULL AS cue_card,
+            NULL AS transcript_text,
+            NULL AS audio_url,
+            NULL AS audio_object_key,
+            COALESCE(
+                    (
+                        SELECT bir.file_url
+                        FROM biz_image_resource bir
+                        WHERE bir.target_type = 'WRITING_QUESTION'
+                          AND bir.target_id = wq.id
+                          AND bir.is_deleted = 0
+                        ORDER BY bir.sort_order ASC, bir.id ASC
+                        LIMIT 1
+                    ),
+                    wq.image_url
+            ) AS image_url,
             wq.task_type AS task_type
         FROM writing_question wq
         WHERE wq.id = #{questionId}
           AND wq.is_deleted = 0
-        LIMIT 1
     </select>
 
-    <select id="selectReadingPassage" resultMap="READING_PASSAGE_RESULT_MAP">
+    <!-- =========================
+         Passage / Test
+         ========================= -->
+
+    <select id="selectReadingPassage" resultMap="LearningObjectResultMap">
         SELECT
             'reading' AS module,
             'passage' AS object_type,
             rp.id AS id,
             rp.test_id AS test_id,
             rp.id AS passage_id,
+            NULL AS question_id,
+            NULL AS record_id,
             rp.title AS title,
             rt.title AS test_title,
             rp.title AS passage_title,
             rp.content AS content,
-            rp.content AS passage_content
+            rp.content AS passage_content,
+            NULL AS question_text,
+            NULL AS correct_answer,
+            NULL AS explanation,
+            rp.passage_no AS question_number,
+            rp.material_type AS question_type,
+            NULL AS answer_mode,
+            NULL AS options_json,
+            NULL AS accepted_answers_json,
+            NULL AS cue_card,
+            NULL AS transcript_text,
+            NULL AS audio_url,
+            NULL AS audio_object_key,
+            (
+                SELECT bir.file_url
+                FROM biz_image_resource bir
+                WHERE bir.target_type = 'READING_PART_GROUP'
+                  AND bir.target_id = rp.part_group_id
+                  AND bir.is_deleted = 0
+                ORDER BY bir.sort_order ASC, bir.id ASC
+                LIMIT 1
+            ) AS image_url,
+            NULL AS task_type
         FROM reading_passage rp
-                 INNER JOIN reading_test rt
-                            ON rt.id = rp.test_id
-                                AND rt.is_deleted = 0
+                 JOIN reading_test rt
+                      ON rt.id = rp.test_id
+                          AND rt.is_deleted = 0
         WHERE rp.id = #{passageId}
           AND rp.is_deleted = 0
-        LIMIT 1
     </select>
 
-    <select id="selectListeningTest" resultMap="LISTENING_TEST_RESULT_MAP">
+    <select id="selectListeningTest" resultMap="LearningObjectResultMap">
         SELECT
             'listening' AS module,
             'test' AS object_type,
             lt.id AS id,
             lt.id AS test_id,
+            NULL AS passage_id,
+            NULL AS question_id,
+            NULL AS record_id,
             lt.title AS title,
             lt.title AS test_title,
-            lt.transcript_text AS transcript_text,
-            lt.audio_url AS audio_url,
-            lt.audio_object_key AS audio_object_key
+            NULL AS passage_title,
+            NULL AS content,
+            NULL AS passage_content,
+            NULL AS question_text,
+            NULL AS correct_answer,
+            NULL AS explanation,
+            NULL AS question_number,
+            NULL AS question_type,
+            NULL AS answer_mode,
+            NULL AS options_json,
+            NULL AS accepted_answers_json,
+            NULL AS cue_card,
+            NULL AS transcript_text,
+            NULL AS audio_url,
+            NULL AS audio_object_key,
+            NULL AS image_url,
+            NULL AS task_type
         FROM listening_test lt
         WHERE lt.id = #{testId}
           AND lt.is_deleted = 0
-        LIMIT 1
     </select>
 
-    <select id="selectReadingTest" resultMap="READING_TEST_RESULT_MAP">
+    <select id="selectReadingTest" resultMap="LearningObjectResultMap">
         SELECT
             'reading' AS module,
             'test' AS object_type,
             rt.id AS id,
             rt.id AS test_id,
+            NULL AS passage_id,
+            NULL AS question_id,
+            NULL AS record_id,
             rt.title AS title,
-            rt.title AS test_title
+            rt.title AS test_title,
+            NULL AS passage_title,
+            NULL AS content,
+            NULL AS passage_content,
+            NULL AS question_text,
+            NULL AS correct_answer,
+            NULL AS explanation,
+            NULL AS question_number,
+            NULL AS question_type,
+            NULL AS answer_mode,
+            NULL AS options_json,
+            NULL AS accepted_answers_json,
+            NULL AS cue_card,
+            NULL AS transcript_text,
+            NULL AS audio_url,
+            NULL AS audio_object_key,
+            NULL AS image_url,
+            NULL AS task_type
         FROM reading_test rt
         WHERE rt.id = #{testId}
           AND rt.is_deleted = 0
-        LIMIT 1
     </select>
 
     <!-- =========================
-         Attempt queries
+         Attempt
          ========================= -->
 
-    <select id="selectListeningAttempt" resultMap="LISTENING_ATTEMPT_RESULT_MAP">
+    <select id="selectListeningAttempt" resultMap="UserAttemptResultMap">
         SELECT
             'listening' AS module,
             lr.user_id AS user_id,
             lr.id AS record_id,
             lr.test_id AS test_id,
+            lq.part_group_id AS passage_id,
             lq.id AS question_id,
+            lr.session_id AS session_id,
             lar.user_answer AS user_answer,
             lar.is_correct AS correct,
             lar.score AS score,
             lr.total_score AS total_score,
+            NULL AS feedback,
+            NULL AS ai_feedback,
+            NULL AS ai_score,
+            NULL AS text_content,
+            NULL AS extracted_text,
+            NULL AS transcript,
+            NULL AS audio_url,
+            lr.record_status AS answer_status,
+            NULL AS ai_status,
             DATE_FORMAT(lr.created_time, '%Y-%m-%d %H:%i:%s') AS created_time
         FROM listening_record lr
-                 INNER JOIN listening_question lq
-                            ON lq.test_id = lr.test_id
-                                AND lq.id = #{questionId}
-                                AND lq.is_deleted = 0
+                 JOIN listening_question lq
+                      ON lq.id = #{questionId}
+                          AND lq.test_id = lr.test_id
+                          AND lq.is_deleted = 0
                  LEFT JOIN listening_answer_record lar
                            ON lar.record_id = lr.id
                                AND lar.question_id = lq.id
@@ -572,30 +425,37 @@
         LIMIT 1
     </select>
 
-    <select id="selectReadingAttempt" resultMap="READING_ATTEMPT_RESULT_MAP">
+    <select id="selectReadingAttempt" resultMap="UserAttemptResultMap">
         SELECT
             'reading' AS module,
             rr.user_id AS user_id,
             rr.id AS record_id,
             rr.test_id AS test_id,
-            rp.id AS passage_id,
+            rq.passage_id AS passage_id,
             rq.id AS question_id,
+            rr.session_id AS session_id,
             rar.user_answer AS user_answer,
             rar.is_correct AS correct,
             rar.score AS score,
             rr.total_score AS total_score,
+            NULL AS feedback,
+            NULL AS ai_feedback,
+            NULL AS ai_score,
+            NULL AS text_content,
+            NULL AS extracted_text,
+            NULL AS transcript,
+            NULL AS audio_url,
+            rr.record_status AS answer_status,
+            NULL AS ai_status,
             DATE_FORMAT(rr.created_time, '%Y-%m-%d %H:%i:%s') AS created_time
         FROM reading_record rr
-                 INNER JOIN reading_test rt
-                            ON rt.id = rr.test_id
-                                AND rt.is_deleted = 0
-                 INNER JOIN reading_passage rp
-                            ON rp.test_id = rt.id
-                                AND rp.is_deleted = 0
-                 INNER JOIN reading_question rq
-                            ON rq.passage_id = rp.id
-                                AND rq.id = #{questionId}
-                                AND rq.is_deleted = 0
+                 JOIN reading_question rq
+                      ON rq.id = #{questionId}
+                          AND rq.is_deleted = 0
+                 JOIN reading_passage rp
+                      ON rp.id = rq.passage_id
+                          AND rp.test_id = rr.test_id
+                          AND rp.is_deleted = 0
                  LEFT JOIN reading_answer_record rar
                            ON rar.record_id = rr.id
                                AND rar.question_id = rq.id
@@ -605,19 +465,26 @@
         LIMIT 1
     </select>
 
-    <select id="selectSpeakingAttempt" resultMap="SPEAKING_ATTEMPT_RESULT_MAP">
+    <select id="selectSpeakingAttempt" resultMap="UserAttemptResultMap">
         SELECT
             'speaking' AS module,
             sr.user_id AS user_id,
             sr.id AS record_id,
-            sr.session_id AS session_id,
+            NULL AS test_id,
+            NULL AS passage_id,
             sr.question_id AS question_id,
-            sr.transcript AS user_answer,
+            sr.session_id AS session_id,
+            NULL AS user_answer,
+            NULL AS correct,
+            sr.overall_score AS score,
+            sr.overall_score AS total_score,
+            sr.feedback AS feedback,
+            NULL AS ai_feedback,
+            sr.overall_score AS ai_score,
+            NULL AS text_content,
+            NULL AS extracted_text,
             sr.transcript AS transcript,
             sr.audio_url AS audio_url,
-            sr.feedback AS feedback,
-            sr.feedback AS ai_feedback,
-            sr.overall_score AS ai_score,
             sr.answer_status AS answer_status,
             sr.ai_status AS ai_status,
             DATE_FORMAT(sr.created_time, '%Y-%m-%d %H:%i:%s') AS created_time
@@ -629,17 +496,27 @@
         LIMIT 1
     </select>
 
-    <select id="selectWritingAttempt" resultMap="WRITING_ATTEMPT_RESULT_MAP">
+    <select id="selectWritingAttempt" resultMap="UserAttemptResultMap">
         SELECT
             'writing' AS module,
             wr.user_id AS user_id,
             wr.id AS record_id,
+            NULL AS test_id,
+            NULL AS passage_id,
             wr.question_id AS question_id,
-            COALESCE(wr.text_content, wr.extracted_text) AS user_answer,
-            wr.text_content AS text_content,
-            wr.extracted_text AS extracted_text,
+            NULL AS session_id,
+            NULL AS user_answer,
+            NULL AS correct,
+            wr.ai_score AS score,
+            wr.ai_score AS total_score,
+            NULL AS feedback,
             wr.ai_feedback AS ai_feedback,
             wr.ai_score AS ai_score,
+            wr.text_content AS text_content,
+            wr.extracted_text AS extracted_text,
+            NULL AS transcript,
+            NULL AS audio_url,
+            wr.input_type AS answer_status,
             wr.ai_status AS ai_status,
             DATE_FORMAT(wr.created_time, '%Y-%m-%d %H:%i:%s') AS created_time
         FROM writing_record wr
@@ -651,303 +528,528 @@
     </select>
 
     <!-- =========================
-         Record question lists
+         Record Questions
          ========================= -->
 
     <select id="selectListeningRecordQuestions" resultType="map">
         SELECT
-            lq.id AS questionId,
-            lq.test_id AS testId,
-            lq.section_number AS sectionNumber,
-            lq.question_number AS questionNumber,
-            lq.question_text AS questionText,
-            lq.correct_answer AS correctAnswer,
-            lq.question_type AS questionType,
-            lq.answer_mode AS answerMode,
-            lq.options_json AS optionsJson,
-            lq.accepted_answers_json AS acceptedAnswersJson,
-            lar.user_answer AS userAnswer,
-            lar.is_correct AS isCorrect,
-            lar.score AS userScore
+            'listening' AS module,
+            lr.id AS record_id,
+            lr.test_id AS test_id,
+            lq.part_group_id AS passage_id,
+            lq.id AS question_id,
+            lq.question_number AS question_number,
+            lq.question_text AS question_text
         FROM listening_record lr
-                 INNER JOIN listening_question lq
-                            ON lq.test_id = lr.test_id
-                                AND lq.is_deleted = 0
+                 JOIN listening_question lq
+                      ON lq.test_id = lr.test_id
+                          AND lq.is_deleted = 0
+        WHERE lr.user_id = #{userId}
+          AND lr.id = #{recordId}
+          AND lr.is_deleted = 0
+        ORDER BY lq.question_number ASC, lq.display_order ASC, lq.id ASC
+    </select>
+
+    <select id="selectReadingRecordQuestions" resultType="map">
+        SELECT
+            'reading' AS module,
+            rr.id AS record_id,
+            rr.test_id AS test_id,
+            rq.passage_id AS passage_id,
+            rq.id AS question_id,
+            rq.question_number AS question_number,
+            rq.question_text AS question_text
+        FROM reading_record rr
+                 JOIN reading_passage rp
+                      ON rp.test_id = rr.test_id
+                          AND rp.is_deleted = 0
+                 JOIN reading_question rq
+                      ON rq.passage_id = rp.id
+                          AND rq.is_deleted = 0
+        WHERE rr.user_id = #{userId}
+          AND rr.id = #{recordId}
+          AND rr.is_deleted = 0
+        ORDER BY rq.question_number ASC, rq.display_order ASC, rq.id ASC
+    </select>
+
+    <!-- =========================
+         Locate by Question Number
+         ========================= -->
+
+    <select id="locateListeningQuestionByNumber" resultType="map">
+        SELECT
+            lr.test_id AS test_id,
+            lq.part_group_id AS passage_id,
+            lq.id AS question_id
+        FROM listening_record lr
+                 JOIN listening_question lq
+                      ON lq.test_id = lr.test_id
+                          AND lq.is_deleted = 0
+        WHERE lr.user_id = #{userId}
+          AND lr.id = #{recordId}
+          AND lr.is_deleted = 0
+          AND lq.question_number = #{questionNumber}
+        ORDER BY lq.id ASC
+        LIMIT 1
+    </select>
+
+    <select id="locateReadingQuestionByNumber" resultType="map">
+        SELECT
+            rr.test_id AS test_id,
+            rq.passage_id AS passage_id,
+            rq.id AS question_id
+        FROM reading_record rr
+                 JOIN reading_passage rp
+                      ON rp.test_id = rr.test_id
+                          AND rp.is_deleted = 0
+                 JOIN reading_question rq
+                      ON rq.passage_id = rp.id
+                          AND rq.is_deleted = 0
+        WHERE rr.user_id = #{userId}
+          AND rr.id = #{recordId}
+          AND rr.is_deleted = 0
+          AND rq.question_number = #{questionNumber}
+        ORDER BY rq.id ASC
+        LIMIT 1
+    </select>
+
+    <!-- =========================
+         Context
+         ========================= -->
+
+    <select id="selectListeningContext" resultMap="ModuleLearningContextResultMap">
+        SELECT
+            'listening' AS module,
+            NULL AS ask_scene,
+
+            'listening' AS test_module,
+            'test' AS test_object_type,
+            lt.id AS test_id,
+            lt.id AS test_test_id,
+            NULL AS test_passage_id,
+            NULL AS test_question_id,
+            NULL AS test_record_id,
+            lt.title AS test_title,
+            lt.title AS test_test_title,
+            NULL AS test_passage_title,
+            NULL AS test_content,
+            NULL AS test_passage_content,
+            NULL AS test_question_text,
+            NULL AS test_correct_answer,
+            NULL AS test_explanation,
+            NULL AS test_question_number,
+            NULL AS test_question_type,
+            NULL AS test_answer_mode,
+            NULL AS test_options_json,
+            NULL AS test_accepted_answers_json,
+            NULL AS test_cue_card,
+            NULL AS test_transcript_text,
+            NULL AS test_audio_url,
+            NULL AS test_audio_object_key,
+            NULL AS test_image_url,
+            NULL AS test_task_type,
+
+            'listening' AS passage_module,
+            'passage' AS passage_object_type,
+            lpg.id AS passage_id,
+            lt.id AS passage_test_id,
+            lpg.id AS passage_passage_id,
+            NULL AS passage_question_id,
+            NULL AS passage_record_id,
+            lpg.title AS passage_title,
+            lt.title AS passage_test_title,
+            lpg.title AS passage_passage_title,
+            lpg.instruction_text AS passage_content,
+            COALESCE(lpg.group_guide_text, lpg.instruction_text) AS passage_passage_content,
+            NULL AS passage_question_text,
+            NULL AS passage_correct_answer,
+            NULL AS passage_explanation,
+            lpg.group_number AS passage_question_number,
+            NULL AS passage_question_type,
+            NULL AS passage_answer_mode,
+            NULL AS passage_options_json,
+            NULL AS passage_accepted_answers_json,
+            NULL AS passage_cue_card,
+            la.transcript_text AS passage_transcript_text,
+            la.audio_url AS passage_audio_url,
+            la.audio_object_key AS passage_audio_object_key,
+            (
+                SELECT bir.file_url
+                FROM biz_image_resource bir
+                WHERE bir.target_type = 'LISTENING_PART_GROUP'
+                  AND bir.target_id = lpg.id
+                  AND bir.is_deleted = 0
+                ORDER BY bir.sort_order ASC, bir.id ASC
+                LIMIT 1
+            ) AS passage_image_url,
+            NULL AS passage_task_type,
+
+            'listening' AS question_module,
+            'question' AS question_object_type,
+            lq.id AS question_id,
+            lt.id AS question_test_id,
+            lq.part_group_id AS question_passage_id,
+            lq.id AS question_question_id,
+            NULL AS question_record_id,
+            COALESCE(lpg.title, CONCAT('Listening Question ', lq.question_number)) AS question_title,
+            lt.title AS question_test_title,
+            lpg.title AS question_passage_title,
+            lpg.instruction_text AS question_content,
+            COALESCE(lpg.group_guide_text, lpg.instruction_text) AS question_passage_content,
+            lq.question_text AS question_question_text,
+            lq.correct_answer AS question_correct_answer,
+            NULL AS question_explanation,
+            lq.question_number AS question_question_number,
+            lq.question_type AS question_question_type,
+            lq.answer_mode AS question_answer_mode,
+            lq.options_json AS question_options_json,
+            lq.accepted_answers_json AS question_accepted_answers_json,
+            NULL AS question_cue_card,
+            la.transcript_text AS question_transcript_text,
+            la.audio_url AS question_audio_url,
+            la.audio_object_key AS question_audio_object_key,
+            (
+                SELECT bir.file_url
+                FROM biz_image_resource bir
+                WHERE bir.target_type = 'LISTENING_PART_GROUP'
+                  AND bir.target_id = lpg.id
+                  AND bir.is_deleted = 0
+                ORDER BY bir.sort_order ASC, bir.id ASC
+                LIMIT 1
+            ) AS question_image_url,
+            NULL AS question_task_type,
+
+            'listening' AS user_attempt_module,
+            lr.user_id AS user_attempt_user_id,
+            lr.id AS user_attempt_record_id,
+            lr.test_id AS user_attempt_test_id,
+            lq.part_group_id AS user_attempt_passage_id,
+            lq.id AS user_attempt_question_id,
+            lr.session_id AS user_attempt_session_id,
+            lar.user_answer AS user_attempt_user_answer,
+            lar.is_correct AS user_attempt_correct,
+            lar.score AS user_attempt_score,
+            lr.total_score AS user_attempt_total_score,
+            NULL AS user_attempt_feedback,
+            NULL AS user_attempt_ai_feedback,
+            NULL AS user_attempt_ai_score,
+            NULL AS user_attempt_text_content,
+            NULL AS user_attempt_extracted_text,
+            NULL AS user_attempt_transcript,
+            NULL AS user_attempt_audio_url,
+            lr.record_status AS user_attempt_answer_status,
+            NULL AS user_attempt_ai_status,
+            DATE_FORMAT(lr.created_time, '%Y-%m-%d %H:%i:%s') AS user_attempt_created_time
+        FROM listening_record lr
+                 JOIN listening_test lt
+                      ON lt.id = lr.test_id
+                          AND lt.is_deleted = 0
+                 JOIN listening_question lq
+                      ON lq.id = #{questionId}
+                          AND lq.test_id = lr.test_id
+                          AND lq.is_deleted = 0
+                 LEFT JOIN listening_part_group lpg
+                           ON lpg.id = lq.part_group_id
+                               AND lpg.is_deleted = 0
+                 LEFT JOIN listening_audio la
+                           ON la.part_group_id = lq.part_group_id
+                               AND la.audio_scope = 'part_group'
+                               AND la.is_deleted = 0
                  LEFT JOIN listening_answer_record lar
                            ON lar.record_id = lr.id
                                AND lar.question_id = lq.id
         WHERE lr.user_id = #{userId}
           AND lr.id = #{recordId}
           AND lr.is_deleted = 0
-        ORDER BY lq.question_number ASC, lq.display_order ASC
-    </select>
-
-    <select id="selectReadingRecordQuestions" resultType="map">
-        SELECT
-            rq.id AS questionId,
-            rp.id AS passageId,
-            rp.test_id AS testId,
-            rp.title AS passageTitle,
-            rq.display_order AS questionNumber,
-            rq.question_text AS questionText,
-            rq.correct_answer AS correctAnswer,
-            rq.question_type AS questionType,
-            rq.answer_mode AS answerMode,
-            rq.options_json AS optionsJson,
-            rq.accepted_answers_json AS acceptedAnswersJson,
-            rar.user_answer AS userAnswer,
-            rar.is_correct AS isCorrect,
-            rar.score AS userScore
-        FROM reading_record rr
-                 INNER JOIN reading_passage rp
-                            ON rp.test_id = rr.test_id
-                                AND rp.is_deleted = 0
-                 INNER JOIN reading_question rq
-                            ON rq.passage_id = rp.id
-                                AND rq.is_deleted = 0
-                 LEFT JOIN reading_answer_record rar
-                           ON rar.record_id = rr.id
-                               AND rar.question_id = rq.id
-        WHERE rr.user_id = #{userId}
-          AND rr.id = #{recordId}
-          AND rr.is_deleted = 0
-        ORDER BY rp.id ASC, rq.display_order ASC
-    </select>
-
-    <!-- =========================
-         Locate by question number
-         ========================= -->
-
-    <select id="locateListeningQuestionByNumber" resultType="map">
-        SELECT
-            lq.id AS questionId,
-            lq.test_id AS testId
-        FROM listening_record lr
-                 INNER JOIN listening_question lq
-                            ON lq.test_id = lr.test_id
-                                AND lq.is_deleted = 0
-        WHERE lr.id = #{recordId}
-          AND lr.user_id = #{userId}
-          AND lr.is_deleted = 0
-          AND lq.question_number = #{questionNumber}
         LIMIT 1
     </select>
 
-    <select id="locateReadingQuestionByNumber" resultType="map">
-        SELECT
-            rq.id AS questionId,
-            rp.id AS passageId,
-            rp.test_id AS testId
-        FROM reading_record rr
-                 INNER JOIN reading_passage rp
-                            ON rp.test_id = rr.test_id
-                                AND rp.is_deleted = 0
-                 INNER JOIN reading_question rq
-                            ON rq.passage_id = rp.id
-                                AND rq.is_deleted = 0
-        WHERE rr.id = #{recordId}
-          AND rr.user_id = #{userId}
-          AND rr.is_deleted = 0
-          AND rq.display_order = #{questionNumber}
-        LIMIT 1
-    </select>
-
-    <!-- =========================
-         Full module context
-         ========================= -->
-
-    <select id="selectListeningContext" resultMap="LISTENING_CONTEXT_RESULT_MAP">
-        SELECT
-            'listening' AS module,
-
-            'listening' AS test_module,
-            'test' AS test_object_type,
-            lt.id AS test_id,
-            lt.id AS test_test_id,
-            lt.title AS test_title,
-            lt.audio_url AS test_audio_url,
-            lt.audio_object_key AS test_audio_object_key,
-            lt.transcript_text AS test_transcript_text,
-
-            'listening' AS question_module,
-            'question' AS question_object_type,
-            lq.id AS question_id,
-            lq.test_id AS question_test_id,
-            lq.id AS question_question_id,
-            lt.title AS question_test_title,
-            lq.question_text AS question_question_text,
-            lq.correct_answer AS question_correct_answer,
-            lq.question_number AS question_question_number,
-            lq.question_type AS question_question_type,
-            lq.answer_mode AS question_answer_mode,
-            lq.options_json AS question_options_json,
-            lq.accepted_answers_json AS question_accepted_answers_json,
-            lt.transcript_text AS question_transcript_text,
-            lt.audio_url AS question_audio_url,
-            lt.audio_object_key AS question_audio_object_key,
-
-            'listening' AS attempt_module,
-            lr.user_id AS attempt_user_id,
-            lr.id AS attempt_record_id,
-            lr.test_id AS attempt_test_id,
-            lq.id AS attempt_question_id,
-            lar.user_answer AS attempt_user_answer,
-            lar.is_correct AS attempt_correct,
-            lar.score AS attempt_score,
-            lr.total_score AS attempt_total_score,
-            DATE_FORMAT(lr.created_time, '%Y-%m-%d %H:%i:%s') AS attempt_created_time
-        FROM listening_record lr
-                 INNER JOIN listening_test lt
-                            ON lt.id = lr.test_id
-                                AND lt.is_deleted = 0
-                 INNER JOIN listening_question lq
-                            ON lq.test_id = lt.id
-                                AND lq.id = #{questionId}
-                                AND lq.is_deleted = 0
-                 LEFT JOIN listening_answer_record lar
-                           ON lar.record_id = lr.id
-                               AND lar.question_id = lq.id
-        WHERE lr.id = #{recordId}
-          AND lr.user_id = #{userId}
-          AND lr.is_deleted = 0
-        LIMIT 1
-    </select>
-
-    <select id="selectReadingContext" resultMap="READING_CONTEXT_RESULT_MAP">
+    <select id="selectReadingContext" resultMap="ModuleLearningContextResultMap">
         SELECT
             'reading' AS module,
+            NULL AS ask_scene,
 
             'reading' AS test_module,
             'test' AS test_object_type,
             rt.id AS test_id,
             rt.id AS test_test_id,
+            NULL AS test_passage_id,
+            NULL AS test_question_id,
+            NULL AS test_record_id,
             rt.title AS test_title,
+            rt.title AS test_test_title,
+            NULL AS test_passage_title,
+            NULL AS test_content,
+            NULL AS test_passage_content,
+            NULL AS test_question_text,
+            NULL AS test_correct_answer,
+            NULL AS test_explanation,
+            NULL AS test_question_number,
+            NULL AS test_question_type,
+            NULL AS test_answer_mode,
+            NULL AS test_options_json,
+            NULL AS test_accepted_answers_json,
+            NULL AS test_cue_card,
+            NULL AS test_transcript_text,
+            NULL AS test_audio_url,
+            NULL AS test_audio_object_key,
+            NULL AS test_image_url,
+            NULL AS test_task_type,
 
             'reading' AS passage_module,
             'passage' AS passage_object_type,
             rp.id AS passage_id,
             rp.test_id AS passage_test_id,
             rp.id AS passage_passage_id,
+            NULL AS passage_question_id,
+            NULL AS passage_record_id,
             rp.title AS passage_title,
-            rp.content AS passage_content,
             rt.title AS passage_test_title,
+            rp.title AS passage_passage_title,
+            rp.content AS passage_content,
+            rp.content AS passage_passage_content,
+            NULL AS passage_question_text,
+            NULL AS passage_correct_answer,
+            NULL AS passage_explanation,
+            rp.passage_no AS passage_question_number,
+            rp.material_type AS passage_question_type,
+            NULL AS passage_answer_mode,
+            NULL AS passage_options_json,
+            NULL AS passage_accepted_answers_json,
+            NULL AS passage_cue_card,
+            NULL AS passage_transcript_text,
+            NULL AS passage_audio_url,
+            NULL AS passage_audio_object_key,
+            (
+                SELECT bir.file_url
+                FROM biz_image_resource bir
+                WHERE bir.target_type = 'READING_PART_GROUP'
+                  AND bir.target_id = rpg.id
+                  AND bir.is_deleted = 0
+                ORDER BY bir.sort_order ASC, bir.id ASC
+                LIMIT 1
+            ) AS passage_image_url,
+            NULL AS passage_task_type,
 
             'reading' AS question_module,
             'question' AS question_object_type,
             rq.id AS question_id,
             rp.test_id AS question_test_id,
-            rp.id AS question_passage_id,
+            rq.passage_id AS question_passage_id,
             rq.id AS question_question_id,
+            NULL AS question_record_id,
+            COALESCE(rq.group_label, rp.title, CONCAT('Reading Question ', rq.question_number)) AS question_title,
             rt.title AS question_test_title,
             rp.title AS question_passage_title,
+            rp.content AS question_content,
             rp.content AS question_passage_content,
             rq.question_text AS question_question_text,
             rq.correct_answer AS question_correct_answer,
-            rq.display_order AS question_question_number,
+            NULL AS question_explanation,
+            rq.question_number AS question_question_number,
             rq.question_type AS question_question_type,
             rq.answer_mode AS question_answer_mode,
             rq.options_json AS question_options_json,
             rq.accepted_answers_json AS question_accepted_answers_json,
+            NULL AS question_cue_card,
+            NULL AS question_transcript_text,
+            NULL AS question_audio_url,
+            NULL AS question_audio_object_key,
+            (
+                SELECT bir.file_url
+                FROM biz_image_resource bir
+                WHERE bir.target_type = 'READING_PART_GROUP'
+                  AND bir.target_id = rpg.id
+                  AND bir.is_deleted = 0
+                ORDER BY bir.sort_order ASC, bir.id ASC
+                LIMIT 1
+            ) AS question_image_url,
+            NULL AS question_task_type,
 
-            'reading' AS attempt_module,
-            rr.user_id AS attempt_user_id,
-            rr.id AS attempt_record_id,
-            rr.test_id AS attempt_test_id,
-            rp.id AS attempt_passage_id,
-            rq.id AS attempt_question_id,
-            rar.user_answer AS attempt_user_answer,
-            rar.is_correct AS attempt_correct,
-            rar.score AS attempt_score,
-            rr.total_score AS attempt_total_score,
-            DATE_FORMAT(rr.created_time, '%Y-%m-%d %H:%i:%s') AS attempt_created_time
+            'reading' AS user_attempt_module,
+            rr.user_id AS user_attempt_user_id,
+            rr.id AS user_attempt_record_id,
+            rr.test_id AS user_attempt_test_id,
+            rq.passage_id AS user_attempt_passage_id,
+            rq.id AS user_attempt_question_id,
+            rr.session_id AS user_attempt_session_id,
+            rar.user_answer AS user_attempt_user_answer,
+            rar.is_correct AS user_attempt_correct,
+            rar.score AS user_attempt_score,
+            rr.total_score AS user_attempt_total_score,
+            NULL AS user_attempt_feedback,
+            NULL AS user_attempt_ai_feedback,
+            NULL AS user_attempt_ai_score,
+            NULL AS user_attempt_text_content,
+            NULL AS user_attempt_extracted_text,
+            NULL AS user_attempt_transcript,
+            NULL AS user_attempt_audio_url,
+            rr.record_status AS user_attempt_answer_status,
+            NULL AS user_attempt_ai_status,
+            DATE_FORMAT(rr.created_time, '%Y-%m-%d %H:%i:%s') AS user_attempt_created_time
         FROM reading_record rr
-                 INNER JOIN reading_test rt
-                            ON rt.id = rr.test_id
-                                AND rt.is_deleted = 0
-                 INNER JOIN reading_passage rp
-                            ON rp.test_id = rt.id
-                                AND rp.is_deleted = 0
-                 INNER JOIN reading_question rq
-                            ON rq.passage_id = rp.id
-                                AND rq.id = #{questionId}
-                                AND rq.is_deleted = 0
+                 JOIN reading_passage rp
+                      ON rp.test_id = rr.test_id
+                          AND rp.is_deleted = 0
+                 JOIN reading_test rt
+                      ON rt.id = rr.test_id
+                          AND rt.is_deleted = 0
+                 JOIN reading_question rq
+                      ON rq.id = #{questionId}
+                          AND rq.passage_id = rp.id
+                          AND rq.is_deleted = 0
+                 LEFT JOIN reading_part_group rpg
+                           ON rpg.id = rq.part_group_id
+                               AND rpg.is_deleted = 0
                  LEFT JOIN reading_answer_record rar
                            ON rar.record_id = rr.id
                                AND rar.question_id = rq.id
-        WHERE rr.id = #{recordId}
-          AND rr.user_id = #{userId}
+        WHERE rr.user_id = #{userId}
+          AND rr.id = #{recordId}
           AND rr.is_deleted = 0
         LIMIT 1
     </select>
 
-    <select id="selectWritingContext" resultMap="WRITING_CONTEXT_RESULT_MAP">
+    <select id="selectWritingContext" resultMap="ModuleLearningContextResultMap">
         SELECT
             'writing' AS module,
+            NULL AS ask_scene,
+
+            NULL AS test_id,
+            NULL AS passage_id,
 
             'writing' AS question_module,
             'question' AS question_object_type,
             wq.id AS question_id,
+            NULL AS question_test_id,
+            NULL AS question_passage_id,
             wq.id AS question_question_id,
+            NULL AS question_record_id,
+            COALESCE(wq.title, CONCAT('Writing ', wq.task_type)) AS question_title,
+            NULL AS question_test_title,
+            NULL AS question_passage_title,
+            wq.description AS question_content,
+            wq.description AS question_passage_content,
+            COALESCE(wq.title, wq.description) AS question_question_text,
+            NULL AS question_correct_answer,
+            NULL AS question_explanation,
+            NULL AS question_question_number,
+            wq.task_type AS question_question_type,
+            'ESSAY' AS question_answer_mode,
+            NULL AS question_options_json,
+            NULL AS question_accepted_answers_json,
+            NULL AS question_cue_card,
+            NULL AS question_transcript_text,
+            NULL AS question_audio_url,
+            NULL AS question_audio_object_key,
+            COALESCE(
+                    (
+                        SELECT bir.file_url
+                        FROM biz_image_resource bir
+                        WHERE bir.target_type = 'WRITING_QUESTION'
+                          AND bir.target_id = wq.id
+                          AND bir.is_deleted = 0
+                        ORDER BY bir.sort_order ASC, bir.id ASC
+                        LIMIT 1
+                    ),
+                    wq.image_url
+            ) AS question_image_url,
             wq.task_type AS question_task_type,
-            wq.title AS question_title,
-            wq.description AS question_question_text,
-            wq.image_url AS question_image_url,
 
-            'writing' AS attempt_module,
-            wr.user_id AS attempt_user_id,
-            wr.id AS attempt_record_id,
-            wr.question_id AS attempt_question_id,
-            wr.text_content AS attempt_text_content,
-            wr.extracted_text AS attempt_extracted_text,
-            COALESCE(wr.text_content, wr.extracted_text) AS attempt_user_answer,
-            wr.ai_feedback AS attempt_ai_feedback,
-            wr.ai_score AS attempt_ai_score,
-            wr.ai_status AS attempt_ai_status,
-            DATE_FORMAT(wr.created_time, '%Y-%m-%d %H:%i:%s') AS attempt_created_time
+            'writing' AS user_attempt_module,
+            wr.user_id AS user_attempt_user_id,
+            wr.id AS user_attempt_record_id,
+            NULL AS user_attempt_test_id,
+            NULL AS user_attempt_passage_id,
+            wr.question_id AS user_attempt_question_id,
+            NULL AS user_attempt_session_id,
+            NULL AS user_attempt_user_answer,
+            NULL AS user_attempt_correct,
+            wr.ai_score AS user_attempt_score,
+            wr.ai_score AS user_attempt_total_score,
+            NULL AS user_attempt_feedback,
+            wr.ai_feedback AS user_attempt_ai_feedback,
+            wr.ai_score AS user_attempt_ai_score,
+            wr.text_content AS user_attempt_text_content,
+            wr.extracted_text AS user_attempt_extracted_text,
+            NULL AS user_attempt_transcript,
+            NULL AS user_attempt_audio_url,
+            wr.input_type AS user_attempt_answer_status,
+            wr.ai_status AS user_attempt_ai_status,
+            DATE_FORMAT(wr.created_time, '%Y-%m-%d %H:%i:%s') AS user_attempt_created_time
         FROM writing_record wr
-                 INNER JOIN writing_question wq
-                            ON wq.id = wr.question_id
-                                AND wq.is_deleted = 0
-        WHERE wr.id = #{recordId}
-          AND wr.user_id = #{userId}
+                 JOIN writing_question wq
+                      ON wq.id = wr.question_id
+                          AND wq.is_deleted = 0
+        WHERE wr.user_id = #{userId}
+          AND wr.id = #{recordId}
           AND wr.is_deleted = 0
         LIMIT 1
     </select>
 
-    <select id="selectSpeakingContext" resultMap="SPEAKING_CONTEXT_RESULT_MAP">
+    <select id="selectSpeakingContext" resultMap="ModuleLearningContextResultMap">
         SELECT
             'speaking' AS module,
+            NULL AS ask_scene,
+
+            NULL AS test_id,
+            NULL AS passage_id,
 
             'speaking' AS question_module,
             'question' AS question_object_type,
             sq.id AS question_id,
+            NULL AS question_test_id,
+            NULL AS question_passage_id,
             sq.id AS question_question_id,
-            sq.sub_type AS question_question_type,
-            sq.topic_key AS question_title,
+            NULL AS question_record_id,
+            COALESCE(sq.topic_key, CONCAT(sq.part, ' ', sq.sub_type)) AS question_title,
+            NULL AS question_test_title,
+            NULL AS question_passage_title,
+            sq.cue_card AS question_content,
+            sq.cue_card AS question_passage_content,
             sq.question_text AS question_question_text,
-            sq.cue_card AS question_cue_card,
+            NULL AS question_correct_answer,
+            NULL AS question_explanation,
             sq.display_order AS question_question_number,
+            sq.sub_type AS question_question_type,
+            'SPEECH' AS question_answer_mode,
+            NULL AS question_options_json,
+            NULL AS question_accepted_answers_json,
+            sq.cue_card AS question_cue_card,
+            NULL AS question_transcript_text,
+            NULL AS question_audio_url,
+            NULL AS question_audio_object_key,
+            NULL AS question_image_url,
+            sq.part AS question_task_type,
 
-            'speaking' AS attempt_module,
-            sr.user_id AS attempt_user_id,
-            sr.id AS attempt_record_id,
-            sr.session_id AS attempt_session_id,
-            sr.question_id AS attempt_question_id,
-            sr.audio_url AS attempt_audio_url,
-            sr.transcript AS attempt_transcript,
-            sr.transcript AS attempt_user_answer,
-            sr.feedback AS attempt_feedback,
-            sr.feedback AS attempt_ai_feedback,
-            sr.overall_score AS attempt_ai_score,
-            sr.answer_status AS attempt_answer_status,
-            sr.ai_status AS attempt_ai_status,
-            DATE_FORMAT(sr.created_time, '%Y-%m-%d %H:%i:%s') AS attempt_created_time
+            'speaking' AS user_attempt_module,
+            sr.user_id AS user_attempt_user_id,
+            sr.id AS user_attempt_record_id,
+            NULL AS user_attempt_test_id,
+            NULL AS user_attempt_passage_id,
+            sr.question_id AS user_attempt_question_id,
+            sr.session_id AS user_attempt_session_id,
+            NULL AS user_attempt_user_answer,
+            NULL AS user_attempt_correct,
+            sr.overall_score AS user_attempt_score,
+            sr.overall_score AS user_attempt_total_score,
+            sr.feedback AS user_attempt_feedback,
+            NULL AS user_attempt_ai_feedback,
+            sr.overall_score AS user_attempt_ai_score,
+            NULL AS user_attempt_text_content,
+            NULL AS user_attempt_extracted_text,
+            sr.transcript AS user_attempt_transcript,
+            sr.audio_url AS user_attempt_audio_url,
+            sr.answer_status AS user_attempt_answer_status,
+            sr.ai_status AS user_attempt_ai_status,
+            DATE_FORMAT(sr.created_time, '%Y-%m-%d %H:%i:%s') AS user_attempt_created_time
         FROM speaking_record sr
-                 INNER JOIN speaking_question sq
-                            ON sq.id = sr.question_id
-                                AND sq.is_deleted = 0
-        WHERE sr.id = #{recordId}
-          AND sr.user_id = #{userId}
+                 JOIN speaking_question sq
+                      ON sq.id = sr.question_id
+                          AND sq.is_deleted = 0
+                          AND sq.active = 1
+        WHERE sr.user_id = #{userId}
+          AND sr.id = #{recordId}
           AND sr.is_deleted = 0
         LIMIT 1
     </select>

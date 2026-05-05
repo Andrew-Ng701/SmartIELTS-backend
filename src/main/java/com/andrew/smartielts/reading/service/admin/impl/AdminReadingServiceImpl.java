@@ -1,14 +1,12 @@
 package com.andrew.smartielts.reading.service.admin.impl;
 
 import com.andrew.smartielts.common.constants.RecordQueryValidator;
-import com.andrew.smartielts.common.domain.dto.BizImageResourceDTO;
-import com.andrew.smartielts.common.domain.pojo.BizImageResource;
+import com.andrew.smartielts.common.image.domain.dto.BizImageResourceDTO;
+import com.andrew.smartielts.common.image.domain.pojo.BizImageResource;
 import com.andrew.smartielts.common.domain.pojo.QuestionAnswerRule;
 import com.andrew.smartielts.common.domain.pojo.TestPartGroup;
-import com.andrew.smartielts.common.domain.pojo.TestTimerConfig;
 import com.andrew.smartielts.common.page.PageResult;
-import com.andrew.smartielts.common.service.BizImageResourceService;
-import com.andrew.smartielts.common.storage.BucketType;
+import com.andrew.smartielts.common.image.service.BizImageResourceService;
 import com.andrew.smartielts.reading.domain.dto.ReadingPassageDTO;
 import com.andrew.smartielts.reading.domain.dto.ReadingQuestionDTO;
 import com.andrew.smartielts.reading.domain.dto.ReadingTestDTO;
@@ -33,7 +31,6 @@ import com.andrew.smartielts.reading.mapper.ReadingTestMapper;
 import com.andrew.smartielts.reading.service.admin.AdminReadingService;
 import com.andrew.smartielts.reading.service.admin.ReadingPartGroupService;
 import com.andrew.smartielts.reading.service.admin.ReadingQuestionAnswerRuleService;
-import com.andrew.smartielts.reading.service.admin.ReadingTestTimerService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
@@ -50,42 +47,47 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.andrew.smartielts.common.constants.StorageBizConstants.*;
 import static com.andrew.smartielts.reading.constant.ReadingQuestionConstants.normalize_question_type;
 import static com.andrew.smartielts.reading.constant.ReadingQuestionConstants.resolve_answer_mode_by_question_type;
 
 @Service
 public class AdminReadingServiceImpl implements AdminReadingService {
 
-    private final ReadingTestMapper reading_test_mapper;
-    private final ReadingPassageMapper reading_passage_mapper;
-    private final ReadingQuestionMapper reading_question_mapper;
-    private final ReadingRecordMapper reading_record_mapper;
-    private final ReadingAnswerRecordMapper reading_answer_record_mapper;
-    private final ReadingTestTimerService reading_test_timer_service;
-    private final ReadingPartGroupService reading_part_group_service;
-    private final ReadingQuestionAnswerRuleService reading_question_answer_rule_service;
-    private final BizImageResourceService biz_image_resource_service;
-    private final ObjectMapper object_mapper = new ObjectMapper();
+    private static final String TARGET_TYPE_READING_PART_GROUP = "READING_PART_GROUP";
+    private static final String BUCKET_TYPE_QUESTION_GROUP_IMAGE = "QUESTION_GROUP_IMAGE";
+    private static final String BIZ_PATH_QUESTION_GROUP_IMAGE = "question_group_image";
 
-    public AdminReadingServiceImpl(ReadingTestMapper reading_test_mapper,
-                                   ReadingPassageMapper reading_passage_mapper,
-                                   ReadingQuestionMapper reading_question_mapper,
-                                   ReadingRecordMapper reading_record_mapper,
-                                   ReadingAnswerRecordMapper reading_answer_record_mapper,
-                                   ReadingTestTimerService reading_test_timer_service,
-                                   ReadingPartGroupService reading_part_group_service,
-                                   ReadingQuestionAnswerRuleService reading_question_answer_rule_service,
-                                   BizImageResourceService biz_image_resource_service) {
-        this.reading_test_mapper = reading_test_mapper;
-        this.reading_passage_mapper = reading_passage_mapper;
-        this.reading_question_mapper = reading_question_mapper;
-        this.reading_record_mapper = reading_record_mapper;
-        this.reading_answer_record_mapper = reading_answer_record_mapper;
-        this.reading_test_timer_service = reading_test_timer_service;
-        this.reading_part_group_service = reading_part_group_service;
-        this.reading_question_answer_rule_service = reading_question_answer_rule_service;
-        this.biz_image_resource_service = biz_image_resource_service;
+    private static final String TIMER_MODE_TEST_LEVEL = "test_level";
+    private static final int DEFAULT_TOTAL_SECONDS = 3600;
+    private static final int DEFAULT_AUTO_SUBMIT = 1;
+    private static final int DEFAULT_ALLOW_PAUSE = 0;
+
+    private final ReadingTestMapper readingTestMapper;
+    private final ReadingPassageMapper readingPassageMapper;
+    private final ReadingQuestionMapper readingQuestionMapper;
+    private final ReadingRecordMapper readingRecordMapper;
+    private final ReadingAnswerRecordMapper readingAnswerRecordMapper;
+    private final ReadingPartGroupService readingPartGroupService;
+    private final ReadingQuestionAnswerRuleService readingQuestionAnswerRuleService;
+    private final BizImageResourceService bizImageResourceService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public AdminReadingServiceImpl(ReadingTestMapper readingTestMapper,
+                                   ReadingPassageMapper readingPassageMapper,
+                                   ReadingQuestionMapper readingQuestionMapper,
+                                   ReadingRecordMapper readingRecordMapper,
+                                   ReadingAnswerRecordMapper readingAnswerRecordMapper,
+                                   ReadingPartGroupService readingPartGroupService,
+                                   ReadingQuestionAnswerRuleService readingQuestionAnswerRuleService,
+                                   BizImageResourceService bizImageResourceService) {
+        this.readingTestMapper = readingTestMapper;
+        this.readingPassageMapper = readingPassageMapper;
+        this.readingQuestionMapper = readingQuestionMapper;
+        this.readingRecordMapper = readingRecordMapper;
+        this.readingAnswerRecordMapper = readingAnswerRecordMapper;
+        this.readingPartGroupService = readingPartGroupService;
+        this.readingQuestionAnswerRuleService = readingQuestionAnswerRuleService;
+        this.bizImageResourceService = bizImageResourceService;
     }
 
     @Override
@@ -95,66 +97,59 @@ public class AdminReadingServiceImpl implements AdminReadingService {
             throw new RuntimeException("Request body is required");
         }
 
+        LocalDateTime now = LocalDateTime.now();
+
         ReadingTest test = new ReadingTest();
-        test.setTitle(trim_to_null(dto.getTitle()));
+        test.setTitle(trimToNull(dto.getTitle()));
         test.setTotalScore(dto.getTotalScore());
-        test.setCreatedTime(LocalDateTime.now());
+        test.setCreatedTime(now);
+        test.setUpdatedTime(now);
         test.setIsDeleted(0);
-        reading_test_mapper.insertReadingTest(test);
+        applyTimerSettings(test, dto);
 
-        TestTimerConfig timer_config = dto.getTimerConfig() == null ? new TestTimerConfig() : dto.getTimerConfig();
-        timer_config.setTestId(test.getId());
-        if (trim_to_null(timer_config.getTimerMode()) == null) {
-            timer_config.setTimerMode("NONE");
-        }
-        if (timer_config.getAutoSubmit() == null) {
-            timer_config.setAutoSubmit(1);
-        }
-        if (timer_config.getAllowPause() == null) {
-            timer_config.setAllowPause(0);
-        }
-        reading_test_timer_service.saveOrUpdateTestTimerConfig(timer_config);
+        readingTestMapper.insertReadingTest(test);
 
-        sync_reading_part_groups(test.getId(), dto.getPartGroups());
-
-        test.setTimerConfig(reading_test_timer_service.getByTestId(test.getId()));
-        test.setPartGroups(reading_part_group_service.listAnyByTestId(test.getId()));
-        attach_group_images(test.getPartGroups());
+        syncReadingPartGroups(test.getId(), dto.getPartGroups());
+        test.setPartGroups(readingPartGroupService.listAnyByTestId(test.getId()));
+        attachGroupImages(test.getPartGroups());
         return test;
     }
 
     @Override
     public List<ReadingTest> listTests() {
-        return reading_test_mapper.findAllActive();
+        return readingTestMapper.findAllActive();
     }
 
     @Override
-    public ReadingTestDetailVO getTestDetail(Long test_id) {
-        ReadingTest test = reading_test_mapper.findAnyById(test_id);
+    public ReadingTestDetailVO getTestDetail(Long testId) {
+        ReadingTest test = readingTestMapper.findAnyById(testId);
         if (test == null) {
             throw new RuntimeException("Reading test not found");
         }
 
-        List<TestPartGroup> part_groups = reading_part_group_service.listAnyByTestId(test_id);
-        attach_group_images(part_groups);
+        List<TestPartGroup> partGroups = readingPartGroupService.listAnyByTestId(testId);
+        attachGroupImages(partGroups);
 
-        List<ReadingPassage> passages = reading_passage_mapper.findAnyByTestId(test_id);
-        List<ReadingPassageVO> passage_vo_list = build_passage_vo_list(passages, false);
+        List<ReadingPassage> passages = readingPassageMapper.findAnyByTestId(testId);
+        List<ReadingPassageVO> passageVoList = buildPassageVoList(passages, false);
 
-        ReadingTestDetailVO detail_vo = new ReadingTestDetailVO();
-        detail_vo.setId(test.getId());
-        detail_vo.setTitle(test.getTitle());
-        detail_vo.setTotalScore(test.getTotalScore());
-        detail_vo.setTimerConfig(reading_test_timer_service.getByTestId(test_id));
-        detail_vo.setPartGroups(part_groups);
-        detail_vo.setPassages(passage_vo_list);
-        return detail_vo;
+        ReadingTestDetailVO detailVo = new ReadingTestDetailVO();
+        detailVo.setId(test.getId());
+        detailVo.setTitle(test.getTitle());
+        detailVo.setTotalScore(test.getTotalScore());
+        detailVo.setTimerMode(normalizeTimerMode(test.getTimerMode()));
+        detailVo.setTotalSeconds(resolveReadingTimeLimitSeconds(test));
+        detailVo.setAutoSubmit(defaultFlag(test.getAutoSubmit(), DEFAULT_AUTO_SUBMIT));
+        detailVo.setAllowPause(defaultFlag(test.getAllowPause(), DEFAULT_ALLOW_PAUSE));
+        detailVo.setPartGroups(partGroups);
+        detailVo.setPassages(passageVoList);
+        return detailVo;
     }
 
     @Override
     @Transactional
     public ReadingTest updateTest(Long id, ReadingTestDTO dto) {
-        ReadingTest test = reading_test_mapper.findActiveById(id);
+        ReadingTest test = readingTestMapper.findActiveById(id);
         if (test == null) {
             throw new RuntimeException("Reading test not found");
         }
@@ -162,84 +157,69 @@ public class AdminReadingServiceImpl implements AdminReadingService {
             throw new RuntimeException("Request body is required");
         }
 
-        test.setTitle(trim_to_null(dto.getTitle()));
+        test.setTitle(trimToNull(dto.getTitle()));
         test.setTotalScore(dto.getTotalScore());
-        reading_test_mapper.updateReadingTest(test);
+        test.setUpdatedTime(LocalDateTime.now());
+        applyTimerSettings(test, dto);
 
-        if (dto.getTimerConfig() != null) {
-            TestTimerConfig timer_config = dto.getTimerConfig();
-            timer_config.setTestId(id);
-            if (trim_to_null(timer_config.getTimerMode()) == null) {
-                timer_config.setTimerMode("NONE");
-            }
-            if (timer_config.getAutoSubmit() == null) {
-                timer_config.setAutoSubmit(1);
-            }
-            if (timer_config.getAllowPause() == null) {
-                timer_config.setAllowPause(0);
-            }
-            reading_test_timer_service.saveOrUpdateTestTimerConfig(timer_config);
-        }
+        readingTestMapper.updateReadingTest(test);
 
-        sync_reading_part_groups(id, dto.getPartGroups());
-
-        test.setTimerConfig(reading_test_timer_service.getByTestId(id));
-        test.setPartGroups(reading_part_group_service.listAnyByTestId(id));
-        attach_group_images(test.getPartGroups());
+        syncReadingPartGroups(id, dto.getPartGroups());
+        test.setPartGroups(readingPartGroupService.listAnyByTestId(id));
+        attachGroupImages(test.getPartGroups());
         return test;
     }
 
     @Override
     @Transactional
     public void deleteTest(Long id) {
-        ReadingTest test = reading_test_mapper.findActiveById(id);
+        ReadingTest test = readingTestMapper.findActiveById(id);
         if (test == null) {
             throw new RuntimeException("Reading test not found");
         }
 
-        List<ReadingPassage> passages = reading_passage_mapper.findAnyByTestId(id);
+        List<ReadingPassage> passages = readingPassageMapper.findAnyByTestId(id);
         if (passages != null) {
             for (ReadingPassage passage : passages) {
                 if (passage == null || passage.getId() == null) {
                     continue;
                 }
-                reading_question_mapper.softDeleteByPassageId(passage.getId());
+                readingQuestionMapper.softDeleteByPassageId(passage.getId());
             }
         }
 
-        reading_passage_mapper.softDeleteByTestId(id);
-        reading_part_group_service.deleteByTestId(id);
-        reading_test_timer_service.deleteByTestId(id);
-        reading_test_mapper.softDeleteById(id);
+        readingPassageMapper.softDeleteByTestId(id);
+        readingPartGroupService.deleteByTestId(id);
+        readingTestMapper.softDeleteById(id);
     }
 
     @Override
     @Transactional
     public void restoreTest(Long id) {
-        ReadingTest test = reading_test_mapper.findAnyById(id);
+        ReadingTest test = readingTestMapper.findAnyById(id);
         if (test == null) {
             throw new RuntimeException("Reading test not found");
         }
 
-        reading_test_mapper.restoreById(id);
-        reading_part_group_service.restoreByTestId(id);
-        reading_passage_mapper.restoreByTestId(id);
+        readingTestMapper.restoreById(id);
+        readingPartGroupService.restoreByTestId(id);
+        readingPassageMapper.restoreByTestId(id);
 
-        List<ReadingPassage> passages = reading_passage_mapper.findAnyByTestId(id);
+        List<ReadingPassage> passages = readingPassageMapper.findAnyByTestId(id);
         if (passages != null) {
             for (ReadingPassage passage : passages) {
                 if (passage == null || passage.getId() == null) {
                     continue;
                 }
-                reading_question_mapper.restoreByPassageId(passage.getId());
+                readingQuestionMapper.restoreByPassageId(passage.getId());
             }
         }
     }
 
     @Override
     @Transactional
-    public void createPassage(Long test_id, ReadingPassageDTO dto) {
-        ReadingTest test = reading_test_mapper.findActiveById(test_id);
+    public void createPassage(Long testId, ReadingPassageDTO dto) {
+        ReadingTest test = readingTestMapper.findActiveById(testId);
         if (test == null) {
             throw new RuntimeException("Reading test not found");
         }
@@ -247,24 +227,25 @@ public class AdminReadingServiceImpl implements AdminReadingService {
             throw new RuntimeException("Request body is required");
         }
 
-        validate_reading_part_group(test_id, dto.getPartGroupId());
+        validateReadingPartGroup(testId, dto.getPartGroupId());
 
         ReadingPassage passage = new ReadingPassage();
-        passage.setTestId(test_id);
+        passage.setTestId(testId);
         passage.setPartGroupId(dto.getPartGroupId());
         passage.setPassageNo(dto.getPassageNo());
-        passage.setTitle(trim_to_null(dto.getTitle()));
-        passage.setContent(trim_to_null(dto.getContent()));
-        passage.setMaterialType(trim_to_null(dto.getMaterialType()));
+        passage.setTitle(trimToNull(dto.getTitle()));
+        passage.setContent(trimToNull(dto.getContent()));
+        passage.setMaterialType(trimToNull(dto.getMaterialType()));
         passage.setDisplayOrder(dto.getDisplayOrder() == null ? 0 : dto.getDisplayOrder());
         passage.setIsDeleted(0);
-        reading_passage_mapper.insertReadingPassage(passage);
+
+        readingPassageMapper.insertReadingPassage(passage);
     }
 
     @Override
     @Transactional
-    public void updatePassage(Long passage_id, ReadingPassageDTO dto) {
-        ReadingPassage passage = reading_passage_mapper.findActiveById(passage_id);
+    public void updatePassage(Long passageId, ReadingPassageDTO dto) {
+        ReadingPassage passage = readingPassageMapper.findActiveById(passageId);
         if (passage == null) {
             throw new RuntimeException("Reading passage not found");
         }
@@ -272,45 +253,46 @@ public class AdminReadingServiceImpl implements AdminReadingService {
             throw new RuntimeException("Request body is required");
         }
 
-        validate_reading_part_group(passage.getTestId(), dto.getPartGroupId());
+        validateReadingPartGroup(passage.getTestId(), dto.getPartGroupId());
 
         passage.setPartGroupId(dto.getPartGroupId());
         passage.setPassageNo(dto.getPassageNo());
-        passage.setTitle(trim_to_null(dto.getTitle()));
-        passage.setContent(trim_to_null(dto.getContent()));
-        passage.setMaterialType(trim_to_null(dto.getMaterialType()));
+        passage.setTitle(trimToNull(dto.getTitle()));
+        passage.setContent(trimToNull(dto.getContent()));
+        passage.setMaterialType(trimToNull(dto.getMaterialType()));
         passage.setDisplayOrder(dto.getDisplayOrder() == null ? 0 : dto.getDisplayOrder());
-        reading_passage_mapper.updateReadingPassage(passage);
+
+        readingPassageMapper.updateReadingPassage(passage);
     }
 
     @Override
     @Transactional
-    public void deletePassage(Long passage_id) {
-        ReadingPassage passage = reading_passage_mapper.findActiveById(passage_id);
+    public void deletePassage(Long passageId) {
+        ReadingPassage passage = readingPassageMapper.findActiveById(passageId);
         if (passage == null) {
             throw new RuntimeException("Reading passage not found");
         }
 
-        reading_question_mapper.softDeleteByPassageId(passage_id);
-        reading_passage_mapper.softDeleteById(passage_id);
+        readingQuestionMapper.softDeleteByPassageId(passageId);
+        readingPassageMapper.softDeleteById(passageId);
     }
 
     @Override
     @Transactional
-    public void restorePassage(Long passage_id) {
-        ReadingPassage passage = reading_passage_mapper.findAnyById(passage_id);
+    public void restorePassage(Long passageId) {
+        ReadingPassage passage = readingPassageMapper.findAnyById(passageId);
         if (passage == null) {
             throw new RuntimeException("Reading passage not found");
         }
 
-        reading_passage_mapper.restoreById(passage_id);
-        reading_question_mapper.restoreByPassageId(passage_id);
+        readingPassageMapper.restoreById(passageId);
+        readingQuestionMapper.restoreByPassageId(passageId);
     }
 
     @Override
     @Transactional
-    public void createQuestion(Long passage_id, ReadingQuestionDTO dto) {
-        ReadingPassage passage = reading_passage_mapper.findActiveById(passage_id);
+    public void createQuestion(Long passageId, ReadingQuestionDTO dto) {
+        ReadingPassage passage = readingPassageMapper.findActiveById(passageId);
         if (passage == null) {
             throw new RuntimeException("Reading passage not found");
         }
@@ -318,43 +300,45 @@ public class AdminReadingServiceImpl implements AdminReadingService {
             throw new RuntimeException("Request body is required");
         }
 
-        Long part_group_id = dto.getPartGroupId() != null ? dto.getPartGroupId() : passage.getPartGroupId();
-        validate_reading_part_group(passage.getTestId(), part_group_id);
+        Long partGroupId = dto.getPartGroupId() != null ? dto.getPartGroupId() : passage.getPartGroupId();
+        validateReadingPartGroup(passage.getTestId(), partGroupId);
 
-        String question_type = normalize_question_type(dto.getQuestionType());
-        String answer_mode = resolve_answer_mode_by_question_type(question_type, dto.getAnswerMode());
+        String questionType = normalize_question_type(dto.getQuestionType());
+        String answerMode = resolve_answer_mode_by_question_type(questionType, dto.getAnswerMode());
 
         ReadingQuestion question = new ReadingQuestion();
-        question.setPassageId(passage_id);
-        question.setPartGroupId(part_group_id);
+        question.setPassageId(passageId);
+        question.setPartGroupId(partGroupId);
         question.setQuestionNumber(dto.getQuestionNumber());
-        question.setQuestionType(question_type);
-        question.setAnswerMode(answer_mode);
-        question.setQuestionText(trim_to_null(dto.getQuestionText()));
-        question.setCorrectAnswer(trim_to_null(dto.getCorrectAnswer()));
-        question.setOptionsJson(trim_to_null(dto.getOptionsJson()));
-        question.setAcceptedAnswersJson(trim_to_null(dto.getAcceptedAnswersJson()));
-        question.setGroupLabel(trim_to_null(dto.getGroupLabel()));
-        question.setCaseInsensitive(default_flag(dto.getCaseInsensitive(), 1));
-        question.setIgnoreWhitespace(default_flag(dto.getIgnoreWhitespace(), 1));
-        question.setIgnorePunctuation(default_flag(dto.getIgnorePunctuation(), 1));
+        question.setQuestionType(questionType);
+        question.setAnswerMode(answerMode);
+        question.setQuestionText(trimToNull(dto.getQuestionText()));
+        question.setCorrectAnswer(trimToNull(dto.getCorrectAnswer()));
+        question.setOptionsJson(trimToNull(dto.getOptionsJson()));
+        question.setAcceptedAnswersJson(trimToNull(dto.getAcceptedAnswersJson()));
+        question.setGroupLabel(trimToNull(dto.getGroupLabel()));
+        question.setCaseInsensitive(defaultFlag(dto.getCaseInsensitive(), 1));
+        question.setIgnoreWhitespace(defaultFlag(dto.getIgnoreWhitespace(), 1));
+        question.setIgnorePunctuation(defaultFlag(dto.getIgnorePunctuation(), 1));
         question.setDisplayOrder(dto.getDisplayOrder() == null ? 0 : dto.getDisplayOrder());
         question.setScore(dto.getScore() == null ? 1 : dto.getScore());
         question.setIsDeleted(0);
-        reading_question_mapper.insertReadingQuestion(question);
+
+        readingQuestionMapper.insertReadingQuestion(question);
 
         if (dto.getAnswerRules() != null) {
-            reading_question_answer_rule_service.replaceByQuestionId(question.getId(), dto.getAnswerRules());
+            readingQuestionAnswerRuleService.replaceByQuestionId(question.getId(), dto.getAnswerRules());
         }
-        if (part_group_id != null && has_group_images(dto.getGroupImages())) {
-            replace_reading_part_group_images(part_group_id, dto.getGroupImages());
+
+        if (partGroupId != null && hasGroupImages(dto.getGroupImages())) {
+            replaceReadingPartGroupImages(partGroupId, dto.getGroupImages());
         }
     }
 
     @Override
     @Transactional
-    public void updateQuestion(Long question_id, ReadingQuestionDTO dto) {
-        ReadingQuestion question = reading_question_mapper.findActiveById(question_id);
+    public void updateQuestion(Long questionId, ReadingQuestionDTO dto) {
+        ReadingQuestion question = readingQuestionMapper.findActiveById(questionId);
         if (question == null) {
             throw new RuntimeException("Reading question not found");
         }
@@ -362,141 +346,145 @@ public class AdminReadingServiceImpl implements AdminReadingService {
             throw new RuntimeException("Request body is required");
         }
 
-        ReadingPassage passage = reading_passage_mapper.findActiveById(question.getPassageId());
+        ReadingPassage passage = readingPassageMapper.findActiveById(question.getPassageId());
         if (passage == null) {
             throw new RuntimeException("Reading passage not found");
         }
 
-        Long part_group_id = dto.getPartGroupId() != null ? dto.getPartGroupId() : passage.getPartGroupId();
-        validate_reading_part_group(passage.getTestId(), part_group_id);
+        Long partGroupId = dto.getPartGroupId() != null ? dto.getPartGroupId() : passage.getPartGroupId();
+        validateReadingPartGroup(passage.getTestId(), partGroupId);
 
-        String question_type = normalize_question_type(dto.getQuestionType());
-        String answer_mode = resolve_answer_mode_by_question_type(question_type, dto.getAnswerMode());
+        String questionType = normalize_question_type(dto.getQuestionType());
+        String answerMode = resolve_answer_mode_by_question_type(questionType, dto.getAnswerMode());
 
-        question.setPartGroupId(part_group_id);
+        question.setPartGroupId(partGroupId);
         question.setQuestionNumber(dto.getQuestionNumber());
-        question.setQuestionType(question_type);
-        question.setAnswerMode(answer_mode);
-        question.setQuestionText(trim_to_null(dto.getQuestionText()));
-        question.setCorrectAnswer(trim_to_null(dto.getCorrectAnswer()));
-        question.setOptionsJson(trim_to_null(dto.getOptionsJson()));
-        question.setAcceptedAnswersJson(trim_to_null(dto.getAcceptedAnswersJson()));
-        question.setGroupLabel(trim_to_null(dto.getGroupLabel()));
-        question.setCaseInsensitive(default_flag(dto.getCaseInsensitive(), 1));
-        question.setIgnoreWhitespace(default_flag(dto.getIgnoreWhitespace(), 1));
-        question.setIgnorePunctuation(default_flag(dto.getIgnorePunctuation(), 1));
+        question.setQuestionType(questionType);
+        question.setAnswerMode(answerMode);
+        question.setQuestionText(trimToNull(dto.getQuestionText()));
+        question.setCorrectAnswer(trimToNull(dto.getCorrectAnswer()));
+        question.setOptionsJson(trimToNull(dto.getOptionsJson()));
+        question.setAcceptedAnswersJson(trimToNull(dto.getAcceptedAnswersJson()));
+        question.setGroupLabel(trimToNull(dto.getGroupLabel()));
+        question.setCaseInsensitive(defaultFlag(dto.getCaseInsensitive(), 1));
+        question.setIgnoreWhitespace(defaultFlag(dto.getIgnoreWhitespace(), 1));
+        question.setIgnorePunctuation(defaultFlag(dto.getIgnorePunctuation(), 1));
         question.setDisplayOrder(dto.getDisplayOrder() == null ? 0 : dto.getDisplayOrder());
         question.setScore(dto.getScore() == null ? 1 : dto.getScore());
-        reading_question_mapper.updateReadingQuestion(question);
+
+        readingQuestionMapper.updateReadingQuestion(question);
 
         if (dto.getAnswerRules() != null) {
-            reading_question_answer_rule_service.replaceByQuestionId(question_id, dto.getAnswerRules());
+            readingQuestionAnswerRuleService.replaceByQuestionId(questionId, dto.getAnswerRules());
         }
-        if (part_group_id != null && dto.getGroupImages() != null) {
-            replace_reading_part_group_images(part_group_id, dto.getGroupImages());
+
+        if (partGroupId != null && dto.getGroupImages() != null) {
+            replaceReadingPartGroupImages(partGroupId, dto.getGroupImages());
         }
     }
 
     @Override
     @Transactional
-    public void deleteQuestion(Long question_id) {
-        ReadingQuestion question = reading_question_mapper.findActiveById(question_id);
+    public void deleteQuestion(Long questionId) {
+        ReadingQuestion question = readingQuestionMapper.findActiveById(questionId);
         if (question == null) {
             throw new RuntimeException("Reading question not found");
         }
-        reading_question_mapper.softDeleteById(question_id);
+        readingQuestionMapper.softDeleteById(questionId);
     }
 
     @Override
     @Transactional
-    public void restoreQuestion(Long question_id) {
-        ReadingQuestion question = reading_question_mapper.findAnyById(question_id);
+    public void restoreQuestion(Long questionId) {
+        ReadingQuestion question = readingQuestionMapper.findAnyById(questionId);
         if (question == null) {
             throw new RuntimeException("Reading question not found");
         }
-        reading_question_mapper.restoreById(question_id);
+        readingQuestionMapper.restoreById(questionId);
     }
 
     @Override
     public PageResult<ReadingRecordVO> pageActiveRecords(AdminReadingRecordPageQuery query) {
-        AdminReadingRecordPageQuery safe_query = query == null ? new AdminReadingRecordPageQuery() : query;
+        AdminReadingRecordPageQuery safeQuery = query == null ? new AdminReadingRecordPageQuery() : query;
 
         RecordQueryValidator.validate(
-                safe_query.getPageNum(),
-                safe_query.getPageSize(),
-                safe_query.getUserId(),
-                safe_query.getTestId(),
-                safe_query.getMinScore(),
-                safe_query.getMaxScore(),
-                safe_query.getStartTime(),
-                safe_query.getEndTime()
+                safeQuery.getPageNum(),
+                safeQuery.getPageSize(),
+                safeQuery.getUserId(),
+                safeQuery.getTestId(),
+                safeQuery.getMinScore(),
+                safeQuery.getMaxScore(),
+                safeQuery.getStartTime(),
+                safeQuery.getEndTime()
         );
 
-        int page_num = normalize_page_num(safe_query.getPageNum());
-        int page_size = normalize_page_size(safe_query.getPageSize());
-        int offset = (page_num - 1) * page_size;
+        int pageNum = normalizePageNum(safeQuery.getPageNum());
+        int pageSize = normalizePageSize(safeQuery.getPageSize());
+        int offset = (pageNum - 1) * pageSize;
 
-        Long total = reading_record_mapper.countAdminActive(safe_query);
-        if (total == null || total <= 0L) {
-            return new PageResult<>(new ArrayList<>(), 0L, page_num, page_size);
+        Long total = readingRecordMapper.countAdminActive(safeQuery);
+        if (total == null || total == 0L) {
+            return new PageResult<>(new ArrayList<>(), 0L, pageNum, pageSize);
         }
 
-        List<ReadingRecord> records = reading_record_mapper.pageAdminActive(safe_query, offset, page_size);
-        List<ReadingRecordVO> vo_list = new ArrayList<>();
+        List<ReadingRecord> records = readingRecordMapper.pageAdminActive(safeQuery, offset, pageSize);
+        List<ReadingRecordVO> voList = new ArrayList<>();
+
         if (records != null) {
             for (ReadingRecord record : records) {
-                if (record == null) {
-                    continue;
+                if (record != null) {
+                    voList.add(toRecordVo(record));
                 }
-                vo_list.add(to_record_vo(record));
             }
         }
-        return new PageResult<>(vo_list, total, page_num, page_size);
+
+        return new PageResult<>(voList, total, pageNum, pageSize);
     }
 
     @Override
     public PageResult<ReadingRecordVO> pageDeletedRecords(AdminReadingDeletedRecordPageQuery query) {
-        AdminReadingDeletedRecordPageQuery safe_query = query == null ? new AdminReadingDeletedRecordPageQuery() : query;
+        AdminReadingDeletedRecordPageQuery safeQuery = query == null ? new AdminReadingDeletedRecordPageQuery() : query;
 
-        int page_num = normalize_page_num(safe_query.getPageNum());
-        int page_size = normalize_page_size(safe_query.getPageSize());
-        int offset = (page_num - 1) * page_size;
+        int pageNum = normalizePageNum(safeQuery.getPageNum());
+        int pageSize = normalizePageSize(safeQuery.getPageSize());
+        int offset = (pageNum - 1) * pageSize;
 
-        Long total = reading_record_mapper.countAdminDeleted(safe_query);
-        if (total == null || total <= 0L) {
-            return new PageResult<>(new ArrayList<>(), 0L, page_num, page_size);
+        Long total = readingRecordMapper.countAdminDeleted(safeQuery);
+        if (total == null || total == 0L) {
+            return new PageResult<>(new ArrayList<>(), 0L, pageNum, pageSize);
         }
 
-        List<ReadingRecord> records = reading_record_mapper.pageAdminDeleted(safe_query, offset, page_size);
-        List<ReadingRecordVO> vo_list = new ArrayList<>();
+        List<ReadingRecord> records = readingRecordMapper.pageAdminDeleted(safeQuery, offset, pageSize);
+        List<ReadingRecordVO> voList = new ArrayList<>();
+
         if (records != null) {
             for (ReadingRecord record : records) {
-                if (record == null) {
-                    continue;
+                if (record != null) {
+                    voList.add(toRecordVo(record));
                 }
-                vo_list.add(to_record_vo(record));
             }
         }
-        return new PageResult<>(vo_list, total, page_num, page_size);
+
+        return new PageResult<>(voList, total, pageNum, pageSize);
     }
 
     @Override
-    public ReadingRecordDetailVO getRecord(Long record_id) {
-        ReadingRecord record = reading_record_mapper.findAnyById(record_id);
+    public ReadingRecordDetailVO getRecord(Long recordId) {
+        ReadingRecord record = readingRecordMapper.findAnyById(recordId);
         if (record == null) {
             throw new RuntimeException("Reading record not found");
         }
 
-        ReadingTest test = reading_test_mapper.findAnyById(record.getTestId());
+        ReadingTest test = readingTestMapper.findAnyById(record.getTestId());
         if (test == null) {
             throw new RuntimeException("Reading test not found");
         }
 
-        List<ReadingPassage> passages = reading_passage_mapper.findAnyByTestId(test.getId());
-        List<ReadingAnswerRecord> answer_records = reading_answer_record_mapper.findByRecordId(record_id);
+        List<ReadingPassage> passages = readingPassageMapper.findAnyByTestId(test.getId());
+        List<ReadingAnswerRecord> answerRecords = readingAnswerRecordMapper.findByRecordId(recordId);
 
-        List<ReadingPassageVO> passage_vo_list = new ArrayList<>();
-        List<ReadingAnswerResultVO> answer_vo_list = new ArrayList<>();
+        List<ReadingPassageVO> passageVoList = new ArrayList<>();
+        List<ReadingAnswerResultVO> answerVoList = new ArrayList<>();
 
         if (passages != null) {
             for (ReadingPassage passage : passages) {
@@ -504,17 +492,17 @@ public class AdminReadingServiceImpl implements AdminReadingService {
                     continue;
                 }
 
-                ReadingPassageVO passage_vo = new ReadingPassageVO();
-                passage_vo.setId(passage.getId());
-                passage_vo.setPartGroupId(passage.getPartGroupId());
-                passage_vo.setPassageNo(passage.getPassageNo());
-                passage_vo.setTitle(passage.getTitle());
-                passage_vo.setContent(passage.getContent());
-                passage_vo.setMaterialType(passage.getMaterialType());
-                passage_vo.setDisplayOrder(passage.getDisplayOrder());
+                ReadingPassageVO passageVo = new ReadingPassageVO();
+                passageVo.setId(passage.getId());
+                passageVo.setPartGroupId(passage.getPartGroupId());
+                passageVo.setPassageNo(passage.getPassageNo());
+                passageVo.setTitle(passage.getTitle());
+                passageVo.setContent(passage.getContent());
+                passageVo.setMaterialType(passage.getMaterialType());
+                passageVo.setDisplayOrder(passage.getDisplayOrder());
 
-                List<ReadingQuestion> questions = reading_question_mapper.findAnyByPassageId(passage.getId());
-                List<ReadingQuestionVO> question_vo_list = new ArrayList<>();
+                List<ReadingQuestion> questions = readingQuestionMapper.findAnyByPassageId(passage.getId());
+                List<ReadingQuestionVO> questionVoList = new ArrayList<>();
 
                 if (questions != null) {
                     for (ReadingQuestion question : questions) {
@@ -522,87 +510,117 @@ public class AdminReadingServiceImpl implements AdminReadingService {
                             continue;
                         }
 
-                        question_vo_list.add(to_question_vo(question));
+                        questionVoList.add(toQuestionVo(question));
 
-                        ReadingAnswerRecord matched = find_matched_answer(answer_records, question.getId());
+                        ReadingAnswerRecord matched = findMatchedAnswer(answerRecords, question.getId());
 
-                        ReadingAnswerResultVO answer_vo = new ReadingAnswerResultVO();
-                        answer_vo.setQuestionId(question.getId());
-                        answer_vo.setQuestionType(question.getQuestionType());
-                        answer_vo.setAnswerMode(question.getAnswerMode());
-                        answer_vo.setQuestionText(question.getQuestionText());
-                        answer_vo.setOptionsJson(question.getOptionsJson());
-                        answer_vo.setCorrectAnswer(build_display_correct_answer(question));
+                        ReadingAnswerResultVO answerVo = new ReadingAnswerResultVO();
+                        answerVo.setQuestionId(question.getId());
+                        answerVo.setQuestionType(question.getQuestionType());
+                        answerVo.setAnswerMode(question.getAnswerMode());
+                        answerVo.setQuestionText(question.getQuestionText());
+                        answerVo.setOptionsJson(question.getOptionsJson());
+                        answerVo.setCorrectAnswer(buildDisplayCorrectAnswer(question));
 
                         if (matched != null) {
-                            answer_vo.setUserAnswer(matched.getUserAnswer());
-                            answer_vo.setIsCorrect(matched.getIsCorrect());
-                            answer_vo.setScore(matched.getScore());
+                            answerVo.setUserAnswer(matched.getUserAnswer());
+                            answerVo.setIsCorrect(matched.getIsCorrect());
+                            answerVo.setScore(matched.getScore());
                         } else {
-                            answer_vo.setUserAnswer(null);
-                            answer_vo.setIsCorrect(0);
-                            answer_vo.setScore(0);
+                            answerVo.setUserAnswer(null);
+                            answerVo.setIsCorrect(0);
+                            answerVo.setScore(0);
                         }
-                        answer_vo_list.add(answer_vo);
+                        answerVoList.add(answerVo);
                     }
                 }
 
-                question_vo_list.sort(Comparator
-                        .comparing(ReadingQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
-                        .thenComparing(ReadingQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo))
-                        .thenComparing(ReadingQuestionVO::getId, Comparator.nullsLast(Long::compareTo)));
+                questionVoList.sort(
+                        Comparator.comparing(ReadingQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                                .thenComparing(ReadingQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo))
+                                .thenComparing(ReadingQuestionVO::getId, Comparator.nullsLast(Long::compareTo))
+                );
 
-                passage_vo.setQuestions(question_vo_list);
-                passage_vo_list.add(passage_vo);
+                passageVo.setQuestions(questionVoList);
+                passageVoList.add(passageVo);
             }
         }
 
-        passage_vo_list.sort(Comparator
-                .comparing(ReadingPassageVO::getPassageNo, Comparator.nullsLast(Integer::compareTo))
-                .thenComparing(ReadingPassageVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
-                .thenComparing(ReadingPassageVO::getId, Comparator.nullsLast(Long::compareTo)));
+        passageVoList.sort(
+                Comparator.comparing(ReadingPassageVO::getPassageNo, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingPassageVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingPassageVO::getId, Comparator.nullsLast(Long::compareTo))
+        );
 
-        ReadingRecordDetailVO detail_vo = new ReadingRecordDetailVO();
-        detail_vo.setRecordId(record.getId());
-        detail_vo.setTestId(test.getId());
-        detail_vo.setTestTitle(test.getTitle());
-        detail_vo.setTotalScore(record.getTotalScore());
-        detail_vo.setCreatedTime(record.getCreatedTime());
-        detail_vo.setPassages(passage_vo_list);
-        detail_vo.setAnswers(answer_vo_list);
-        return detail_vo;
+        ReadingRecordDetailVO detailVo = new ReadingRecordDetailVO();
+        detailVo.setRecordId(record.getId());
+        detailVo.setTestId(test.getId());
+        detailVo.setTestTitle(test.getTitle());
+        detailVo.setTotalScore(record.getTotalScore());
+        detailVo.setCreatedTime(record.getCreatedTime());
+        detailVo.setPassages(passageVoList);
+        detailVo.setAnswers(answerVoList);
+        return detailVo;
     }
 
     @Override
     @Transactional
-    public void deleteRecord(Long record_id) {
-        ReadingRecord record = reading_record_mapper.findAnyById(record_id);
+    public void deleteRecord(Long recordId) {
+        ReadingRecord record = readingRecordMapper.findAnyById(recordId);
         if (record == null) {
             throw new RuntimeException("Reading record not found");
         }
         if (record.getIsDeleted() != null && record.getIsDeleted() == 1) {
             throw new RuntimeException("Reading record already deleted");
         }
-        reading_record_mapper.softDeleteById(record_id);
+        readingRecordMapper.softDeleteById(recordId);
     }
 
     @Override
     @Transactional
-    public void restoreRecord(Long record_id) {
-        ReadingRecord record = reading_record_mapper.findAnyById(record_id);
+    public void restoreRecord(Long recordId) {
+        ReadingRecord record = readingRecordMapper.findAnyById(recordId);
         if (record == null) {
             throw new RuntimeException("Reading record not found");
         }
         if (record.getIsDeleted() == null || record.getIsDeleted() == 0) {
             throw new RuntimeException("Reading record is not deleted");
         }
-        reading_record_mapper.restoreById(record_id);
+        readingRecordMapper.restoreById(recordId);
     }
 
-    private List<ReadingPassageVO> build_passage_vo_list(List<ReadingPassage> passages, boolean active_only) {
-        List<ReadingPassageVO> passage_vo_list = new ArrayList<>();
+    private void applyTimerSettings(ReadingTest test, ReadingTestDTO dto) {
+        test.setTimerMode(normalizeTimerMode(dto.getTimerMode()));
+        test.setTotalSeconds(resolveTotalSeconds(dto.getTotalSeconds()));
+        test.setAutoSubmit(defaultFlag(dto.getAutoSubmit(), DEFAULT_AUTO_SUBMIT));
+        test.setAllowPause(defaultFlag(dto.getAllowPause(), DEFAULT_ALLOW_PAUSE));
+    }
+
+    private Integer resolveTotalSeconds(Integer totalSeconds) {
+        if (totalSeconds == null || totalSeconds <= 0) {
+            return DEFAULT_TOTAL_SECONDS;
+        }
+        return totalSeconds;
+    }
+
+    private String normalizeTimerMode(String timerMode) {
+        return tokenEquals(timerMode, TIMER_MODE_TEST_LEVEL) ? TIMER_MODE_TEST_LEVEL : TIMER_MODE_TEST_LEVEL;
+    }
+
+    private Integer resolveReadingTimeLimitSeconds(ReadingTest test) {
+        if (test == null) {
+            return DEFAULT_TOTAL_SECONDS;
+        }
+        if (test.getTotalSeconds() != null && test.getTotalSeconds() > 0) {
+            return test.getTotalSeconds();
+        }
+        return tokenEquals(test.getTimerMode(), TIMER_MODE_TEST_LEVEL) ? DEFAULT_TOTAL_SECONDS : null;
+    }
+
+    private List<ReadingPassageVO> buildPassageVoList(List<ReadingPassage> passages, boolean activeOnly) {
+        List<ReadingPassageVO> passageVoList = new ArrayList<>();
         if (passages == null) {
-            return passage_vo_list;
+            return passageVoList;
         }
 
         for (ReadingPassage passage : passages) {
@@ -610,218 +628,175 @@ public class AdminReadingServiceImpl implements AdminReadingService {
                 continue;
             }
 
-            ReadingPassageVO passage_vo = new ReadingPassageVO();
-            passage_vo.setId(passage.getId());
-            passage_vo.setPartGroupId(passage.getPartGroupId());
-            passage_vo.setPassageNo(passage.getPassageNo());
-            passage_vo.setTitle(passage.getTitle());
-            passage_vo.setContent(passage.getContent());
-            passage_vo.setMaterialType(passage.getMaterialType());
-            passage_vo.setDisplayOrder(passage.getDisplayOrder());
+            ReadingPassageVO passageVo = new ReadingPassageVO();
+            passageVo.setId(passage.getId());
+            passageVo.setPartGroupId(passage.getPartGroupId());
+            passageVo.setPassageNo(passage.getPassageNo());
+            passageVo.setTitle(passage.getTitle());
+            passageVo.setContent(passage.getContent());
+            passageVo.setMaterialType(passage.getMaterialType());
+            passageVo.setDisplayOrder(passage.getDisplayOrder());
 
-            List<ReadingQuestion> questions = active_only
-                    ? reading_question_mapper.findActiveByPassageId(passage.getId())
-                    : reading_question_mapper.findAnyByPassageId(passage.getId());
+            List<ReadingQuestion> questions = activeOnly
+                    ? readingQuestionMapper.findActiveByPassageId(passage.getId())
+                    : readingQuestionMapper.findAnyByPassageId(passage.getId());
 
-            List<ReadingQuestionVO> question_vo_list = new ArrayList<>();
+            List<ReadingQuestionVO> questionVoList = new ArrayList<>();
             if (questions != null) {
                 for (ReadingQuestion question : questions) {
-                    if (question == null) {
-                        continue;
+                    if (question != null) {
+                        questionVoList.add(toQuestionVo(question));
                     }
-                    question_vo_list.add(to_question_vo(question));
                 }
             }
 
-            question_vo_list.sort(Comparator
-                    .comparing(ReadingQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
-                    .thenComparing(ReadingQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo))
-                    .thenComparing(ReadingQuestionVO::getId, Comparator.nullsLast(Long::compareTo)));
+            questionVoList.sort(
+                    Comparator.comparing(ReadingQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                            .thenComparing(ReadingQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo))
+                            .thenComparing(ReadingQuestionVO::getId, Comparator.nullsLast(Long::compareTo))
+            );
 
-            passage_vo.setQuestions(question_vo_list);
-            passage_vo_list.add(passage_vo);
+            passageVo.setQuestions(questionVoList);
+            passageVoList.add(passageVo);
         }
 
-        passage_vo_list.sort(Comparator
-                .comparing(ReadingPassageVO::getPassageNo, Comparator.nullsLast(Integer::compareTo))
-                .thenComparing(ReadingPassageVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
-                .thenComparing(ReadingPassageVO::getId, Comparator.nullsLast(Long::compareTo)));
-
-        return passage_vo_list;
+        passageVoList.sort(
+                Comparator.comparing(ReadingPassageVO::getPassageNo, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingPassageVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingPassageVO::getId, Comparator.nullsLast(Long::compareTo))
+        );
+        return passageVoList;
     }
 
-    private void validate_reading_part_group(Long test_id, Long part_group_id) {
-        if (part_group_id == null) {
+    private void validateReadingPartGroup(Long testId, Long partGroupId) {
+        if (partGroupId == null) {
             return;
         }
 
-        TestPartGroup part_group = reading_part_group_service.getActiveById(part_group_id);
-        if (part_group == null) {
+        TestPartGroup partGroup = readingPartGroupService.getActiveById(partGroupId);
+        if (partGroup == null) {
             throw new RuntimeException("Reading part group not found");
         }
-        if (!Objects.equals(part_group.getTestId(), test_id)) {
+        if (!Objects.equals(partGroup.getTestId(), testId)) {
             throw new RuntimeException("Reading part group does not belong to test");
         }
     }
 
-    private void sync_reading_part_groups(Long test_id, List<TestPartGroup> incoming_part_groups) {
-        List<TestPartGroup> existing_part_groups = reading_part_group_service.listAnyByTestId(test_id);
-        Set<Long> incoming_ids = incoming_part_groups == null
+    private void syncReadingPartGroups(Long testId, List<TestPartGroup> incomingPartGroups) {
+        List<TestPartGroup> existingPartGroups = readingPartGroupService.listAnyByTestId(testId);
+
+        Set<Long> incomingIds = incomingPartGroups == null
                 ? Collections.emptySet()
-                : incoming_part_groups.stream()
+                : incomingPartGroups.stream()
                 .filter(Objects::nonNull)
                 .map(TestPartGroup::getId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        if (existing_part_groups != null) {
-            for (TestPartGroup existing_part_group : existing_part_groups) {
-                if (existing_part_group == null || existing_part_group.getId() == null) {
+        if (existingPartGroups != null) {
+            for (TestPartGroup existingPartGroup : existingPartGroups) {
+                if (existingPartGroup == null || existingPartGroup.getId() == null) {
                     continue;
                 }
-                if (!incoming_ids.contains(existing_part_group.getId())) {
-                    reading_part_group_service.deleteById(existing_part_group.getId());
+                if (!incomingIds.contains(existingPartGroup.getId())) {
+                    readingPartGroupService.deleteById(existingPartGroup.getId());
                 }
             }
         }
 
-        if (incoming_part_groups == null) {
+        if (incomingPartGroups == null) {
             return;
         }
 
-        for (TestPartGroup incoming_part_group : incoming_part_groups) {
-            if (incoming_part_group == null) {
+        for (TestPartGroup incomingPartGroup : incomingPartGroups) {
+            if (incomingPartGroup == null) {
                 continue;
             }
-            incoming_part_group.setTestId(test_id);
 
-            if (incoming_part_group.getId() == null) {
-                reading_part_group_service.createPartGroup(incoming_part_group);
-            } else if (reading_part_group_service.getAnyById(incoming_part_group.getId()) == null) {
-                reading_part_group_service.createPartGroup(incoming_part_group);
+            incomingPartGroup.setTestId(testId);
+            if (incomingPartGroup.getId() == null) {
+                readingPartGroupService.createPartGroup(incomingPartGroup);
+            } else if (readingPartGroupService.getAnyById(incomingPartGroup.getId()) == null) {
+                readingPartGroupService.createPartGroup(incomingPartGroup);
             } else {
-                reading_part_group_service.updatePartGroup(incoming_part_group.getId(), incoming_part_group);
-                reading_part_group_service.restoreById(incoming_part_group.getId());
+                readingPartGroupService.updatePartGroup(incomingPartGroup.getId(), incomingPartGroup);
+                readingPartGroupService.restoreById(incomingPartGroup.getId());
             }
         }
     }
 
-    private boolean has_group_images(List<BizImageResourceDTO> group_images) {
-        return group_images != null && !group_images.isEmpty();
+    private boolean hasGroupImages(List<BizImageResourceDTO> groupImages) {
+        return groupImages != null && !groupImages.isEmpty();
     }
 
-    private void replace_reading_part_group_images(Long part_group_id, List<BizImageResourceDTO> group_images) {
-        if (part_group_id == null) {
+    private void replaceReadingPartGroupImages(Long partGroupId, List<BizImageResourceDTO> groupImages) {
+        if (partGroupId == null) {
             throw new RuntimeException("partGroupId is required");
         }
-        if (group_images == null) {
+        if (groupImages == null) {
             return;
         }
-        biz_image_resource_service.replaceByTarget(
+
+        bizImageResourceService.replaceByTarget(
                 TARGET_TYPE_READING_PART_GROUP,
-                part_group_id,
-                BucketType.QUESTION_GROUP_IMAGE.getKey(),
+                partGroupId,
+                BUCKET_TYPE_QUESTION_GROUP_IMAGE,
                 BIZ_PATH_QUESTION_GROUP_IMAGE,
-                group_images
+                groupImages
         );
     }
 
-    private void attach_group_images(List<TestPartGroup> part_groups) {
-        if (part_groups == null || part_groups.isEmpty()) {
+    private void attachGroupImages(List<TestPartGroup> partGroups) {
+        if (partGroups == null || partGroups.isEmpty()) {
             return;
         }
 
-        List<Long> target_ids = part_groups.stream()
+        List<Long> targetIds = partGroups.stream()
                 .filter(Objects::nonNull)
                 .map(TestPartGroup::getId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
 
-        if (target_ids.isEmpty()) {
+        if (targetIds.isEmpty()) {
             return;
         }
 
-        Map<Long, List<BizImageResource>> image_map = biz_image_resource_service.listByTargets(
+        Map<Long, List<BizImageResource>> imageMap = bizImageResourceService.listByTargets(
                 TARGET_TYPE_READING_PART_GROUP,
-                target_ids
+                targetIds
         );
-        if (image_map == null) {
-            image_map = Collections.emptyMap();
+        if (imageMap == null) {
+            imageMap = Collections.emptyMap();
         }
 
-        for (TestPartGroup part_group : part_groups) {
-            if (part_group == null || part_group.getId() == null) {
+        for (TestPartGroup partGroup : partGroups) {
+            if (partGroup == null || partGroup.getId() == null) {
                 continue;
             }
-            List<BizImageResource> images = sort_images(image_map.get(part_group.getId()));
+            List<BizImageResource> images = sortImages(imageMap.get(partGroup.getId()));
             try {
-                part_group.getClass().getMethod("setImages", List.class).invoke(part_group, images);
+                partGroup.getClass().getMethod("setImages", List.class).invoke(partGroup, images);
             } catch (Exception ignored) {
             }
         }
     }
 
-    private List<BizImageResource> sort_images(List<BizImageResource> images) {
+    private List<BizImageResource> sortImages(List<BizImageResource> images) {
         if (images == null || images.isEmpty()) {
             return new ArrayList<>();
         }
+
         return images.stream()
                 .filter(Objects::nonNull)
-                .sorted(Comparator
-                        .comparing(BizImageResource::getSortOrder, Comparator.nullsLast(Integer::compareTo))
-                        .thenComparing(BizImageResource::getId, Comparator.nullsLast(Long::compareTo)))
+                .sorted(
+                        Comparator.comparing(BizImageResource::getSortOrder, Comparator.nullsLast(Integer::compareTo))
+                                .thenComparing(BizImageResource::getId, Comparator.nullsLast(Long::compareTo))
+                )
                 .collect(Collectors.toList());
     }
 
-    private String build_display_correct_answer(ReadingQuestion question) {
-        if (question == null) {
-            return null;
-        }
-
-        List<QuestionAnswerRule> rules = question.getId() == null
-                ? Collections.emptyList()
-                : reading_question_answer_rule_service.listByQuestionId(question.getId());
-
-        if (rules != null && !rules.isEmpty()) {
-            List<String> values = rules.stream()
-                    .filter(Objects::nonNull)
-                    .sorted(Comparator
-                            .comparing(QuestionAnswerRule::getBlankNo, Comparator.nullsLast(Integer::compareTo))
-                            .thenComparing(QuestionAnswerRule::getAnswerGroupNo, Comparator.nullsLast(Integer::compareTo))
-                            .thenComparing(QuestionAnswerRule::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
-                            .thenComparing(QuestionAnswerRule::getId, Comparator.nullsLast(Long::compareTo)))
-                    .map(QuestionAnswerRule::getAnswerText)
-                    .map(this::trim_to_null)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-
-            if (!values.isEmpty()) {
-                return String.join(" / ", new LinkedHashSet<>(values));
-            }
-        }
-
-        List<String> accepted_answers = parse_json_string_list(question.getAcceptedAnswersJson());
-        if (!accepted_answers.isEmpty()) {
-            return String.join(" / ", accepted_answers);
-        }
-
-        return trim_to_null(question.getCorrectAnswer());
-    }
-
-    private ReadingAnswerRecord find_matched_answer(List<ReadingAnswerRecord> answer_records, Long question_id) {
-        if (answer_records == null || answer_records.isEmpty() || question_id == null) {
-            return null;
-        }
-        for (ReadingAnswerRecord answer_record : answer_records) {
-            if (answer_record != null && Objects.equals(answer_record.getQuestionId(), question_id)) {
-                return answer_record;
-            }
-        }
-        return null;
-    }
-
-    private ReadingQuestionVO to_question_vo(ReadingQuestion question) {
+    private ReadingQuestionVO toQuestionVo(ReadingQuestion question) {
         ReadingQuestionVO vo = new ReadingQuestionVO();
         vo.setId(question.getId());
         vo.setPassageId(question.getPassageId());
@@ -839,13 +814,15 @@ public class AdminReadingServiceImpl implements AdminReadingService {
         vo.setIgnorePunctuation(question.getIgnorePunctuation());
         vo.setDisplayOrder(question.getDisplayOrder());
         vo.setScore(question.getScore());
-        vo.setAnswerRules(question.getId() == null
-                ? new ArrayList<>()
-                : reading_question_answer_rule_service.listByQuestionId(question.getId()));
+        vo.setAnswerRules(
+                question.getId() == null
+                        ? new ArrayList<>()
+                        : readingQuestionAnswerRuleService.listByQuestionId(question.getId())
+        );
         return vo;
     }
 
-    private ReadingRecordVO to_record_vo(ReadingRecord record) {
+    private ReadingRecordVO toRecordVo(ReadingRecord record) {
         ReadingRecordVO vo = new ReadingRecordVO();
         vo.setId(record.getId());
         vo.setUserId(record.getUserId());
@@ -854,24 +831,72 @@ public class AdminReadingServiceImpl implements AdminReadingService {
         vo.setCreatedTime(record.getCreatedTime());
         vo.setIsDeleted(record.getIsDeleted());
 
-        ReadingTest test = reading_test_mapper.findAnyById(record.getTestId());
-        vo.setTestTitle(test != null ? test.getTitle() : null);
+        ReadingTest test = readingTestMapper.findAnyById(record.getTestId());
+        vo.setTestTitle(test == null ? null : test.getTitle());
         return vo;
     }
 
-    private List<String> parse_json_string_list(String json_value) {
-        String safe_json_value = trim_to_null(json_value);
-        if (safe_json_value == null) {
+    private String buildDisplayCorrectAnswer(ReadingQuestion question) {
+        if (question == null) {
+            return null;
+        }
+
+        List<QuestionAnswerRule> rules = question.getId() == null
+                ? Collections.emptyList()
+                : readingQuestionAnswerRuleService.listByQuestionId(question.getId());
+
+        if (rules != null && !rules.isEmpty()) {
+            List<String> values = rules.stream()
+                    .filter(Objects::nonNull)
+                    .sorted(
+                            Comparator.comparing(QuestionAnswerRule::getBlankNo, Comparator.nullsLast(Integer::compareTo))
+                                    .thenComparing(QuestionAnswerRule::getAnswerGroupNo, Comparator.nullsLast(Integer::compareTo))
+                                    .thenComparing(QuestionAnswerRule::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                                    .thenComparing(QuestionAnswerRule::getId, Comparator.nullsLast(Long::compareTo))
+                    )
+                    .map(QuestionAnswerRule::getAnswerText)
+                    .map(this::trimToNull)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            if (!values.isEmpty()) {
+                return String.join(", ", new LinkedHashSet<>(values));
+            }
+        }
+
+        List<String> acceptedAnswers = parseJsonStringList(question.getAcceptedAnswersJson());
+        if (!acceptedAnswers.isEmpty()) {
+            return String.join(", ", acceptedAnswers);
+        }
+
+        return trimToNull(question.getCorrectAnswer());
+    }
+
+    private ReadingAnswerRecord findMatchedAnswer(List<ReadingAnswerRecord> answerRecords, Long questionId) {
+        if (answerRecords == null || answerRecords.isEmpty() || questionId == null) {
+            return null;
+        }
+        for (ReadingAnswerRecord answerRecord : answerRecords) {
+            if (answerRecord != null && Objects.equals(answerRecord.getQuestionId(), questionId)) {
+                return answerRecord;
+            }
+        }
+        return null;
+    }
+
+    private List<String> parseJsonStringList(String jsonValue) {
+        String safeJsonValue = trimToNull(jsonValue);
+        if (safeJsonValue == null) {
             return Collections.emptyList();
         }
 
         try {
-            JsonNode root = object_mapper.readTree(safe_json_value);
+            JsonNode root = objectMapper.readTree(safeJsonValue);
             List<String> result = new ArrayList<>();
 
             if (root.isArray()) {
                 for (JsonNode item : root) {
-                    String value = trim_to_null(item == null ? null : item.asText());
+                    String value = trimToNull(item == null ? null : item.asText());
                     if (value != null) {
                         result.add(value);
                     }
@@ -880,36 +905,60 @@ public class AdminReadingServiceImpl implements AdminReadingService {
             }
 
             if (root.isTextual()) {
-                String value = trim_to_null(root.asText());
+                String value = trimToNull(root.asText());
                 return value == null ? Collections.emptyList() : List.of(value);
             }
         } catch (Exception ignored) {
+            return List.of(safeJsonValue);
         }
 
-        String fallback_value = trim_to_null(safe_json_value);
-        return fallback_value == null ? Collections.emptyList() : List.of(fallback_value);
+        return Collections.emptyList();
     }
 
-    private int normalize_page_num(Integer page_num) {
-        return page_num == null || page_num < 1 ? 1 : page_num;
+    private Integer defaultFlag(Integer value, int defaultValue) {
+        return value == null ? defaultValue : value;
     }
 
-    private int normalize_page_size(Integer page_size) {
-        if (page_size == null || page_size < 1) {
+    private boolean tokenEquals(String actual, String expected) {
+        String normalizedActual = normalizeToken(actual);
+        String normalizedExpected = normalizeToken(expected);
+        if (Objects.equals(normalizedActual, normalizedExpected)) {
+            return true;
+        }
+        if (normalizedActual == null || normalizedExpected == null) {
+            return false;
+        }
+        return Objects.equals(normalizedActual.replace("_", ""), normalizedExpected.replace("_", ""));
+    }
+
+    private String normalizeToken(String value) {
+        String normalizedValue = trimToNull(value);
+        if (normalizedValue == null) {
+            return null;
+        }
+        return normalizedValue
+                .trim()
+                .replace('-', '_')
+                .replace(' ', '_')
+                .toLowerCase();
+    }
+
+    private int normalizePageNum(Integer pageNum) {
+        return pageNum == null || pageNum < 1 ? 1 : pageNum;
+    }
+
+    private int normalizePageSize(Integer pageSize) {
+        if (pageSize == null || pageSize < 1) {
             return 10;
         }
-        return Math.min(page_size, 100);
+        return Math.min(pageSize, 100);
     }
 
-    private Integer default_flag(Integer value, Integer default_value) {
-        return value == null ? default_value : value;
-    }
-
-    private String trim_to_null(String value) {
+    private String trimToNull(String value) {
         if (value == null) {
             return null;
         }
-        String trimmed_value = value.trim();
-        return trimmed_value.isEmpty() ? null : trimmed_value;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

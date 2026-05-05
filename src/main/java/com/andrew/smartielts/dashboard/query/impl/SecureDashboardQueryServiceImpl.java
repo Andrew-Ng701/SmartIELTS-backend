@@ -88,11 +88,14 @@ public class SecureDashboardQueryServiceImpl implements SecureDashboardQueryServ
             params.putAll(request.getParams());
         }
 
-        params.put("operatorUserId", request.getOperatorUserId());
-        params.put("targetUserId", request.getTargetUserId());
+        Long operatorUserId = request.getOperatorUserId();
+        Long targetUserId = request.getTargetUserId();
 
-        params.put("operator_user_id", request.getOperatorUserId());
-        params.put("target_user_id", request.getTargetUserId());
+        params.put("operatorUserId", operatorUserId);
+        params.put("targetUserId", targetUserId);
+
+        params.put("operator_user_id", operatorUserId);
+        params.put("target_user_id", targetUserId);
 
         Object limit = params.get("limit");
         if (limit instanceof Number number) {
@@ -102,6 +105,35 @@ public class SecureDashboardQueryServiceImpl implements SecureDashboardQueryServ
         }
 
         return params;
+    }
+
+    private void mirrorParam(Map<String, Object> params, String legacyKey, String snakeCaseKey) {
+        if (!params.containsKey(snakeCaseKey) && params.containsKey(legacyKey)) {
+            params.put(snakeCaseKey, params.get(legacyKey));
+        }
+        if (!params.containsKey(legacyKey) && params.containsKey(snakeCaseKey)) {
+            params.put(legacyKey, params.get(snakeCaseKey));
+        }
+    }
+
+    private void mirrorParam(Map<String, Object> params, String key1, String key2, String canonicalKey) {
+        if (params.containsKey(canonicalKey)) {
+            Object value = params.get(canonicalKey);
+            params.putIfAbsent(key1, value);
+            params.putIfAbsent(key2, value);
+            return;
+        }
+        if (params.containsKey(key1)) {
+            Object value = params.get(key1);
+            params.putIfAbsent(canonicalKey, value);
+            params.putIfAbsent(key2, value);
+            return;
+        }
+        if (params.containsKey(key2)) {
+            Object value = params.get(key2);
+            params.putIfAbsent(canonicalKey, value);
+            params.putIfAbsent(key1, value);
+        }
     }
 
     private String safeSql(String sql) {

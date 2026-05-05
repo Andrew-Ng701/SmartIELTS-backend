@@ -1,8 +1,8 @@
 package com.andrew.smartielts.writing.service.admin.impl;
 
-import com.andrew.smartielts.common.domain.pojo.BizImageResource;
+import com.andrew.smartielts.common.image.domain.pojo.BizImageResource;
 import com.andrew.smartielts.common.page.PageResult;
-import com.andrew.smartielts.common.service.BizImageResourceService;
+import com.andrew.smartielts.common.image.service.BizImageResourceService;
 import com.andrew.smartielts.writing.domain.dto.WritingQuestionDTO;
 import com.andrew.smartielts.writing.domain.pojo.WritingQuestion;
 import com.andrew.smartielts.writing.domain.pojo.WritingRecord;

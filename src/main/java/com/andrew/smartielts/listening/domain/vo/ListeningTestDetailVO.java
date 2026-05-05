@@ -1,22 +1,26 @@
 package com.andrew.smartielts.listening.domain.vo;
 
 import com.andrew.smartielts.common.domain.pojo.TestPartGroup;
-import com.andrew.smartielts.common.domain.pojo.TestTimerConfig;
-import com.andrew.smartielts.listening.domain.pojo.ListeningMaterial;
+import com.andrew.smartielts.listening.domain.pojo.ListeningAudio;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
 public class ListeningTestDetailVO {
+
     private Long id;
     private String title;
-    private String audioUrl;
-    private String transcriptText;
     private Integer totalScore;
 
-    private TestTimerConfig timerConfig;
+    private String timerMode;
+    private Integer totalSeconds;
+    private Integer autoSubmit;
+    private Integer allowPause;
+
+    private ListeningAudio testAudio;
+    private List<ListeningPartVO> parts;
     private List<TestPartGroup> partGroups;
-    private List<ListeningMaterial> materials;
+    private List<ListeningAudio> partGroupAudios;
     private List<ListeningQuestionVO> questions;
 }

@@ -86,17 +86,11 @@ public class LoginServiceImpl implements LoginService {
         if (isBlank(dto.getNewPassword())) {
             throw new RuntimeException("New password cannot be empty");
         }
-        if (isBlank(dto.getConfirmPassword())) {
-            throw new RuntimeException("Confirm password cannot be empty");
-        }
         if (!passwordEncoder.matches(dto.getOldPassword(), user.getPassword())) {
             throw new RuntimeException("Old password incorrect");
         }
         if (dto.getNewPassword().length() < 8) {
             throw new RuntimeException("New password must be at least 8 characters");
-        }
-        if (!dto.getNewPassword().equals(dto.getConfirmPassword())) {
-            throw new RuntimeException("New password and confirm password do not match");
         }
         if (passwordEncoder.matches(dto.getNewPassword(), user.getPassword())) {
             throw new RuntimeException("New password cannot be the same as old password");

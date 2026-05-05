@@ -38,134 +38,187 @@ public class UserDashboardSseController {
 
     @PostMapping(value = "/ask-sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter askSse(@RequestBody DashboardAskRequest request) {
+        DashboardAskRequest safeRequest = request == null ? new DashboardAskRequest() : request;
         long startedAt = System.currentTimeMillis();
-        Long requestUserId = getCurrentUserId();
 
+        Long operatorUserId = getCurrentUserId();
         log.info("dashboard.ask.sse.start role=USER operatorUserId={} askScene={} query={}",
-                requestUserId, request.getAskScene(), safeString(request.getQuery()));
+                operatorUserId, safeString(safeRequest.getAskScene()), safeString(safeRequest.getQuery()));
 
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MILLIS);
 
-        emitter.onCompletion(() -> log.info("dashboard.ask.sse.complete role=USER operatorUserId={} elapsedMs={}",
-                requestUserId, System.currentTimeMillis() - startedAt));
+        emitter.onCompletion(() ->
+                log.info("dashboard.ask.sse.complete role=USER operatorUserId={} elapsedMs={}",
+                        operatorUserId, System.currentTimeMillis() - startedAt));
 
         emitter.onTimeout(() -> {
             log.warn("dashboard.ask.sse.timeout role=USER operatorUserId={} elapsedMs={}",
-                    requestUserId, System.currentTimeMillis() - startedAt);
-            emitter.complete();
+                    operatorUserId, System.currentTimeMillis() - startedAt);
+            safeComplete(emitter);
         });
 
-        emitter.onError(ex -> {
-            log.error("dashboard.ask.sse.error role=USER operatorUserId={} elapsedMs={} message={}",
-                    requestUserId, System.currentTimeMillis() - startedAt, ex.getMessage(), ex);
-            emitter.completeWithError(ex);
-        });
+        emitter.onError(ex ->
+                log.error("dashboard.ask.sse.error role=USER operatorUserId={} elapsedMs={} message={}",
+                        operatorUserId, System.currentTimeMillis() - startedAt,
+                        ex == null ? null : ex.getMessage(), ex));
 
-        CompletableFuture.runAsync(() -> {
-            try {
-                Long operatorUserId = getCurrentUserId();
-
-                log.info("dashboard.ask.sse.async.begin role=USER operatorUserId={}", operatorUserId);
-
-                sendEvent(emitter, "start", Map.of(
-                        "message", "dashboard request started"
-                ));
-
-                sendEvent(emitter, "loading", Map.of(
-                        "answer", buildInitialLoadingAnswer(request),
-                        "loading", true,
-                        "stage", "ANALYZING",
-                        "meta", Map.of(
-                                "role", "USER",
-                                "askScene", safeString(request.getAskScene())
-                        )
-                ));
-
-                log.info("dashboard.ask.sse.event.sent role=USER operatorUserId={} event=start/loading", operatorUserId);
-
-                DashboardAssistantResponse response = dashboardIntentExecutionFacade
-                        .ask("USER", operatorUserId, operatorUserId, request);
-
-                log.info("dashboard.ask.sse.facade.done role=USER operatorUserId={} elapsedMs={} meta={}",
-                        operatorUserId, System.currentTimeMillis() - startedAt, response.getMeta());
-
-                sendEvent(emitter, "intentResolved", Map.of(
-                        "message", "intent resolved",
-                        "loading", true,
-                        "displayAnswer", buildIntentResolvedLoadingAnswer(request, response),
-                        "meta", safeMeta(response.getMeta())
-                ));
-
-                sendEvent(emitter, "result", Result.success(response));
-
-                sendEvent(emitter, "done", Map.of(
-                        "message", "completed",
-                        "elapsedMs", System.currentTimeMillis() - startedAt
-                ));
-
-                log.info("dashboard.ask.sse.event.sent role=USER operatorUserId={} event=done elapsedMs={}",
-                        operatorUserId, System.currentTimeMillis() - startedAt);
-
-                emitter.complete();
-            } catch (Exception e) {
-                log.error("dashboard.ask.sse.async.failed role=USER operatorUserId={} elapsedMs={} message={}",
-                        requestUserId, System.currentTimeMillis() - startedAt, e.getMessage(), e);
-                try {
-                    sendEvent(emitter, "error", Result.error(
-                            e.getMessage() == null ? "dashboard request failed" : e.getMessage()
-                    ));
-                } catch (IOException ignored) {
-                }
-                emitter.completeWithError(e);
-            }
-        }, dashboardSseExecutor);
+        CompletableFuture.runAsync(
+                () -> executeUserSse(emitter, safeRequest, operatorUserId, startedAt),
+                dashboardSseExecutor
+        );
 
         return emitter;
+    }
+
+    private void executeUserSse(SseEmitter emitter, DashboardAskRequest request, Long operatorUserId, long startedAt) {
+        try {
+            log.info("dashboard.ask.sse.async.begin role=USER operatorUserId={}", operatorUserId);
+
+            sendEvent(emitter, "start", simplePayload("message", "dashboard request started"));
+
+            Map<String, Object> loadingPayload = new LinkedHashMap<>();
+            loadingPayload.put("answer", buildInitialLoadingAnswer(request));
+            loadingPayload.put("loading", true);
+            loadingPayload.put("stage", "ANALYZING");
+            loadingPayload.put("meta", buildUserLoadingMeta(request));
+            sendEvent(emitter, "loading", loadingPayload);
+
+            DashboardAssistantResponse response =
+                    dashboardIntentExecutionFacade.ask("USER", operatorUserId, operatorUserId, request);
+
+            log.info("dashboard.ask.sse.facade.done role=USER operatorUserId={} elapsedMs={} meta={}",
+                    operatorUserId, System.currentTimeMillis() - startedAt,
+                    response == null ? null : response.getMeta());
+
+            Map<String, Object> intentResolvedPayload = new LinkedHashMap<>();
+            intentResolvedPayload.put("message", "intent resolved");
+            intentResolvedPayload.put("loading", true);
+            intentResolvedPayload.put("displayAnswer", buildIntentResolvedLoadingAnswer(request, response));
+            intentResolvedPayload.put("meta", safeMeta(response == null ? null : response.getMeta()));
+            sendEvent(emitter, "intentResolved", intentResolvedPayload);
+
+            sendEvent(emitter, "result", Result.success(response));
+
+            Map<String, Object> donePayload = new LinkedHashMap<>();
+            donePayload.put("message", "completed");
+            donePayload.put("elapsedMs", System.currentTimeMillis() - startedAt);
+            sendEvent(emitter, "done", donePayload);
+
+        } catch (Exception e) {
+            log.error("dashboard.ask.sse.async.failed role=USER operatorUserId={} elapsedMs={} message={}",
+                    operatorUserId, System.currentTimeMillis() - startedAt, e.getMessage(), e);
+            safeSendErrorEvent(emitter, e, startedAt);
+        } finally {
+            safeComplete(emitter);
+        }
+    }
+
+    private void safeSendErrorEvent(SseEmitter emitter, Exception e, long startedAt) {
+        try {
+            String message = e == null || e.getMessage() == null || e.getMessage().isBlank()
+                    ? "dashboard request failed"
+                    : e.getMessage();
+
+            sendEvent(emitter, "error", Result.error(message));
+
+            Map<String, Object> donePayload = new LinkedHashMap<>();
+            donePayload.put("message", "failed");
+            donePayload.put("elapsedMs", System.currentTimeMillis() - startedAt);
+            sendEvent(emitter, "done", donePayload);
+        } catch (Exception sendEx) {
+            log.warn("dashboard.ask.sse.error.event.failed message={}", sendEx.getMessage(), sendEx);
+        }
     }
 
     private void sendEvent(SseEmitter emitter, String eventName, Object data) throws IOException {
         emitter.send(SseEmitter.event().name(eventName).data(data));
     }
 
+    private void safeComplete(SseEmitter emitter) {
+        try {
+            emitter.complete();
+        } catch (Exception ex) {
+            log.debug("dashboard.ask.sse.complete.ignore message={}", ex.getMessage());
+        }
+    }
+
     private Map<String, Object> safeMeta(Map<String, Object> meta) {
         return meta == null ? new LinkedHashMap<>() : new LinkedHashMap<>(meta);
+    }
+
+    private Map<String, Object> buildUserLoadingMeta(DashboardAskRequest request) {
+        Map<String, Object> meta = new LinkedHashMap<>();
+        meta.put("role", "USER");
+        putIfNotBlank(meta, "askScene", safeString(request == null ? null : request.getAskScene()));
+        return meta;
+    }
+
+    private Map<String, Object> simplePayload(String key, Object value) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put(key, value);
+        return map;
+    }
+
+    private void putIfNotBlank(Map<String, Object> map, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            map.put(key, value);
+        }
     }
 
     private String buildInitialLoadingAnswer(DashboardAskRequest request) {
         String language = resolveLanguage(request);
         if ("en".equals(language)) {
-            return "I’m checking your dashboard data and organizing the key points now.";
+            return "I'm checking your dashboard data and organizing the key points now.";
         }
         if ("zh-Hans".equals(language)) {
-            return "我先帮你查看当前学习数据，正在整理重点，请稍等一下。";
+            return "我正在查看你的儀表板資料，並整理重點結果。";
         }
-        return "我先幫你查看目前的學習數據，正在整理重點，請稍等一下。";
+        return "我正在查看你的儀表板資料，並整理重點結果。";
     }
 
     private String buildIntentResolvedLoadingAnswer(DashboardAskRequest request, DashboardAssistantResponse response) {
+        String reviewSummary = response != null && response.getMeta() != null
+                ? stringValue(response.getMeta().get("reviewSummary"))
+                : null;
+
+        if (reviewSummary != null && !reviewSummary.isBlank()) {
+            return reviewSummary.trim();
+        }
+
         String language = resolveLanguage(request);
         String answerMode = response != null && response.getMeta() != null
                 ? stringValue(response.getMeta().get("answerMode"))
                 : null;
 
         if ("en".equals(language)) {
-            if ("FALL_BACK_SQL".equalsIgnoreCase(answerMode) || "AI_SQL_SUCCESS".equalsIgnoreCase(answerMode)) {
-                return "I’m querying your recent learning records and preparing a more complete answer.";
+            if ("FALLBACK_SQL".equalsIgnoreCase(answerMode) || "AI_SQL_SUCCESS".equalsIgnoreCase(answerMode)) {
+                return "I'm querying the relevant dashboard records and consolidating the final analysis.";
             }
-            return "I’ve understood your question and I’m putting the final answer together now.";
+            return "The request has been understood and the final response is being assembled.";
         }
 
         if ("zh-Hans".equals(language)) {
-            if ("FALL_BACK_SQL".equalsIgnoreCase(answerMode) || "AI_SQL_SUCCESS".equalsIgnoreCase(answerMode)) {
-                return "我正在查询你的相关学习记录，并整理更完整的分析。";
+            if ("FALLBACK_SQL".equalsIgnoreCase(answerMode) || "AI_SQL_SUCCESS".equalsIgnoreCase(answerMode)) {
+                return "正在查詢相關儀表板資料並整理最終分析。";
             }
-            return "我已经理解你的问题，正在整理最终回复。";
+            return "我已理解你的問題，正在整理最終回覆。";
         }
 
-        if ("FALL_BACK_SQL".equalsIgnoreCase(answerMode) || "AI_SQL_SUCCESS".equalsIgnoreCase(answerMode)) {
-            return "我正在查詢你的相關學習記錄，並整理更完整的分析。";
+        if ("yue-Hant".equals(language) || "zh-Hant".equals(language)) {
+            if ("FALLBACK_SQL".equalsIgnoreCase(answerMode) || "AI_SQL_SUCCESS".equalsIgnoreCase(answerMode)) {
+                return "正在查詢相關儀表板資料並整理最終分析。";
+            }
+            return "我已理解你的問題，正在整理最終回覆。";
         }
-        return "我已經理解你的問題，正在整理最終回覆。";
+
+        return "我已理解你的問題，正在整理最終回覆。";
+    }
+
+    private boolean isSqlMode(String answerMode) {
+        return "FALL_BACK_SQL".equalsIgnoreCase(answerMode)
+                || "AI_SQL_SUCCESS".equalsIgnoreCase(answerMode)
+                || "FALLBACK_SQL".equalsIgnoreCase(answerMode)
+                || "AI_SQL_SUCCESS".equalsIgnoreCase(answerMode);
     }
 
     private String resolveLanguage(DashboardAskRequest request) {
@@ -205,6 +258,6 @@ public class UserDashboardSseController {
     }
 
     private String safeString(String text) {
-        return text == null ? null : text.replaceAll("[\\r\\n]+", " ").trim();
+        return text == null ? null : text.replaceAll("\\s+", " ").trim();
     }
 }

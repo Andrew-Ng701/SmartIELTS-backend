@@ -2,14 +2,13 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
 <mapper namespace="com.andrew.smartielts.listening.mapper.ListeningQuestionMapper">
 
-    <resultMap id="ListeningQuestionResultMap"
-               type="com.andrew.smartielts.listening.domain.pojo.ListeningQuestion">
+    <resultMap id="ListeningQuestionResultMap" type="com.andrew.smartielts.listening.domain.pojo.ListeningQuestion">
         <id column="id" property="id"/>
         <result column="test_id" property="testId"/>
         <result column="part_group_id" property="partGroupId"/>
-        <result column="material_id" property="materialId"/>
         <result column="section_number" property="sectionNumber"/>
         <result column="question_number" property="questionNumber"/>
         <result column="question_type" property="questionType"/>
@@ -26,11 +25,24 @@
         <result column="is_deleted" property="isDeleted"/>
     </resultMap>
 
-    <sql id="Base_Column_List">
-        id, test_id, part_group_id, material_id, section_number, question_number,
-        question_type, answer_mode, question_text, correct_answer, options_json,
-        accepted_answers_json, case_insensitive, ignore_whitespace,
-        ignore_punctuation, display_order, score, is_deleted
+    <sql id="BaseColumnList">
+        id,
+        test_id,
+        part_group_id,
+        section_number,
+        question_number,
+        question_type,
+        answer_mode,
+        question_text,
+        correct_answer,
+        options_json,
+        accepted_answers_json,
+        case_insensitive,
+        ignore_whitespace,
+        ignore_punctuation,
+        display_order,
+        score,
+        is_deleted
     </sql>
 
     <insert id="insertListeningQuestion"
@@ -38,54 +50,92 @@
             useGeneratedKeys="true"
             keyProperty="id"
             keyColumn="id">
-        insert into listening_question (
-        test_id, part_group_id, material_id, section_number, question_number,
-        question_type, answer_mode, question_text, correct_answer, options_json,
-        accepted_answers_json, case_insensitive, ignore_whitespace,
-        ignore_punctuation, display_order, score, is_deleted
-        ) values (
-        #{testId}, #{partGroupId}, #{materialId}, #{sectionNumber}, #{questionNumber},
-        #{questionType}, #{answerMode}, #{questionText}, #{correctAnswer}, #{optionsJson},
-        #{acceptedAnswersJson}, #{caseInsensitive}, #{ignoreWhitespace},
-        #{ignorePunctuation}, #{displayOrder}, #{score}, 0
+        INSERT INTO listening_question (
+        test_id,
+        part_group_id,
+        section_number,
+        question_number,
+        question_type,
+        answer_mode,
+        question_text,
+        correct_answer,
+        options_json,
+        accepted_answers_json,
+        case_insensitive,
+        ignore_whitespace,
+        ignore_punctuation,
+        display_order,
+        score,
+        is_deleted
+        ) VALUES (
+        #{testId},
+        #{partGroupId},
+        #{sectionNumber},
+        #{questionNumber},
+        #{questionType},
+        #{answerMode},
+        #{questionText},
+        #{correctAnswer},
+        #{optionsJson},
+        #{acceptedAnswersJson},
+        #{caseInsensitive},
+        #{ignoreWhitespace},
+        #{ignorePunctuation},
+        #{displayOrder},
+        #{score},
+        #{isDeleted}
         )
     </insert>
 
     <select id="findActiveById" resultMap="ListeningQuestionResultMap">
-        select <include refid="Base_Column_List"/>
-        from listening_question
-        where id = #{id}
-        and is_deleted = 0
-        limit 1
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_question
+        WHERE id = #{id}
+        AND is_deleted = 0
+        LIMIT 1
     </select>
 
     <select id="findAnyById" resultMap="ListeningQuestionResultMap">
-        select <include refid="Base_Column_List"/>
-        from listening_question
-        where id = #{id}
-        limit 1
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_question
+        WHERE id = #{id}
+        LIMIT 1
     </select>
 
     <select id="findActiveByTestId" resultMap="ListeningQuestionResultMap">
-        select <include refid="Base_Column_List"/>
-        from listening_question
-        where test_id = #{testId}
-        and is_deleted = 0
-        order by display_order asc, question_number asc, id asc
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_question
+        WHERE test_id = #{testId}
+        AND is_deleted = 0
+        ORDER BY display_order ASC, question_number ASC, id ASC
     </select>
 
     <select id="findAnyByTestId" resultMap="ListeningQuestionResultMap">
-        select <include refid="Base_Column_List"/>
-        from listening_question
-        where test_id = #{testId}
-        order by display_order asc, question_number asc, id asc
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_question
+        WHERE test_id = #{testId}
+        ORDER BY display_order ASC, question_number ASC, id ASC
+    </select>
+
+    <select id="findActiveByPartGroupId" resultMap="ListeningQuestionResultMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_question
+        WHERE part_group_id = #{partGroupId}
+        AND is_deleted = 0
+        ORDER BY display_order ASC, question_number ASC, id ASC
+    </select>
+
+    <select id="findAnyByPartGroupId" resultMap="ListeningQuestionResultMap">
+        SELECT <include refid="BaseColumnList"/>
+        FROM listening_question
+        WHERE part_group_id = #{partGroupId}
+        ORDER BY display_order ASC, question_number ASC, id ASC
     </select>
 
     <update id="updateListeningQuestion"
             parameterType="com.andrew.smartielts.listening.domain.pojo.ListeningQuestion">
-        update listening_question
-        set part_group_id = #{partGroupId},
-        material_id = #{materialId},
+        UPDATE listening_question
+        SET part_group_id = #{partGroupId},
         section_number = #{sectionNumber},
         question_number = #{questionNumber},
         question_type = #{questionType},
@@ -99,35 +149,49 @@
         ignore_punctuation = #{ignorePunctuation},
         display_order = #{displayOrder},
         score = #{score}
-        where id = #{id}
+        WHERE id = #{id}
     </update>
 
     <update id="softDeleteById">
-        update listening_question
-        set is_deleted = 1
-        where id = #{id}
-        and is_deleted = 0
+        UPDATE listening_question
+        SET is_deleted = 1
+        WHERE id = #{id}
+        AND is_deleted = 0
     </update>
 
     <update id="softDeleteByTestId">
-        update listening_question
-        set is_deleted = 1
-        where test_id = #{testId}
-        and is_deleted = 0
+        UPDATE listening_question
+        SET is_deleted = 1
+        WHERE test_id = #{testId}
+        AND is_deleted = 0
+    </update>
+
+    <update id="softDeleteByPartGroupId">
+        UPDATE listening_question
+        SET is_deleted = 1
+        WHERE part_group_id = #{partGroupId}
+        AND is_deleted = 0
     </update>
 
     <update id="restoreById">
-        update listening_question
-        set is_deleted = 0
-        where id = #{id}
-        and is_deleted = 1
+        UPDATE listening_question
+        SET is_deleted = 0
+        WHERE id = #{id}
+        AND is_deleted = 1
     </update>
 
     <update id="restoreByTestId">
-        update listening_question
-        set is_deleted = 0
-        where test_id = #{testId}
-        and is_deleted = 1
+        UPDATE listening_question
+        SET is_deleted = 0
+        WHERE test_id = #{testId}
+        AND is_deleted = 1
+    </update>
+
+    <update id="restoreByPartGroupId">
+        UPDATE listening_question
+        SET is_deleted = 0
+        WHERE part_group_id = #{partGroupId}
+        AND is_deleted = 1
     </update>
 
 </mapper>

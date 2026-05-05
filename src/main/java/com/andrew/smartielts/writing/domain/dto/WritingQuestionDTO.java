@@ -1,6 +1,6 @@
 package com.andrew.smartielts.writing.domain.dto;
 
-import com.andrew.smartielts.common.domain.dto.BizImageResourceDTO;
+import com.andrew.smartielts.common.image.domain.dto.BizImageResourceDTO;
 import lombok.Data;
 
 import java.util.List;

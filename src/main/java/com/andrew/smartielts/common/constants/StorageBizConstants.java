@@ -9,12 +9,9 @@ public final class StorageBizConstants {
     public static final String TARGET_TYPE_READING_PART_GROUP = "READING_PART_GROUP";
     public static final String TARGET_TYPE_WRITING_QUESTION = "WRITING_QUESTION";
 
-    /**
-     * 必須與 application.yml 的 aliyun.oss.buckets.* key 完全一致
-     */
     public static final String BUCKET_KEY_WRITING_QUESTION = "writing-question";
     public static final String BUCKET_KEY_WRITING_RECORD = "writing-record";
-    public static final String BUCKET_KEY_LISTENING_RECORDING = "listening-recording";
+    public static final String BUCKET_KEY_LISTENING_AUDIO = "listening-audio";
     public static final String BUCKET_KEY_SPEAKING_AUDIO = "speaking-audio";
     public static final String BUCKET_KEY_QUESTION_GROUP_IMAGE = "question-group-image";
 

@@ -2,7 +2,7 @@ package com.andrew.smartielts.speaking.oss.service.impl;
 
 import com.andrew.smartielts.common.storage.BucketType;
 import com.andrew.smartielts.common.storage.UploadResult;
-import com.andrew.smartielts.common.storage.service.StorageService;
+import com.andrew.smartielts.common.storage.service.OssStorageService;
 import com.andrew.smartielts.speaking.domain.vo.UploadSpeakingAudioVO;
 import com.andrew.smartielts.speaking.oss.service.SpeakingAudioStorageService;
 import org.springframework.stereotype.Service;
@@ -13,10 +13,10 @@ import java.time.LocalDate;
 @Service
 public class SpeakingAudioStorageServiceImpl implements SpeakingAudioStorageService {
 
-    private final StorageService storageService;
+    private final OssStorageService ossStorageService;
 
-    public SpeakingAudioStorageServiceImpl(StorageService storageService) {
-        this.storageService = storageService;
+    public SpeakingAudioStorageServiceImpl(OssStorageService ossStorageService) {
+        this.ossStorageService = ossStorageService;
     }
 
     @Override
@@ -46,7 +46,7 @@ public class SpeakingAudioStorageServiceImpl implements SpeakingAudioStorageServ
                 safeQuestionId
         );
 
-        UploadResult result = storageService.upload(file, BucketType.SPEAKING_AUDIO, bizPath);
+        UploadResult result = ossStorageService.upload(file, BucketType.SPEAKING_AUDIO, bizPath);
 
         UploadSpeakingAudioVO vo = new UploadSpeakingAudioVO();
         vo.setFileName(originalName);

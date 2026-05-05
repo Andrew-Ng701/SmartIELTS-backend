@@ -17,21 +17,18 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class DashboardSqlSchemaGuard {
 
-    private static final Pattern FROM_OR_JOIN_PATTERN = Pattern.compile(
-            "(?i)\\b(from|join)\\s+`?([a-zA-Z_][\\w]*)`?(?:\\s+(?:as\\s+)?`?([a-zA-Z_][\\w]*)`?)?"
-    );
+    private static final Pattern FROM_OR_JOIN_PATTERN =
+            Pattern.compile("\\b(from|join)\\s+([a-z_][a-z0-9_]*)(?:\\s+(?:as\\s+)?([a-z_][a-z0-9_]*))?",
+                    Pattern.CASE_INSENSITIVE);
 
-    private static final Pattern QUALIFIED_COLUMN_PATTERN = Pattern.compile(
-            "(?i)`?([a-zA-Z_][\\w]*)`?\\.`?([a-zA-Z_][\\w]*)`?"
-    );
+    private static final Pattern QUALIFIED_COLUMN_PATTERN =
+            Pattern.compile("\\b([a-z_][a-z0-9_]*)\\.([a-z_][a-z0-9_]*)\\b", Pattern.CASE_INSENSITIVE);
 
-    private static final Pattern EXPLICIT_ALIAS_PATTERN = Pattern.compile(
-            "(?i)\\bas\\s+`?([a-zA-Z_][\\w]*)`?\\s*$"
-    );
+    private static final Pattern EXPLICIT_ALIAS_PATTERN =
+            Pattern.compile("\\bas\\s+([a-z_][a-z0-9_]*)\\b", Pattern.CASE_INSENSITIVE);
 
-    private static final Pattern NULL_AS_ALIAS_PATTERN = Pattern.compile(
-            "(?i)^null\\s+as\\s+`?([a-zA-Z_][\\w]*)`?$"
-    );
+    private static final Pattern NULL_AS_ALIAS_PATTERN =
+            Pattern.compile("^null\\s+as\\s+[a-z_][a-z0-9_]*$", Pattern.CASE_INSENSITIVE);
 
     private static final Set<String> SQL_KEYWORDS = Set.of(
             "where", "group", "order", "limit", "offset", "join", "left", "right",
@@ -53,7 +50,6 @@ public class DashboardSqlSchemaGuard {
         if (effectivePrimaryTable.isBlank()) {
             effectivePrimaryTable = inferPrimaryTable(sql);
         }
-
         if (effectivePrimaryTable.isBlank() || !schemaRegistry.supports(effectivePrimaryTable)) {
             return;
         }
@@ -79,8 +75,7 @@ public class DashboardSqlSchemaGuard {
         for (String table : aliasToTable.values()) {
             if (!contract.allowsTable(table)) {
                 throw new IllegalArgumentException(
-                        "table [" + table + "] is not allowed by primary_table contract [" + contract.primaryTable() + "]"
-                );
+                        "table " + table + " is not allowed by primaryTable contract " + contract.primaryTable());
             }
         }
     }
@@ -98,8 +93,7 @@ public class DashboardSqlSchemaGuard {
             }
             if (!contract.allowsColumn(table, column)) {
                 throw new IllegalArgumentException(
-                        "column [" + alias + "." + column + "] is not allowed by contract [" + contract.primaryTable() + "]"
-                );
+                        "column " + alias + "." + column + " is not allowed by contract " + contract.primaryTable());
             }
         }
     }
@@ -118,8 +112,7 @@ public class DashboardSqlSchemaGuard {
         for (String alias : selectedAliases) {
             if (!contract.allowsOutputAlias(alias)) {
                 throw new IllegalArgumentException(
-                        "output alias [" + alias + "] is not allowed by contract [" + contract.primaryTable() + "]"
-                );
+                        "output alias " + alias + " is not allowed by contract " + contract.primaryTable());
             }
         }
     }
@@ -127,13 +120,12 @@ public class DashboardSqlSchemaGuard {
     private void validateExpectedColumns(List<String> selectedAliases, List<String> expectedColumns) {
         List<String> normalizedExpected = normalizeList(expectedColumns);
         if (normalizedExpected.isEmpty()) {
-            throw new IllegalArgumentException("expected_columns cannot be empty");
+            throw new IllegalArgumentException("expectedColumns cannot be empty");
         }
         if (!selectedAliases.equals(normalizedExpected)) {
             throw new IllegalArgumentException(
-                    "expected_columns must exactly match select aliases. selected="
-                            + selectedAliases + ", expected=" + normalizedExpected
-            );
+                    "expectedColumns must exactly match select aliases. selected=" + selectedAliases
+                            + ", expected=" + normalizedExpected);
         }
     }
 
@@ -151,11 +143,9 @@ public class DashboardSqlSchemaGuard {
     private Map<String, String> extractAliasToTable(String sql) {
         Matcher matcher = FROM_OR_JOIN_PATTERN.matcher(sql);
         Map<String, String> result = new LinkedHashMap<>();
-
         while (matcher.find()) {
             String table = normalize(matcher.group(2));
             String alias = normalize(matcher.group(3));
-
             if (table.isBlank()) {
                 continue;
             }
@@ -175,7 +165,6 @@ public class DashboardSqlSchemaGuard {
 
         List<String> items = splitTopLevelComma(selectBlock);
         List<String> aliases = new ArrayList<>();
-
         for (String item : items) {
             String trimmed = item == null ? "" : item.trim();
             if (trimmed.isBlank()) {
@@ -184,7 +173,6 @@ public class DashboardSqlSchemaGuard {
             if (NULL_AS_ALIAS_PATTERN.matcher(trimmed).matches()) {
                 throw new IllegalArgumentException("NULL AS alias placeholders are not allowed: " + trimmed);
             }
-
             String alias = extractExplicitAlias(trimmed);
             if (alias.isBlank()) {
                 throw new IllegalArgumentException("every selected column must use explicit AS alias: " + trimmed);
@@ -196,16 +184,14 @@ public class DashboardSqlSchemaGuard {
 
     private String extractMainSelectBlock(String sql) {
         String lower = sql.toLowerCase(Locale.ROOT);
-        int selectIndex = lower.indexOf("select ");
+        int selectIndex = lower.indexOf("select");
         if (selectIndex < 0) {
             return "";
         }
-
         int fromIndex = findTopLevelFromIndex(lower, selectIndex + 6);
-        if (fromIndex < 0 || fromIndex <= selectIndex) {
+        if (fromIndex <= selectIndex) {
             return "";
         }
-
         return sql.substring(selectIndex + 6, fromIndex).trim();
     }
 
@@ -213,10 +199,8 @@ public class DashboardSqlSchemaGuard {
         int depth = 0;
         boolean inSingleQuote = false;
         boolean inDoubleQuote = false;
-
         for (int i = startIndex; i < lowerSql.length(); i++) {
             char ch = lowerSql.charAt(i);
-
             if (ch == '\'' && !inDoubleQuote) {
                 inSingleQuote = !inSingleQuote;
                 continue;
@@ -256,7 +240,6 @@ public class DashboardSqlSchemaGuard {
 
         for (int i = 0; i < text.length(); i++) {
             char ch = text.charAt(i);
-
             if (ch == '\'' && !inDoubleQuote) {
                 inSingleQuote = !inSingleQuote;
                 current.append(ch);
@@ -271,7 +254,6 @@ public class DashboardSqlSchemaGuard {
                 current.append(ch);
                 continue;
             }
-
             if (ch == '(') {
                 depth++;
                 current.append(ch);

@@ -49,7 +49,6 @@ public class DashboardAskContextResolver {
         fillFromObjectRef(result, objectRef);
         fillFromLearningObjects(result, test, passage, question);
         fillFromUserAttempt(result, userAttempt);
-        fillFromPreloadedPayload(result, preloadedPayload);
         overlayFromRequestContext(result, request.getContext());
         putExt(result, learningContext, moduleContext, objectRef);
 
@@ -183,21 +182,6 @@ public class DashboardAskContextResolver {
         if (!result.containsKey(DashboardAskContextKeys.CONTEXT_KEY_TRANSCRIPT_TEXT)) {
             putIfPresent(result, DashboardAskContextKeys.CONTEXT_KEY_TRANSCRIPT_TEXT, userAttempt.getTranscript());
         }
-    }
-
-    private void fillFromPreloadedPayload(Map<String, Object> result, DashboardAskPreloadedPayload preloadedPayload) {
-        if (preloadedPayload == null) {
-            return;
-        }
-
-        putIfPresent(result, DashboardAskContextKeys.CONTEXT_KEY_PRELOADED_PAYLOAD, preloadedPayload);
-        putIfPresent(result, DashboardAskContextKeys.CONTEXT_KEY_OVERVIEW, preloadedPayload.getOverview());
-        putIfPresent(result, DashboardAskContextKeys.CONTEXT_KEY_PROGRESS_SUMMARY, preloadedPayload.getProgressSummary());
-        putIfPresent(result, DashboardAskContextKeys.CONTEXT_KEY_RECENT_RECORDS, preloadedPayload.getRecentRecords());
-        putIfPresent(result, DashboardAskContextKeys.CONTEXT_KEY_MODULE_STATS, preloadedPayload.getModuleStats());
-        putIfPresent(result, DashboardAskContextKeys.CONTEXT_KEY_RECENT_QUESTIONS, preloadedPayload.getRecentQuestions());
-        putIfPresent(result, DashboardAskContextKeys.CONTEXT_KEY_RECENT_PASSAGES, preloadedPayload.getRecentPassages());
-        putIfPresent(result, DashboardAskContextKeys.CONTEXT_KEY_AGGREGATES, preloadedPayload.getAggregates());
     }
 
     private void putExt(Map<String, Object> result,

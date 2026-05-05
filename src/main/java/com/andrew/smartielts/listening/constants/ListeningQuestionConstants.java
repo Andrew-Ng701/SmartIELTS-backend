@@ -49,21 +49,21 @@ public final class ListeningQuestionConstants {
             ANSWER_MODE_MULTI
     );
 
-    public static boolean supports_question_type(String question_type) {
-        String normalized = normalize_question_type(question_type);
+    public static boolean supportsQuestionType(String question_type) {
+        String normalized = normalizeQuestionType(question_type);
         return normalized != null && SUPPORTED_QUESTION_TYPES.contains(normalized);
     }
 
-    public static boolean supports_answer_mode(String answer_mode) {
+    public static boolean supportsAnswerMode(String answer_mode) {
         String normalized = normalize_answer_mode(answer_mode);
         return normalized != null && SUPPORTED_ANSWER_MODES.contains(normalized);
     }
 
-    public static boolean is_multi_answer_mode(String answer_mode) {
+    public static boolean isMultiAnswerMode(String answer_mode) {
         return ANSWER_MODE_MULTI.equals(normalize_answer_mode(answer_mode));
     }
 
-    public static boolean is_single_answer_mode(String answer_mode) {
+    public static boolean isSingleAnswerMode(String answer_mode) {
         String normalized = normalize_answer_mode(answer_mode);
         return ANSWER_MODE_SINGLE.equals(normalized) || ANSWER_MODE_TEXT.equals(normalized);
     }
@@ -73,56 +73,20 @@ public final class ListeningQuestionConstants {
         if (normalized == null) {
             return ANSWER_MODE_TEXT;
         }
-
-        return switch (normalized) {
-            case "TEXT", "INPUT", "FILL", "FILL_IN", "FILL_IN_BLANK", "BLANK" -> ANSWER_MODE_TEXT;
-            case "SINGLE", "RADIO", "ONE", "SINGLE_CHOICE" -> ANSWER_MODE_SINGLE;
-            case "MULTI", "MULTIPLE", "CHECKBOX", "MANY", "MULTI_CHOICE" -> ANSWER_MODE_MULTI;
-            default -> ANSWER_MODE_TEXT;
-        };
+        return normalized;
     }
 
-    public static String normalize_question_type(String question_type) {
+    public static String normalizeQuestionType(String question_type) {
         String normalized = normalize_token(question_type);
         if (normalized == null) {
             return null;
         }
 
-        return switch (normalized) {
-            case "MULTIPLE_CHOICE_SINGLE", "MULTIPLECHOICESINGLE", "MCQ_SINGLE", "MCQSINGLE", "SINGLE_CHOICE"
-                    -> QUESTION_TYPE_MULTIPLE_CHOICE_SINGLE;
-            case "MULTIPLE_CHOICE_MULTI", "MULTIPLECHOICEMULTI", "MCQ_MULTI", "MCQMULTI", "MULTI_CHOICE"
-                    -> QUESTION_TYPE_MULTIPLE_CHOICE_MULTI;
-            case "TRUE_FALSE_NOT_GIVEN", "TRUEFALSENOTGIVEN"
-                    -> QUESTION_TYPE_TRUE_FALSE_NOT_GIVEN;
-            case "YES_NO_NOT_GIVEN", "YESNONOTGIVEN"
-                    -> QUESTION_TYPE_YES_NO_NOT_GIVEN;
-            case "MATCHING", "MATCH"
-                    -> QUESTION_TYPE_MATCHING;
-            case "HEADING_MATCHING", "HEADINGMATCHING"
-                    -> QUESTION_TYPE_HEADING_MATCHING;
-            case "SUMMARY_COMPLETION", "SUMMARYCOMPLETION", "SUMMARY"
-                    -> QUESTION_TYPE_SUMMARY_COMPLETION;
-            case "SENTENCE_COMPLETION", "SENTENCECOMPLETION", "SENTENCE"
-                    -> QUESTION_TYPE_SENTENCE_COMPLETION;
-            case "SHORT_ANSWER", "SHORTANSWER"
-                    -> QUESTION_TYPE_SHORT_ANSWER;
-            case "TABLE_COMPLETION", "TABLECOMPLETION", "TABLE"
-                    -> QUESTION_TYPE_TABLE_COMPLETION;
-            case "FLOW_CHART_COMPLETION", "FLOWCHARTCOMPLETION", "FLOWCHART"
-                    -> QUESTION_TYPE_FLOW_CHART_COMPLETION;
-            case "DIAGRAM_LABEL_COMPLETION", "DIAGRAMLABELCOMPLETION", "DIAGRAM_LABEL", "DIAGRAMLABEL", "DIAGRAM"
-                    -> QUESTION_TYPE_DIAGRAM_LABEL_COMPLETION;
-            case "FORM_COMPLETION", "FORMCOMPLETION", "FORM"
-                    -> QUESTION_TYPE_FORM_COMPLETION;
-            case "NOTE_COMPLETION", "NOTECOMPLETION", "NOTE"
-                    -> QUESTION_TYPE_NOTE_COMPLETION;
-            default -> normalized;
-        };
+        return normalized;
     }
 
-    public static String infer_answer_mode(String question_type, String answer_mode) {
-        String normalized_question_type = normalize_question_type(question_type);
+    public static String inferAnswerMode(String question_type, String answer_mode) {
+        String normalized_question_type = normalizeQuestionType(question_type);
         String normalized_answer_mode = normalize_answer_mode(answer_mode);
 
         if (QUESTION_TYPE_MULTIPLE_CHOICE_MULTI.equals(normalized_question_type)) {

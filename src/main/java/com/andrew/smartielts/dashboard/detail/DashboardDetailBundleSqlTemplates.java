@@ -5,217 +5,229 @@ public final class DashboardDetailBundleSqlTemplates {
     private DashboardDetailBundleSqlTemplates() {
     }
 
-    public static final String READING_DETAIL_BUNDLE_SQL = """
-            SELECT 'reading' AS module,
-                   rr.id AS record_id,
-                   rt.id AS test_id,
-                   rt.title AS test_title,
-                   rp.id AS passage_id,
-                   rp.title AS passage_title,
-                   COALESCE(rp.title, rt.title) AS article_title,
-                   rp.content AS article_content,
-                   rq.id AS question_id,
-                   rq.question_number AS question_number,
-                   rq.question_text AS question_text,
-                   rq.question_type AS question_type,
-                   rq.answer_mode AS answer_mode,
-                   rq.options_json AS options_json,
-                   rq.accepted_answers_json AS accepted_answers_json,
-                   rq.correct_answer AS correct_answer,
-                   NULL AS explanation,
-                   NULL AS cue_card,
-                   NULL AS image_url,
-                   NULL AS task_type,
-                   rar.user_answer AS user_answer,
-                   NULL AS user_essay,
-                   NULL AS user_transcript,
-                   NULL AS transcript_text,
-                   NULL AS audio_url,
-                   NULL AS audio_object_key,
-                   NULL AS user_feedback,
-                   NULL AS ai_feedback,
-                   rar.score AS score,
-                   rr.total_score AS total_score,
-                   NULL AS ai_score,
-                   rar.is_correct AS correct,
-                   rr.record_status AS status,
-                   rr.created_time AS created_time,
-                   rr.session_id AS session_id
-            FROM reading_record rr
-            JOIN reading_test rt
-              ON rt.id = rr.test_id
-             AND rt.is_deleted = 0
-            LEFT JOIN reading_answer_record rar
-              ON rar.record_id = rr.id
-            LEFT JOIN reading_question rq
-              ON rq.id = rar.question_id
-             AND rq.is_deleted = 0
-            LEFT JOIN reading_passage rp
-              ON rp.id = rq.passage_id
-             AND rp.is_deleted = 0
-            WHERE rr.user_id = :targetUserId
-              AND rr.is_deleted = 0
-              AND (:recordId IS NULL OR rr.id = :recordId)
-              AND (:testId IS NULL OR rt.id = :testId)
-              AND (:passageId IS NULL OR rp.id = :passageId)
-              AND (:questionId IS NULL OR rq.id = :questionId)
-              AND (:questionNumber IS NULL OR rq.question_number = :questionNumber)
-            ORDER BY rr.created_time DESC, rq.question_number ASC
-            LIMIT :limit
-            """;
-
-    public static final String LISTENING_DETAIL_BUNDLE_SQL = """
-            SELECT 'listening' AS module,
-                   lr.id AS record_id,
-                   lt.id AS test_id,
-                   lt.title AS test_title,
-                   NULL AS passage_id,
-                   NULL AS passage_title,
-                   lt.title AS article_title,
-                   COALESCE(lm.transcript_text, lt.transcript_text) AS article_content,
-                   lq.id AS question_id,
-                   lq.question_number AS question_number,
-                   lq.question_text AS question_text,
-                   lq.question_type AS question_type,
-                   lq.answer_mode AS answer_mode,
-                   lq.options_json AS options_json,
-                   lq.accepted_answers_json AS accepted_answers_json,
-                   lq.correct_answer AS correct_answer,
-                   NULL AS explanation,
-                   NULL AS cue_card,
-                   NULL AS image_url,
-                   NULL AS task_type,
-                   lar.user_answer AS user_answer,
-                   NULL AS user_essay,
-                   NULL AS user_transcript,
-                   COALESCE(lm.transcript_text, lt.transcript_text) AS transcript_text,
-                   lm.audio_url AS audio_url,
-                   lm.audio_object_key AS audio_object_key,
-                   NULL AS user_feedback,
-                   NULL AS ai_feedback,
-                   lar.score AS score,
-                   lr.total_score AS total_score,
-                   NULL AS ai_score,
-                   lar.is_correct AS correct,
-                   lr.record_status AS status,
-                   lr.created_time AS created_time,
-                   lr.session_id AS session_id
+    public static final String LISTENING_RECORD_DETAIL = """
+            SELECT
+                'listening' AS module,
+                lr.id AS record_id,
+                lr.user_id AS user_id,
+                lr.test_id AS test_id,
+                lt.title AS test_title,
+                lr.session_id AS session_id,
+                lr.started_time AS started_time,
+                lr.submitted_time AS submitted_time,
+                lr.time_limit_seconds AS time_limit_seconds,
+                lr.time_spent_seconds AS time_spent_seconds,
+                lr.record_status AS record_status,
+                lr.total_score AS total_score,
+                lr.created_time AS created_time,
+                lar.id AS answer_id,
+                lar.part_group_id AS part_group_id,
+                lar.question_id AS question_id,
+                lar.user_answer AS user_answer,
+                lar.normalized_answer AS normalized_answer,
+                lar.raw_answers_json AS raw_answers_json,
+                lar.is_correct AS is_correct,
+                lar.score AS answer_score,
+                lq.section_number AS section_number,
+                lq.question_number AS question_number,
+                lq.question_type AS question_type,
+                lq.answer_mode AS answer_mode,
+                lq.question_text AS question_text,
+                lq.correct_answer AS correct_answer,
+                lq.options_json AS options_json,
+                lq.accepted_answers_json AS accepted_answers_json,
+                lpg.part_number AS part_number,
+                lpg.group_number AS group_number,
+                lpg.title AS group_title,
+                lpg.instruction_text AS instruction_text,
+                lpg.group_guide_text AS group_guide_text,
+                lpg.group_requirement_text AS group_requirement_text,
+                lpg.question_no_start AS question_no_start,
+                lpg.question_no_end AS question_no_end,
+                la.id AS audio_id,
+                la.title AS audio_title,
+                la.audio_url AS audio_url,
+                la.audio_object_key AS audio_object_key,
+                la.transcript_text AS transcript_text
             FROM listening_record lr
-            JOIN listening_test lt
-              ON lt.id = lr.test_id
-             AND lt.is_deleted = 0
+            INNER JOIN listening_test lt
+                ON lt.id = lr.test_id
+               AND lt.is_deleted = 0
             LEFT JOIN listening_answer_record lar
-              ON lar.record_id = lr.id
+                ON lar.record_id = lr.id
             LEFT JOIN listening_question lq
-              ON lq.id = lar.question_id
-             AND lq.is_deleted = 0
-            LEFT JOIN listening_material lm
-              ON lm.id = lq.material_id
-             AND lm.is_deleted = 0
-            WHERE lr.user_id = :targetUserId
+                ON lq.id = lar.question_id
+               AND lq.is_deleted = 0
+            LEFT JOIN listening_part_group lpg
+                ON lpg.id = COALESCE(lar.part_group_id, lq.part_group_id)
+               AND lpg.is_deleted = 0
+            LEFT JOIN listening_audio la
+                ON la.part_group_id = COALESCE(lar.part_group_id, lq.part_group_id)
+               AND la.audio_scope = 'part_group'
+               AND la.is_deleted = 0
+            WHERE lr.user_id = :target_user_id
+              AND lr.id = :record_id
               AND lr.is_deleted = 0
-              AND (:recordId IS NULL OR lr.id = :recordId)
-              AND (:testId IS NULL OR lt.id = :testId)
-              AND (:questionId IS NULL OR lq.id = :questionId)
-              AND (:questionNumber IS NULL OR lq.question_number = :questionNumber)
-            ORDER BY lr.created_time DESC, lq.question_number ASC
-            LIMIT :limit
+            ORDER BY lq.question_number ASC, lq.display_order ASC, lar.id ASC
             """;
 
-    public static final String WRITING_DETAIL_BUNDLE_SQL = """
-            SELECT 'writing' AS module,
-                   wr.id AS record_id,
-                   NULL AS test_id,
-                   NULL AS test_title,
-                   NULL AS passage_id,
-                   NULL AS passage_title,
-                   wq.title AS article_title,
-                   wq.description AS article_content,
-                   wq.id AS question_id,
-                   NULL AS question_number,
-                   wq.title AS question_text,
-                   'writing_task' AS question_type,
-                   'essay' AS answer_mode,
-                   NULL AS options_json,
-                   NULL AS accepted_answers_json,
-                   NULL AS correct_answer,
-                   NULL AS explanation,
-                   NULL AS cue_card,
-                   wq.image_url AS image_url,
-                   wq.task_type AS task_type,
-                   NULL AS user_answer,
-                   COALESCE(wr.text_content, wr.extracted_text) AS user_essay,
-                   NULL AS user_transcript,
-                   NULL AS transcript_text,
-                   NULL AS audio_url,
-                   NULL AS audio_object_key,
-                   NULL AS user_feedback,
-                   wr.ai_feedback AS ai_feedback,
-                   NULL AS score,
-                   NULL AS total_score,
-                   wr.ai_score AS ai_score,
-                   NULL AS correct,
-                   wr.ai_status AS status,
-                   wr.created_time AS created_time,
-                   NULL AS session_id
+    public static final String READING_RECORD_DETAIL = """
+            SELECT
+                'reading' AS module,
+                rr.id AS record_id,
+                rr.user_id AS user_id,
+                rr.test_id AS test_id,
+                rt.title AS test_title,
+                rr.session_id AS session_id,
+                rr.started_time AS started_time,
+                rr.submitted_time AS submitted_time,
+                rr.time_limit_seconds AS time_limit_seconds,
+                rr.time_spent_seconds AS time_spent_seconds,
+                rr.record_status AS record_status,
+                rr.total_score AS total_score,
+                rr.created_time AS created_time,
+                rar.id AS answer_id,
+                rar.part_group_id AS part_group_id,
+                rar.question_id AS question_id,
+                rar.user_answer AS user_answer,
+                rar.normalized_answer AS normalized_answer,
+                rar.raw_answers_json AS raw_answers_json,
+                rar.is_correct AS is_correct,
+                rar.score AS answer_score,
+                rp.id AS passage_id,
+                rp.title AS passage_title,
+                rp.material_type AS material_type,
+                rp.content AS passage_content,
+                rp.passage_no AS passage_no,
+                rq.question_number AS question_number,
+                rq.question_text AS question_text,
+                rq.correct_answer AS correct_answer,
+                rq.question_type AS question_type,
+                rq.answer_mode AS answer_mode,
+                rq.options_json AS options_json,
+                rq.accepted_answers_json AS accepted_answers_json,
+                rq.group_label AS group_label,
+                rpg.part_number AS part_number,
+                rpg.group_number AS group_number,
+                rpg.title AS group_title,
+                rpg.instruction_text AS instruction_text,
+                rpg.group_guide_text AS group_guide_text,
+                rpg.group_requirement_text AS group_requirement_text,
+                rpg.question_no_start AS question_no_start,
+                rpg.question_no_end AS question_no_end
+            FROM reading_record rr
+            INNER JOIN reading_test rt
+                ON rt.id = rr.test_id
+               AND rt.is_deleted = 0
+            LEFT JOIN reading_answer_record rar
+                ON rar.record_id = rr.id
+            LEFT JOIN reading_question rq
+                ON rq.id = rar.question_id
+               AND rq.is_deleted = 0
+            LEFT JOIN reading_passage rp
+                ON rp.id = rq.passage_id
+               AND rp.is_deleted = 0
+            LEFT JOIN reading_part_group rpg
+                ON rpg.id = COALESCE(rar.part_group_id, rq.part_group_id)
+               AND rpg.is_deleted = 0
+            WHERE rr.user_id = :target_user_id
+              AND rr.id = :record_id
+              AND rr.is_deleted = 0
+            ORDER BY rp.passage_no ASC, rq.question_number ASC, rq.display_order ASC, rar.id ASC
+            """;
+
+    public static final String WRITING_RECORD_DETAIL = """
+            SELECT
+                'writing' AS module,
+                wr.id AS record_id,
+                wr.user_id AS user_id,
+                wr.question_id AS question_id,
+                wr.input_type AS input_type,
+                wr.text_content AS text_content,
+                wr.extracted_text AS extracted_text,
+                wr.target_score AS target_score,
+                wr.ai_score AS ai_score,
+                wr.ai_feedback AS ai_feedback,
+                wr.ai_raw_response AS ai_raw_response,
+                wr.ai_status AS ai_status,
+                wr.ai_provider AS ai_provider,
+                wr.ai_model AS ai_model,
+                wr.created_time AS created_time,
+                wq.task_type AS task_type,
+                wq.title AS question_title,
+                wq.description AS question_text,
+                wq.image_url AS image_url,
+                wq.image_object_key AS image_object_key,
+                wra.id AS attachment_id,
+                wra.file_type AS file_type,
+                wra.file_url AS file_url,
+                wra.file_key AS file_key,
+                wra.sort_order AS sort_order,
+                wra.created_time AS attachment_created_time,
+                wra.ocr_text AS ocr_text
             FROM writing_record wr
-            JOIN writing_question wq
-              ON wq.id = wr.question_id
-             AND wq.is_deleted = 0
-            WHERE wr.user_id = :targetUserId
+            INNER JOIN writing_question wq
+                ON wq.id = wr.question_id
+               AND wq.is_deleted = 0
+            LEFT JOIN writing_record_attachment wra
+                ON wra.record_id = wr.id
+            WHERE wr.user_id = :target_user_id
+              AND wr.id = :record_id
               AND wr.is_deleted = 0
-              AND (:recordId IS NULL OR wr.id = :recordId)
-              AND (:questionId IS NULL OR wq.id = :questionId)
-            ORDER BY wr.created_time DESC
-            LIMIT :limit
+            ORDER BY wra.sort_order ASC, wra.id ASC
             """;
 
-    public static final String SPEAKING_DETAIL_BUNDLE_SQL = """
-            SELECT 'speaking' AS module,
-                   sr.id AS record_id,
-                   NULL AS test_id,
-                   NULL AS test_title,
-                   NULL AS passage_id,
-                   NULL AS passage_title,
-                   sq.topic_key AS article_title,
-                   sq.cue_card AS article_content,
-                   sq.id AS question_id,
-                   NULL AS question_number,
-                   sq.question_text AS question_text,
-                   sq.sub_type AS question_type,
-                   'speech' AS answer_mode,
-                   NULL AS options_json,
-                   NULL AS accepted_answers_json,
-                   NULL AS correct_answer,
-                   NULL AS explanation,
-                   sq.cue_card AS cue_card,
-                   NULL AS image_url,
-                   sq.part AS task_type,
-                   NULL AS user_answer,
-                   NULL AS user_essay,
-                   sr.transcript AS user_transcript,
-                   sr.transcript AS transcript_text,
-                   sr.audio_url AS audio_url,
-                   NULL AS audio_object_key,
-                   sr.feedback AS user_feedback,
-                   NULL AS ai_feedback,
-                   sr.overall_score AS score,
-                   sr.overall_score AS total_score,
-                   sr.overall_score AS ai_score,
-                   NULL AS correct,
-                   sr.answer_status AS status,
-                   sr.created_time AS created_time,
-                   sr.session_id AS session_id
+    public static final String SPEAKING_RECORD_DETAIL = """
+            SELECT
+                'speaking' AS module,
+                sr.id AS record_id,
+                sr.user_id AS user_id,
+                sr.session_id AS session_id,
+                sr.question_id AS question_id,
+                sr.audio_url AS audio_url,
+                sr.transcript AS transcript,
+                sr.fluency_and_coherence AS fluency_and_coherence,
+                sr.lexical_resource AS lexical_resource,
+                sr.grammatical_range_and_accuracy AS grammatical_range_and_accuracy,
+                sr.pronunciation AS pronunciation,
+                sr.overall_score AS overall_score,
+                sr.feedback AS feedback,
+                sr.answer_status AS answer_status,
+                sr.ai_status AS ai_status,
+                sr.ai_provider AS ai_provider,
+                sr.ai_model AS ai_model,
+                sr.ai_error_message AS ai_error_message,
+                sr.relevance_comment AS relevance_comment,
+                sr.quality_comment AS quality_comment,
+                sr.created_time AS created_time,
+                sr.updated_time AS updated_time,
+                sq.part AS part,
+                sq.sub_type AS sub_type,
+                sq.topic_key AS topic_key,
+                sq.question_text AS question_text,
+                sq.cue_card AS cue_card,
+                sq.follow_up_questions_json AS follow_up_questions_json,
+                sq.prep_seconds AS prep_seconds,
+                sq.answer_seconds AS answer_seconds,
+                sq.display_order AS question_number,
+                ss.id AS session_pk_id,
+                ss.exam_type AS exam_type,
+                ss.total_questions AS total_questions,
+                ss.current_index AS current_index,
+                ss.exam_status AS exam_status,
+                ss.exam_plan_json AS exam_plan_json,
+                ss.final_feedback AS final_feedback,
+                ss.started_time AS session_started_time,
+                ss.completed_time AS session_completed_time
             FROM speaking_record sr
-            JOIN speaking_question sq
-              ON sq.id = sr.question_id
-             AND sq.is_deleted = 0
-            WHERE sr.user_id = :targetUserId
+            INNER JOIN speaking_question sq
+                ON sq.id = sr.question_id
+               AND sq.is_deleted = 0
+            LEFT JOIN speaking_session ss
+                ON ss.session_id = sr.session_id
+               AND ss.user_id = sr.user_id
+            WHERE sr.user_id = :target_user_id
+              AND sr.id = :record_id
               AND sr.is_deleted = 0
-              AND (:recordId IS NULL OR sr.id = :recordId)
-              AND (:questionId IS NULL OR sq.id = :questionId)
-              AND (:sessionId IS NULL OR sr.session_id = :sessionId)
-            ORDER BY sr.created_time DESC
-            LIMIT :limit
             """;
 }

@@ -1,7 +1,6 @@
 package com.andrew.smartielts.reading.domain.pojo;
 
 import com.andrew.smartielts.common.domain.pojo.TestPartGroup;
-import com.andrew.smartielts.common.domain.pojo.TestTimerConfig;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -13,8 +12,13 @@ public class ReadingTest {
     private String title;
     private Integer totalScore;
     private LocalDateTime createdTime;
+    private LocalDateTime updatedTime;
     private Integer isDeleted;
 
-    private TestTimerConfig timerConfig;
+    private String timerMode;
+    private Integer totalSeconds;
+    private Integer autoSubmit;
+    private Integer allowPause;
+
     private List<TestPartGroup> partGroups;
 }

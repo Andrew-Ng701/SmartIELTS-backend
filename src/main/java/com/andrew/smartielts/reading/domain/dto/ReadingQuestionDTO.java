@@ -1,6 +1,6 @@
 package com.andrew.smartielts.reading.domain.dto;
 
-import com.andrew.smartielts.common.domain.dto.BizImageResourceDTO;
+import com.andrew.smartielts.common.image.domain.dto.BizImageResourceDTO;
 import com.andrew.smartielts.common.domain.pojo.QuestionAnswerRule;
 import lombok.Data;
 

@@ -2,6 +2,7 @@ package com.andrew.smartielts.dashboard.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.concurrent.DelegatingSecurityContextExecutor;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -18,7 +19,7 @@ public class DashboardAsyncConfig {
         int queueCapacity = 200;
         long keepAliveSeconds = 60L;
 
-        return new ThreadPoolExecutor(
+        ThreadPoolExecutor delegate = new ThreadPoolExecutor(
                 corePoolSize,
                 maxPoolSize,
                 keepAliveSeconds,
@@ -32,5 +33,7 @@ public class DashboardAsyncConfig {
                 },
                 new ThreadPoolExecutor.CallerRunsPolicy()
         );
+
+        return new DelegatingSecurityContextExecutor(delegate);
     }
 }
