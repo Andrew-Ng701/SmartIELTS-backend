@@ -1,8 +1,8 @@
 # SmartIELTS 後端概覽
 
-Last Updated: 2026-05-07
+Last Updated: 2026-05-08
 
-Source Verified: 專案根目錄、`pom.xml`、`application.yml`、controller/service/mapper packages、security/auth classes、dashboard packages、tests
+Source Verified: 專案根目錄、`pom.xml`、`application.yml`、controller/service/mapper packages、security/auth classes、dashboard packages、storage/config classes、tests
 
 ## 用途
 
@@ -86,6 +86,7 @@ HTTP：
 - Server port 預設：`8080`
 - Servlet path 預設：`/api`
 - Controller mapping 不包含 `/api`；HTTP client 呼叫時要包含 `/api`。
+- `DidAgentSmokeRedirectFilter` 會把 root-level `/did-agent-smoke.html` redirect 到 `/api/did-agent-smoke.html`，用於 D-ID smoke page 在 servlet path 下的本地訪問。
 
 Database：
 
@@ -277,6 +278,7 @@ User submission flow：
 4. 後端在 `WritingSubmissionValidator` 驗證 submission。
 5. 後端將 uploaded files 存入 OSS，必要時從 images/PDF extract text，建立 record 與 attachments。
 6. AI scoring 透過 writing scoring service/executor 執行，並更新 AI status/score/feedback。
+7. `WritingAsyncConfig` 提供 `writingScoringExecutor`，使用 `DelegatingSecurityContextExecutor` 包住 bounded thread pool，保留 security context 給非同步 scoring。
 
 重要 backend-owned values：
 
@@ -296,6 +298,7 @@ Admin flow：
 - `writing/service/user/impl/UserWritingServiceImpl`
 - `writing/service/admin/impl/AdminWritingServiceImpl`
 - `writing/io/WritingSubmissionValidator`
+- `writing/config/WritingAsyncConfig`
 - `writing/pdf/PdfTextExtractor`
 - `writing/ocr/service/*`
 - `writing/ai/service/*`
@@ -401,6 +404,7 @@ Shared storage：
 - `common/storage/service/OssStorageService`
 - `common/storage/service/impl/OssStorageServiceImpl`
 - `common/storage/UploadResult`
+- `OssStorageService` 支援 upload、download bytes、delete object；empty object key delete 會直接 no-op。
 
 Image resources：
 

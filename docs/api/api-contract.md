@@ -1,8 +1,8 @@
 # SmartIELTS API Contract
 
-Last Updated: 2026-05-06
+Last Updated: 2026-05-08
 
-Source Verified: `src/main/java/com/andrew/smartielts/**/controller`, DTO/query/VO classes, status constants, `SecurityConfig`, `SwaggerConfig`, `application.yml`
+Source Verified: `src/main/java/com/andrew/smartielts/**/controller`, DTO/query/VO classes, status constants, `SecurityConfig`, `SwaggerConfig`, `application.yml`, `DidAgentSmokeRedirectFilter`
 
 ## Quick Start For Frontend
 
@@ -27,6 +27,7 @@ Source Verified: `src/main/java/com/andrew/smartielts/**/controller`, DTO/query/
 - 後端 controller mapping 不寫 `/api`，前端請求必須加上 `/api`
 - 本地預設 base URL：`http://localhost:8080/api`
 - OpenAPI / Knife4j：`/api/doc.html`、`/api/v3/api-docs`
+- D-ID smoke page：`/did-agent-smoke.html` 會 redirect 到 `/api/did-agent-smoke.html`
 - JSON request header：`Content-Type: application/json`
 - 登入後請帶：
 
