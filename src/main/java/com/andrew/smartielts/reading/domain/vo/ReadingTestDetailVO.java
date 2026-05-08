@@ -16,6 +16,7 @@ public class ReadingTestDetailVO {
     private Integer autoSubmit;
     private Integer allowPause;
 
+    private List<ReadingPartVO> parts;
     private List<TestPartGroup> partGroups;
-    private List<ReadingPassageVO> passages;
+    private List<ReadingQuestionVO> questions;
 }

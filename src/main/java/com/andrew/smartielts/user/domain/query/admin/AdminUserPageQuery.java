@@ -12,11 +12,17 @@ public class AdminUserPageQuery {
 
     private Integer pageSize = 10;
 
+    private String keyword;
+
+    private String email;
+
     private String role;
 
     private LocalDateTime startTime;
 
     private LocalDateTime endTime;
+
+    private String sortField = "createdTime";
 
     private SortDirectionEnum sortDirection = SortDirectionEnum.DESC;
 }

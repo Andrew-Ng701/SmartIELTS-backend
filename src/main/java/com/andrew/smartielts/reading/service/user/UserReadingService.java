@@ -3,7 +3,6 @@ package com.andrew.smartielts.reading.service.user;
 import com.andrew.smartielts.common.page.PageResult;
 import com.andrew.smartielts.reading.domain.dto.ReadingSessionActionDTO;
 import com.andrew.smartielts.reading.domain.dto.ReadingSubmitDTO;
-import com.andrew.smartielts.reading.domain.pojo.ReadingTest;
 import com.andrew.smartielts.reading.domain.query.user.UserReadingDeletedRecordPageQuery;
 import com.andrew.smartielts.reading.domain.query.user.UserReadingRecordPageQuery;
 import com.andrew.smartielts.reading.domain.vo.ReadingRecordDetailVO;
@@ -15,7 +14,7 @@ import java.util.List;
 
 public interface UserReadingService {
 
-    List<ReadingTest> listTests();
+    List<ReadingTestDetailVO> listTests();
 
     ReadingTestDetailVO getTestDetail(Long testId);
 

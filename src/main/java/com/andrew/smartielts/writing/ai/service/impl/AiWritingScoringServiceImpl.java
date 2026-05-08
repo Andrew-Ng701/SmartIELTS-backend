@@ -32,6 +32,9 @@ public class AiWritingScoringServiceImpl implements AiWritingScoringService {
         result.setRawResponse(raw);
         result.setAiScore(parseScore(content));
         result.setAiFeedback(parseFeedback(content));
+        if (result.getAiScore() == null || result.getAiFeedback() == null || result.getAiFeedback().isBlank()) {
+            throw new RuntimeException("AI scoring response parsing failed");
+        }
         return result;
     }
 
@@ -86,7 +89,7 @@ public class AiWritingScoringServiceImpl implements AiWritingScoringService {
 
     private BigDecimal parseScore(String raw) {
         if (raw == null) {
-            return BigDecimal.ZERO;
+            return null;
         }
         // Prefer strict JSON parsing if possible
         try {
@@ -109,12 +112,12 @@ public class AiWritingScoringServiceImpl implements AiWritingScoringService {
         if (matcher.find()) {
             return new BigDecimal(matcher.group(1));
         }
-        return BigDecimal.ZERO;
+        return null;
     }
 
     private String parseFeedback(String raw) {
         if (raw == null) {
-            return "AI feedback parsing failed.";
+            return null;
         }
         // Prefer strict JSON parsing if possible
         try {
@@ -137,6 +140,6 @@ public class AiWritingScoringServiceImpl implements AiWritingScoringService {
                     .replace("\\\"", "\"")
                     .trim();
         }
-        return "AI feedback parsing failed.";
+        return null;
     }
 }

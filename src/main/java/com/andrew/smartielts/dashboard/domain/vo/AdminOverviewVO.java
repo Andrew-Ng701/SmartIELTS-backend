@@ -27,6 +27,8 @@ public class AdminOverviewVO {
     private long totalActiveRecords;
     private long totalDeletedRecords;
 
+    private List<AdminModuleStatVO> modules;
+
     /**
      * 最近 AI 問題數量（通常來自 recentIssues size）
      */

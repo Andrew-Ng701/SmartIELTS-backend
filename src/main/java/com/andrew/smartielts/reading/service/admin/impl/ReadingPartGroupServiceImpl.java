@@ -1,15 +1,42 @@
 package com.andrew.smartielts.reading.service.admin.impl;
 
 import com.andrew.smartielts.common.domain.pojo.TestPartGroup;
+import com.andrew.smartielts.reading.constant.ReadingQuestionConstants;
 import com.andrew.smartielts.reading.mapper.ReadingPartGroupMapper;
 import com.andrew.smartielts.reading.service.admin.ReadingPartGroupService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+
+import static com.andrew.smartielts.reading.constant.ReadingQuestionConstants.normalize_answer_mode;
+import static com.andrew.smartielts.reading.constant.ReadingQuestionConstants.normalize_question_type;
+import static com.andrew.smartielts.reading.constant.ReadingQuestionConstants.resolve_answer_mode_by_question_type;
 
 @Service
 public class ReadingPartGroupServiceImpl implements ReadingPartGroupService {
+
+    private static final Set<String> SUPPORTED_QUESTION_TYPES = Set.of(
+            ReadingQuestionConstants.QUESTION_TYPE_MULTIPLE_CHOICE_SINGLE,
+            ReadingQuestionConstants.QUESTION_TYPE_MULTIPLE_CHOICE_MULTI,
+            ReadingQuestionConstants.QUESTION_TYPE_TRUE_FALSE_NOT_GIVEN,
+            ReadingQuestionConstants.QUESTION_TYPE_YES_NO_NOT_GIVEN,
+            ReadingQuestionConstants.QUESTION_TYPE_MATCHING,
+            ReadingQuestionConstants.QUESTION_TYPE_HEADING_MATCHING,
+            ReadingQuestionConstants.QUESTION_TYPE_SUMMARY_COMPLETION,
+            ReadingQuestionConstants.QUESTION_TYPE_SENTENCE_COMPLETION,
+            ReadingQuestionConstants.QUESTION_TYPE_SHORT_ANSWER,
+            ReadingQuestionConstants.QUESTION_TYPE_TABLE_COMPLETION,
+            ReadingQuestionConstants.QUESTION_TYPE_FLOW_CHART_COMPLETION,
+            ReadingQuestionConstants.QUESTION_TYPE_DIAGRAM_LABEL_COMPLETION
+    );
+
+    private static final Set<String> SUPPORTED_ANSWER_MODES = Set.of(
+            ReadingQuestionConstants.ANSWER_MODE_TEXT,
+            ReadingQuestionConstants.ANSWER_MODE_SINGLE,
+            ReadingQuestionConstants.ANSWER_MODE_MULTI
+    );
 
     private final ReadingPartGroupMapper readingPartGroupMapper;
 
@@ -43,20 +70,28 @@ public class ReadingPartGroupServiceImpl implements ReadingPartGroupService {
             throw new RuntimeException("Request body is required");
         }
 
+        normalize(partGroup);
         existing.setPartNumber(partGroup.getPartNumber());
         existing.setGroupNumber(partGroup.getGroupNumber());
-        existing.setTitle(trimToNull(partGroup.getTitle()));
-        existing.setInstructionText(trimToNull(partGroup.getInstructionText()));
-        existing.setGroupGuideText(trimToNull(partGroup.getGroupGuideText()));
-        existing.setGroupRequirementText(trimToNull(partGroup.getGroupRequirementText()));
+        existing.setTitle(partGroup.getTitle());
+        existing.setInstructionText(partGroup.getInstructionText());
+        existing.setGroupGuideText(partGroup.getGroupGuideText());
+        existing.setGroupRequirementText(partGroup.getGroupRequirementText());
+        existing.setQuestionType(partGroup.getQuestionType());
+        existing.setAnswerMode(partGroup.getAnswerMode());
+        existing.setOptionsJson(partGroup.getOptionsJson());
+        existing.setAcceptedAnswersJson(partGroup.getAcceptedAnswersJson());
+        existing.setAnswerRulesJson(partGroup.getAnswerRulesJson());
+        existing.setCaseInsensitive(partGroup.getCaseInsensitive());
+        existing.setIgnoreWhitespace(partGroup.getIgnoreWhitespace());
+        existing.setIgnorePunctuation(partGroup.getIgnorePunctuation());
         existing.setQuestionNoStart(partGroup.getQuestionNoStart());
         existing.setQuestionNoEnd(partGroup.getQuestionNoEnd());
         existing.setDisplayOrder(partGroup.getDisplayOrder());
         existing.setTimeLimitSeconds(partGroup.getTimeLimitSeconds());
 
-        normalize(existing);
         readingPartGroupMapper.updateReadingPartGroup(existing);
-        return readingPartGroupMapper.findActiveById(id);
+        return existing;
     }
 
     @Override
@@ -132,23 +167,61 @@ public class ReadingPartGroupServiceImpl implements ReadingPartGroupService {
         partGroup.setInstructionText(trimToNull(partGroup.getInstructionText()));
         partGroup.setGroupGuideText(trimToNull(partGroup.getGroupGuideText()));
         partGroup.setGroupRequirementText(trimToNull(partGroup.getGroupRequirementText()));
+        partGroup.setOptionsJson(trimToNull(partGroup.getOptionsJson()));
+        partGroup.setAcceptedAnswersJson(trimToNull(partGroup.getAcceptedAnswersJson()));
+        partGroup.setAnswerRulesJson(trimToNull(partGroup.getAnswerRulesJson()));
 
+        if (partGroup.getGroupNumber() == null) {
+            partGroup.setGroupNumber(1);
+        }
         if (partGroup.getDisplayOrder() == null) {
             partGroup.setDisplayOrder(0);
         }
         if (partGroup.getTimeLimitSeconds() == null) {
             partGroup.setTimeLimitSeconds(0);
         }
+        if (partGroup.getPartNumber() == null || partGroup.getPartNumber() < 1) {
+            throw new RuntimeException("part_number must be greater than 0");
+        }
+
+        String questionType = normalize_question_type(partGroup.getQuestionType());
+        if (questionType != null && !SUPPORTED_QUESTION_TYPES.contains(questionType)) {
+            throw new RuntimeException("unsupported_group_question_type");
+        }
+        partGroup.setQuestionType(questionType);
+
+        String answerMode = trimToNull(partGroup.getAnswerMode());
+        if (answerMode != null || questionType != null) {
+            String resolvedAnswerMode = questionType == null
+                    ? normalize_answer_mode(answerMode)
+                    : resolve_answer_mode_by_question_type(questionType, answerMode);
+            if (!SUPPORTED_ANSWER_MODES.contains(resolvedAnswerMode)) {
+                throw new RuntimeException("unsupported_group_answer_mode");
+            }
+            partGroup.setAnswerMode(resolvedAnswerMode);
+        } else {
+            partGroup.setAnswerMode(null);
+        }
+
+        if (partGroup.getCaseInsensitive() == null) {
+            partGroup.setCaseInsensitive(1);
+        }
+        if (partGroup.getIgnoreWhitespace() == null) {
+            partGroup.setIgnoreWhitespace(1);
+        }
+        if (partGroup.getIgnorePunctuation() == null) {
+            partGroup.setIgnorePunctuation(0);
+        }
         if (partGroup.getQuestionNoStart() != null && partGroup.getQuestionNoStart() < 1) {
-            throw new RuntimeException("questionNoStart must be greater than 0");
+            throw new RuntimeException("question_no_start must be greater than 0");
         }
         if (partGroup.getQuestionNoEnd() != null && partGroup.getQuestionNoEnd() < 1) {
-            throw new RuntimeException("questionNoEnd must be greater than 0");
+            throw new RuntimeException("question_no_end must be greater than 0");
         }
         if (partGroup.getQuestionNoStart() != null
                 && partGroup.getQuestionNoEnd() != null
                 && partGroup.getQuestionNoStart() > partGroup.getQuestionNoEnd()) {
-            throw new RuntimeException("questionNoStart cannot be greater than questionNoEnd");
+            throw new RuntimeException("question_no_start cannot be greater than question_no_end");
         }
     }
 

@@ -8,49 +8,69 @@
         <result column="title" property="title"/>
         <result column="total_score" property="totalScore"/>
         <result column="created_time" property="createdTime"/>
+        <result column="updated_time" property="updatedTime"/>
         <result column="is_deleted" property="isDeleted"/>
+        <result column="timer_mode" property="timerMode"/>
+        <result column="total_seconds" property="totalSeconds"/>
+        <result column="auto_submit" property="autoSubmit"/>
+        <result column="allow_pause" property="allowPause"/>
     </resultMap>
+
+    <sql id="BaseColumnList">
+        id,
+        title,
+        total_score,
+        created_time,
+        updated_time,
+        is_deleted,
+        timer_mode,
+        total_seconds,
+        auto_submit,
+        allow_pause
+    </sql>
 
     <insert id="insertReadingTest"
             parameterType="com.andrew.smartielts.reading.domain.pojo.ReadingTest"
             useGeneratedKeys="true"
             keyProperty="id">
         insert into reading_test (
-            title, total_score, created_time, is_deleted
+            title, total_score, created_time, updated_time, is_deleted,
+            timer_mode, total_seconds, auto_submit, allow_pause
         ) values (
-                     #{title}, #{totalScore}, #{createdTime}, 0
+                     #{title}, #{totalScore}, #{createdTime}, #{updatedTime}, 0,
+                     #{timerMode}, #{totalSeconds}, #{autoSubmit}, #{allowPause}
                  )
     </insert>
 
     <select id="findActiveById" resultMap="BaseMap">
-        select *
+        select <include refid="BaseColumnList"/>
         from reading_test
         where id = #{id}
           and is_deleted = 0
     </select>
 
     <select id="findAnyById" resultMap="BaseMap">
-        select *
+        select <include refid="BaseColumnList"/>
         from reading_test
         where id = #{id}
     </select>
 
     <select id="findAllActive" resultMap="BaseMap">
-        select *
+        select <include refid="BaseColumnList"/>
         from reading_test
         where is_deleted = 0
         order by id desc
     </select>
 
     <select id="findAllDeleted" resultMap="BaseMap">
-        select *
+        select <include refid="BaseColumnList"/>
         from reading_test
         where is_deleted = 1
         order by id desc
     </select>
 
     <select id="findAllIncludingDeleted" resultMap="BaseMap">
-        select *
+        select <include refid="BaseColumnList"/>
         from reading_test
         order by id desc
     </select>
@@ -59,20 +79,27 @@
             parameterType="com.andrew.smartielts.reading.domain.pojo.ReadingTest">
         update reading_test
         set title = #{title},
-            total_score = #{totalScore}
+            total_score = #{totalScore},
+            updated_time = #{updatedTime},
+            timer_mode = #{timerMode},
+            total_seconds = #{totalSeconds},
+            auto_submit = #{autoSubmit},
+            allow_pause = #{allowPause}
         where id = #{id}
     </update>
 
     <update id="softDeleteById">
         update reading_test
-        set is_deleted = 1
+        set is_deleted = 1,
+            updated_time = NOW()
         where id = #{id}
           and is_deleted = 0
     </update>
 
     <update id="restoreById">
         update reading_test
-        set is_deleted = 0
+        set is_deleted = 0,
+            updated_time = NOW()
         where id = #{id}
           and is_deleted = 1
     </update>

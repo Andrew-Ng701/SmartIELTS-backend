@@ -56,6 +56,14 @@
         LIMIT 1
     </select>
 
+    <select id="findAnyByIdForUser" resultMap="WritingRecordMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM writing_record
+        WHERE id = #{recordId}
+        AND user_id = #{userId}
+        LIMIT 1
+    </select>
+
     <select id="findByIdForAdmin" resultMap="WritingRecordMap">
         SELECT <include refid="Base_Column_List"/>
         FROM writing_record
@@ -305,7 +313,8 @@
 
     <update id="softDeleteById">
         UPDATE writing_record
-        SET is_deleted = 1
+        SET is_deleted = 1,
+            deleted_time = NOW()
         WHERE id = #{recordId}
           AND is_deleted = 0
     </update>
@@ -313,7 +322,8 @@
 
     <update id="softDeleteByIdForUser">
         UPDATE writing_record
-        SET is_deleted = 1
+        SET is_deleted = 1,
+            deleted_time = NOW()
         WHERE id = #{recordId}
           AND user_id = #{userId}
           AND is_deleted = 0
@@ -321,7 +331,8 @@
 
     <update id="restoreByIdForUser">
         UPDATE writing_record
-        SET is_deleted = 0
+        SET is_deleted = 0,
+            deleted_time = NULL
         WHERE id = #{recordId}
           AND user_id = #{userId}
           AND is_deleted = 1
@@ -367,6 +378,15 @@
         WHERE user_id = #{userId}
           AND is_deleted = 0
           AND ai_score IS NOT NULL
+    </select>
+
+    <select id="findRecentAiFailures" resultMap="WritingRecordMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM writing_record
+        WHERE is_deleted = 0
+          AND ai_status = 'FAILED'
+        ORDER BY created_time DESC, id DESC
+        LIMIT #{limit}
     </select>
 
     <select id="countAdminAiFailed" resultType="java.lang.Long">

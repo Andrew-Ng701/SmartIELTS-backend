@@ -30,4 +30,8 @@ public interface UserWritingService {
     PageResult<WritingRecordVO> pageActiveRecords(Long userId, UserWritingRecordPageQuery query);
 
     PageResult<WritingRecordVO> pageDeletedRecords(Long userId, UserWritingDeletedRecordPageQuery query);
+
+    void deleteRecord(Long recordId, Long userId);
+
+    void restoreRecord(Long recordId, Long userId);
 }

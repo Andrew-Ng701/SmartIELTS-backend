@@ -27,6 +27,8 @@ public class AdminOverviewVO {
     private Long totalActiveRecords;
     private Long totalDeletedRecords;
 
+    private List<AdminModuleStatVO> modules;
+
     private Integer recentAiFailureCount;
     private List<AdminRecentIssueVO> recentIssues;
     private LocalDateTime generatedAt;

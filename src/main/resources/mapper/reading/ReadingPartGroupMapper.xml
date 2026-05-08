@@ -13,6 +13,14 @@
         <result column="instruction_text" property="instructionText"/>
         <result column="group_guide_text" property="groupGuideText"/>
         <result column="group_requirement_text" property="groupRequirementText"/>
+        <result column="question_type" property="questionType"/>
+        <result column="answer_mode" property="answerMode"/>
+        <result column="options_json" property="optionsJson"/>
+        <result column="accepted_answers_json" property="acceptedAnswersJson"/>
+        <result column="answer_rules_json" property="answerRulesJson"/>
+        <result column="case_insensitive" property="caseInsensitive"/>
+        <result column="ignore_whitespace" property="ignoreWhitespace"/>
+        <result column="ignore_punctuation" property="ignorePunctuation"/>
         <result column="question_no_start" property="questionNoStart"/>
         <result column="question_no_end" property="questionNoEnd"/>
         <result column="display_order" property="displayOrder"/>
@@ -29,6 +37,14 @@
         instruction_text,
         group_guide_text,
         group_requirement_text,
+        question_type,
+        answer_mode,
+        options_json,
+        accepted_answers_json,
+        answer_rules_json,
+        case_insensitive,
+        ignore_whitespace,
+        ignore_punctuation,
         question_no_start,
         question_no_end,
         display_order,
@@ -49,6 +65,14 @@
         instruction_text,
         group_guide_text,
         group_requirement_text,
+        question_type,
+        answer_mode,
+        options_json,
+        accepted_answers_json,
+        answer_rules_json,
+        case_insensitive,
+        ignore_whitespace,
+        ignore_punctuation,
         question_no_start,
         question_no_end,
         display_order,
@@ -62,6 +86,14 @@
         #{instructionText},
         #{groupGuideText},
         #{groupRequirementText},
+        #{questionType},
+        #{answerMode},
+        #{optionsJson},
+        #{acceptedAnswersJson},
+        #{answerRulesJson},
+        #{caseInsensitive},
+        #{ignoreWhitespace},
+        #{ignorePunctuation},
         #{questionNoStart},
         #{questionNoEnd},
         #{displayOrder},
@@ -109,6 +141,14 @@
         instruction_text = #{instructionText},
         group_guide_text = #{groupGuideText},
         group_requirement_text = #{groupRequirementText},
+        question_type = #{questionType},
+        answer_mode = #{answerMode},
+        options_json = #{optionsJson},
+        accepted_answers_json = #{acceptedAnswersJson},
+        answer_rules_json = #{answerRulesJson},
+        case_insensitive = #{caseInsensitive},
+        ignore_whitespace = #{ignoreWhitespace},
+        ignore_punctuation = #{ignorePunctuation},
         question_no_start = #{questionNoStart},
         question_no_end = #{questionNoEnd},
         display_order = #{displayOrder},

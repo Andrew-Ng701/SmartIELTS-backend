@@ -71,6 +71,22 @@ public class UserWritingController {
         return Result.success(userWritingService.getRecord(recordId, userId));
     }
 
+    @Operation(summary = "Delete my writing record")
+    @DeleteMapping("/records/{recordId}")
+    public Result<?> deleteRecord(@PathVariable Long recordId) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        userWritingService.deleteRecord(recordId, userId);
+        return Result.success();
+    }
+
+    @Operation(summary = "Restore my writing record")
+    @PutMapping("/records/{recordId}/restore")
+    public Result<?> restoreRecord(@PathVariable Long recordId) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        userWritingService.restoreRecord(recordId, userId);
+        return Result.success();
+    }
+
     @Operation(summary = "User writing active records overview")
     @PostMapping("/records/overview")
     public Result<?> pageActiveRecords(@Valid @RequestBody UserWritingRecordPageQuery query) {

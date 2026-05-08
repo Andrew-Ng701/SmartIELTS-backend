@@ -7,6 +7,9 @@ import com.andrew.smartielts.common.domain.pojo.QuestionAnswerRule;
 import com.andrew.smartielts.common.domain.pojo.TestPartGroup;
 import com.andrew.smartielts.common.page.PageResult;
 import com.andrew.smartielts.common.image.service.BizImageResourceService;
+import com.andrew.smartielts.common.storage.BucketType;
+import com.andrew.smartielts.reading.constant.ReadingConstants;
+import com.andrew.smartielts.reading.constant.ReadingStorageConstants;
 import com.andrew.smartielts.reading.domain.dto.ReadingPassageDTO;
 import com.andrew.smartielts.reading.domain.dto.ReadingQuestionDTO;
 import com.andrew.smartielts.reading.domain.dto.ReadingTestDTO;
@@ -18,6 +21,8 @@ import com.andrew.smartielts.reading.domain.pojo.ReadingTest;
 import com.andrew.smartielts.reading.domain.query.admin.AdminReadingDeletedRecordPageQuery;
 import com.andrew.smartielts.reading.domain.query.admin.AdminReadingRecordPageQuery;
 import com.andrew.smartielts.reading.domain.vo.ReadingAnswerResultVO;
+import com.andrew.smartielts.reading.domain.vo.ReadingPartGroupVO;
+import com.andrew.smartielts.reading.domain.vo.ReadingPartVO;
 import com.andrew.smartielts.reading.domain.vo.ReadingPassageVO;
 import com.andrew.smartielts.reading.domain.vo.ReadingQuestionVO;
 import com.andrew.smartielts.reading.domain.vo.ReadingRecordDetailVO;
@@ -53,11 +58,7 @@ import static com.andrew.smartielts.reading.constant.ReadingQuestionConstants.re
 @Service
 public class AdminReadingServiceImpl implements AdminReadingService {
 
-    private static final String TARGET_TYPE_READING_PART_GROUP = "READING_PART_GROUP";
-    private static final String BUCKET_TYPE_QUESTION_GROUP_IMAGE = "QUESTION_GROUP_IMAGE";
-    private static final String BIZ_PATH_QUESTION_GROUP_IMAGE = "question_group_image";
-
-    private static final String TIMER_MODE_TEST_LEVEL = "test_level";
+    private static final String TIMER_MODE_TEST_LEVEL = ReadingConstants.TIMER_MODE_TEST_LEVEL;
     private static final int DEFAULT_TOTAL_SECONDS = 3600;
     private static final int DEFAULT_AUTO_SUBMIT = 1;
     private static final int DEFAULT_ALLOW_PAUSE = 0;
@@ -130,8 +131,9 @@ public class AdminReadingServiceImpl implements AdminReadingService {
         List<TestPartGroup> partGroups = readingPartGroupService.listAnyByTestId(testId);
         attachGroupImages(partGroups);
 
-        List<ReadingPassage> passages = readingPassageMapper.findAnyByTestId(testId);
-        List<ReadingPassageVO> passageVoList = buildPassageVoList(passages, false);
+        List<ReadingPassage> passages = safeList(readingPassageMapper.findAnyByTestId(testId));
+        List<ReadingQuestion> questions = findQuestions(passages, false);
+        List<ReadingQuestionVO> questionVoList = buildQuestionVoList(questions, partGroups);
 
         ReadingTestDetailVO detailVo = new ReadingTestDetailVO();
         detailVo.setId(test.getId());
@@ -142,7 +144,8 @@ public class AdminReadingServiceImpl implements AdminReadingService {
         detailVo.setAutoSubmit(defaultFlag(test.getAutoSubmit(), DEFAULT_AUTO_SUBMIT));
         detailVo.setAllowPause(defaultFlag(test.getAllowPause(), DEFAULT_ALLOW_PAUSE));
         detailVo.setPartGroups(partGroups);
-        detailVo.setPassages(passageVoList);
+        detailVo.setParts(buildPartVoList(partGroups, passages, questionVoList));
+        detailVo.setQuestions(questionVoList);
         return detailVo;
     }
 
@@ -480,77 +483,45 @@ public class AdminReadingServiceImpl implements AdminReadingService {
             throw new RuntimeException("Reading test not found");
         }
 
-        List<ReadingPassage> passages = readingPassageMapper.findAnyByTestId(test.getId());
-        List<ReadingAnswerRecord> answerRecords = readingAnswerRecordMapper.findByRecordId(recordId);
-
-        List<ReadingPassageVO> passageVoList = new ArrayList<>();
+        List<TestPartGroup> partGroups = safeList(readingPartGroupService.listAnyByTestId(test.getId()));
+        attachGroupImages(partGroups);
+        List<ReadingPassage> passages = safeList(readingPassageMapper.findAnyByTestId(test.getId()));
+        List<ReadingQuestion> questions = findQuestions(passages, false);
+        List<ReadingQuestionVO> questionVoList = buildQuestionVoList(questions, partGroups);
+        List<ReadingAnswerRecord> answerRecords = safeList(readingAnswerRecordMapper.findByRecordId(recordId));
+        Map<Long, ReadingAnswerRecord> answerMap = answerRecords.stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item.getQuestionId() != null)
+                .collect(Collectors.toMap(ReadingAnswerRecord::getQuestionId, item -> item, (a, b) -> a));
+        Map<Long, TestPartGroup> groupMap = toGroupMap(partGroups);
         List<ReadingAnswerResultVO> answerVoList = new ArrayList<>();
 
-        if (passages != null) {
-            for (ReadingPassage passage : passages) {
-                if (passage == null) {
-                    continue;
-                }
-
-                ReadingPassageVO passageVo = new ReadingPassageVO();
-                passageVo.setId(passage.getId());
-                passageVo.setPartGroupId(passage.getPartGroupId());
-                passageVo.setPassageNo(passage.getPassageNo());
-                passageVo.setTitle(passage.getTitle());
-                passageVo.setContent(passage.getContent());
-                passageVo.setMaterialType(passage.getMaterialType());
-                passageVo.setDisplayOrder(passage.getDisplayOrder());
-
-                List<ReadingQuestion> questions = readingQuestionMapper.findAnyByPassageId(passage.getId());
-                List<ReadingQuestionVO> questionVoList = new ArrayList<>();
-
-                if (questions != null) {
-                    for (ReadingQuestion question : questions) {
-                        if (question == null) {
-                            continue;
-                        }
-
-                        questionVoList.add(toQuestionVo(question));
-
-                        ReadingAnswerRecord matched = findMatchedAnswer(answerRecords, question.getId());
-
-                        ReadingAnswerResultVO answerVo = new ReadingAnswerResultVO();
-                        answerVo.setQuestionId(question.getId());
-                        answerVo.setQuestionType(question.getQuestionType());
-                        answerVo.setAnswerMode(question.getAnswerMode());
-                        answerVo.setQuestionText(question.getQuestionText());
-                        answerVo.setOptionsJson(question.getOptionsJson());
-                        answerVo.setCorrectAnswer(buildDisplayCorrectAnswer(question));
-
-                        if (matched != null) {
-                            answerVo.setUserAnswer(matched.getUserAnswer());
-                            answerVo.setIsCorrect(matched.getIsCorrect());
-                            answerVo.setScore(matched.getScore());
-                        } else {
-                            answerVo.setUserAnswer(null);
-                            answerVo.setIsCorrect(0);
-                            answerVo.setScore(0);
-                        }
-                        answerVoList.add(answerVo);
-                    }
-                }
-
-                questionVoList.sort(
-                        Comparator.comparing(ReadingQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
-                                .thenComparing(ReadingQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo))
-                                .thenComparing(ReadingQuestionVO::getId, Comparator.nullsLast(Long::compareTo))
-                );
-
-                passageVo.setQuestions(questionVoList);
-                passageVoList.add(passageVo);
+        for (ReadingQuestion question : questions) {
+            if (question == null || question.getId() == null) {
+                continue;
             }
-        }
+            TestPartGroup partGroup = groupMap.get(question.getPartGroupId());
+            ReadingAnswerRecord matched = answerMap.get(question.getId());
 
-        passageVoList.sort(
-                Comparator.comparing(ReadingPassageVO::getPassageNo, Comparator.nullsLast(Integer::compareTo))
-                        .thenComparing(ReadingPassageVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
-                        .thenComparing(ReadingPassageVO::getId, Comparator.nullsLast(Long::compareTo))
-        );
+            ReadingAnswerResultVO answerVo = new ReadingAnswerResultVO();
+            answerVo.setQuestionId(question.getId());
+            answerVo.setQuestionType(resolveField(question.getQuestionType(), partGroup == null ? null : partGroup.getQuestionType()));
+            answerVo.setAnswerMode(resolveField(question.getAnswerMode(), partGroup == null ? null : partGroup.getAnswerMode()));
+            answerVo.setQuestionText(question.getQuestionText());
+            answerVo.setOptionsJson(resolveField(question.getOptionsJson(), partGroup == null ? null : partGroup.getOptionsJson()));
+            answerVo.setCorrectAnswer(buildDisplayCorrectAnswer(question, partGroup));
+
+            if (matched != null) {
+                answerVo.setUserAnswer(matched.getUserAnswer());
+                answerVo.setIsCorrect(matched.getIsCorrect());
+                answerVo.setScore(matched.getScore());
+            } else {
+                answerVo.setUserAnswer(null);
+                answerVo.setIsCorrect(0);
+                answerVo.setScore(0);
+            }
+            answerVoList.add(answerVo);
+        }
 
         ReadingRecordDetailVO detailVo = new ReadingRecordDetailVO();
         detailVo.setRecordId(record.getId());
@@ -558,7 +529,8 @@ public class AdminReadingServiceImpl implements AdminReadingService {
         detailVo.setTestTitle(test.getTitle());
         detailVo.setTotalScore(record.getTotalScore());
         detailVo.setCreatedTime(record.getCreatedTime());
-        detailVo.setPassages(passageVoList);
+        detailVo.setParts(buildPartVoList(partGroups, passages, questionVoList));
+        detailVo.setQuestions(questionVoList);
         detailVo.setAnswers(answerVoList);
         return detailVo;
     }
@@ -615,6 +587,211 @@ public class AdminReadingServiceImpl implements AdminReadingService {
             return test.getTotalSeconds();
         }
         return tokenEquals(test.getTimerMode(), TIMER_MODE_TEST_LEVEL) ? DEFAULT_TOTAL_SECONDS : null;
+    }
+
+    private List<ReadingQuestion> findQuestions(List<ReadingPassage> passages, boolean activeOnly) {
+        List<ReadingQuestion> allQuestions = new ArrayList<>();
+        for (ReadingPassage passage : safeList(passages)) {
+            if (passage == null || passage.getId() == null) {
+                continue;
+            }
+            List<ReadingQuestion> questions = activeOnly
+                    ? readingQuestionMapper.findActiveByPassageId(passage.getId())
+                    : readingQuestionMapper.findAnyByPassageId(passage.getId());
+            allQuestions.addAll(safeList(questions));
+        }
+        allQuestions.sort(Comparator.comparing(ReadingQuestion::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                .thenComparing(ReadingQuestion::getQuestionNumber, Comparator.nullsLast(Integer::compareTo))
+                .thenComparing(ReadingQuestion::getId, Comparator.nullsLast(Long::compareTo)));
+        return allQuestions;
+    }
+
+    private List<ReadingQuestionVO> buildQuestionVoList(List<ReadingQuestion> questions, List<TestPartGroup> partGroups) {
+        Map<Long, TestPartGroup> groupMap = toGroupMap(partGroups);
+        Map<Long, List<BizImageResourceDTO>> groupImageMap = safeList(partGroups).stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item.getId() != null)
+                .collect(Collectors.toMap(
+                        TestPartGroup::getId,
+                        item -> toBizImageResourceDTOList(item.getImages()),
+                        (a, b) -> a
+                ));
+
+        return safeList(questions).stream()
+                .filter(Objects::nonNull)
+                .map(question -> toQuestionVo(question, groupMap.get(question.getPartGroupId())))
+                .peek(vo -> vo.setGroupImages(new ArrayList<>(
+                        groupImageMap.getOrDefault(vo.getPartGroupId(), new ArrayList<>())
+                )))
+                .sorted(Comparator.comparing(ReadingQuestionVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingQuestionVO::getQuestionNumber, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingQuestionVO::getId, Comparator.nullsLast(Long::compareTo)))
+                .collect(Collectors.toList());
+    }
+
+    private List<ReadingPartVO> buildPartVoList(List<TestPartGroup> partGroups,
+                                                List<ReadingPassage> passages,
+                                                List<ReadingQuestionVO> questions) {
+        List<ReadingPassageVO> passageVoList = buildPassageVoList(passages, questions);
+        Map<Long, List<ReadingPassageVO>> passagesByGroup = passageVoList.stream()
+                .filter(item -> item.getPartGroupId() != null)
+                .collect(Collectors.groupingBy(ReadingPassageVO::getPartGroupId));
+        Map<Long, List<ReadingQuestionVO>> questionsByGroup = safeList(questions).stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item.getPartGroupId() != null)
+                .collect(Collectors.groupingBy(ReadingQuestionVO::getPartGroupId));
+
+        Map<Integer, ReadingPartVO> partMap = new java.util.LinkedHashMap<>();
+        for (TestPartGroup partGroup : sortPartGroups(partGroups)) {
+            if (partGroup == null) {
+                continue;
+            }
+            Integer partNumber = partGroup.getPartNumber() == null ? 1 : partGroup.getPartNumber();
+            ReadingPartVO partVO = partMap.computeIfAbsent(partNumber, this::newReadingPartVO);
+            if (partVO.getDisplayOrder() == null
+                    || (partGroup.getDisplayOrder() != null && partGroup.getDisplayOrder() < partVO.getDisplayOrder())) {
+                partVO.setDisplayOrder(partGroup.getDisplayOrder());
+            }
+
+            ReadingPartGroupVO groupVO = toPartGroupVo(partGroup);
+            groupVO.setImages(toBizImageResourceDTOList(partGroup.getImages()));
+            groupVO.setPassages(new ArrayList<>(passagesByGroup.getOrDefault(partGroup.getId(), new ArrayList<>())));
+            groupVO.setQuestions(new ArrayList<>(questionsByGroup.getOrDefault(partGroup.getId(), new ArrayList<>())));
+            partVO.getGroups().add(groupVO);
+        }
+
+        List<ReadingPassageVO> ungroupedPassages = passageVoList.stream()
+                .filter(item -> item.getPartGroupId() == null)
+                .collect(Collectors.toList());
+        List<ReadingQuestionVO> ungroupedQuestions = safeList(questions).stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item.getPartGroupId() == null)
+                .collect(Collectors.toList());
+        if (!ungroupedPassages.isEmpty() || !ungroupedQuestions.isEmpty()) {
+            ReadingPartVO partVO = partMap.computeIfAbsent(1, this::newReadingPartVO);
+            ReadingPartGroupVO groupVO = new ReadingPartGroupVO();
+            groupVO.setPartNumber(1);
+            groupVO.setGroupNumber(0);
+            groupVO.setTitle("Ungrouped");
+            groupVO.setDisplayOrder(Integer.MAX_VALUE);
+            groupVO.setImages(new ArrayList<>());
+            groupVO.setPassages(ungroupedPassages);
+            groupVO.setQuestions(ungroupedQuestions);
+            partVO.getGroups().add(groupVO);
+        }
+
+        return partMap.values().stream()
+                .sorted(Comparator.comparing(ReadingPartVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingPartVO::getPartNumber, Comparator.nullsLast(Integer::compareTo)))
+                .peek(part -> part.getGroups().sort(Comparator
+                        .comparing(ReadingPartGroupVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingPartGroupVO::getGroupNumber, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingPartGroupVO::getId, Comparator.nullsLast(Long::compareTo))))
+                .collect(Collectors.toList());
+    }
+
+    private List<ReadingPassageVO> buildPassageVoList(List<ReadingPassage> passages, List<ReadingQuestionVO> questions) {
+        Map<Long, List<ReadingQuestionVO>> questionsByPassage = safeList(questions).stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item.getPassageId() != null)
+                .collect(Collectors.groupingBy(ReadingQuestionVO::getPassageId));
+
+        return safeList(passages).stream()
+                .filter(Objects::nonNull)
+                .map(passage -> {
+                    ReadingPassageVO vo = toPassageVo(passage);
+                    vo.setQuestions(new ArrayList<>(questionsByPassage.getOrDefault(passage.getId(), new ArrayList<>())));
+                    return vo;
+                })
+                .sorted(Comparator.comparing(ReadingPassageVO::getPassageNo, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingPassageVO::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(ReadingPassageVO::getId, Comparator.nullsLast(Long::compareTo)))
+                .collect(Collectors.toList());
+    }
+
+    private ReadingPassageVO toPassageVo(ReadingPassage passage) {
+        ReadingPassageVO vo = new ReadingPassageVO();
+        vo.setId(passage.getId());
+        vo.setPartGroupId(passage.getPartGroupId());
+        vo.setPassageNo(passage.getPassageNo());
+        vo.setTitle(passage.getTitle());
+        vo.setContent(passage.getContent());
+        vo.setMaterialType(passage.getMaterialType());
+        vo.setDisplayOrder(passage.getDisplayOrder());
+        return vo;
+    }
+
+    private ReadingPartVO newReadingPartVO(Integer partNumber) {
+        ReadingPartVO vo = new ReadingPartVO();
+        vo.setPartNumber(partNumber);
+        vo.setTitle("Part " + partNumber);
+        vo.setGroups(new ArrayList<>());
+        return vo;
+    }
+
+    private ReadingPartGroupVO toPartGroupVo(TestPartGroup partGroup) {
+        ReadingPartGroupVO vo = new ReadingPartGroupVO();
+        vo.setId(partGroup.getId());
+        vo.setTestId(partGroup.getTestId());
+        vo.setPartNumber(partGroup.getPartNumber());
+        vo.setGroupNumber(partGroup.getGroupNumber());
+        vo.setTitle(partGroup.getTitle());
+        vo.setInstructionText(partGroup.getInstructionText());
+        vo.setGroupGuideText(partGroup.getGroupGuideText());
+        vo.setGroupRequirementText(partGroup.getGroupRequirementText());
+        vo.setQuestionType(partGroup.getQuestionType());
+        vo.setAnswerMode(partGroup.getAnswerMode());
+        vo.setOptionsJson(partGroup.getOptionsJson());
+        vo.setAcceptedAnswersJson(partGroup.getAcceptedAnswersJson());
+        vo.setAnswerRulesJson(partGroup.getAnswerRulesJson());
+        vo.setCaseInsensitive(partGroup.getCaseInsensitive());
+        vo.setIgnoreWhitespace(partGroup.getIgnoreWhitespace());
+        vo.setIgnorePunctuation(partGroup.getIgnorePunctuation());
+        vo.setQuestionNoStart(partGroup.getQuestionNoStart());
+        vo.setQuestionNoEnd(partGroup.getQuestionNoEnd());
+        vo.setDisplayOrder(partGroup.getDisplayOrder());
+        vo.setTimeLimitSeconds(partGroup.getTimeLimitSeconds());
+        vo.setIsDeleted(partGroup.getIsDeleted());
+        return vo;
+    }
+
+    private List<TestPartGroup> sortPartGroups(List<TestPartGroup> partGroups) {
+        return safeList(partGroups).stream()
+                .sorted(Comparator.comparing(TestPartGroup::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(TestPartGroup::getPartNumber, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(TestPartGroup::getGroupNumber, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(TestPartGroup::getId, Comparator.nullsLast(Long::compareTo)))
+                .collect(Collectors.toList());
+    }
+
+    private Map<Long, TestPartGroup> toGroupMap(List<TestPartGroup> partGroups) {
+        return safeList(partGroups).stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item.getId() != null)
+                .collect(Collectors.toMap(TestPartGroup::getId, item -> item, (a, b) -> a));
+    }
+
+    private List<BizImageResourceDTO> toBizImageResourceDTOList(List<BizImageResource> images) {
+        if (images == null || images.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return images.stream()
+                .filter(Objects::nonNull)
+                .map(this::toBizImageResourceDTO)
+                .collect(Collectors.toList());
+    }
+
+    private BizImageResourceDTO toBizImageResourceDTO(BizImageResource image) {
+        BizImageResourceDTO dto = new BizImageResourceDTO();
+        dto.setObjectKey(image.getObjectKey());
+        dto.setFileUrl(image.getFileUrl());
+        dto.setOriginalName(image.getOriginalName());
+        dto.setContentType(image.getContentType());
+        dto.setFileSize(image.getFileSize());
+        dto.setWidth(image.getWidth());
+        dto.setHeight(image.getHeight());
+        dto.setSortOrder(image.getSortOrder());
+        return dto;
     }
 
     private List<ReadingPassageVO> buildPassageVoList(List<ReadingPassage> passages, boolean activeOnly) {
@@ -738,10 +915,10 @@ public class AdminReadingServiceImpl implements AdminReadingService {
         }
 
         bizImageResourceService.replaceByTarget(
-                TARGET_TYPE_READING_PART_GROUP,
+                ReadingStorageConstants.TARGET_TYPE_READING_PART_GROUP,
                 partGroupId,
-                BUCKET_TYPE_QUESTION_GROUP_IMAGE,
-                BIZ_PATH_QUESTION_GROUP_IMAGE,
+                BucketType.QUESTION_GROUP_IMAGE.getKey(),
+                ReadingStorageConstants.BIZ_PATH_QUESTION_GROUP_IMAGE,
                 groupImages
         );
     }
@@ -763,7 +940,7 @@ public class AdminReadingServiceImpl implements AdminReadingService {
         }
 
         Map<Long, List<BizImageResource>> imageMap = bizImageResourceService.listByTargets(
-                TARGET_TYPE_READING_PART_GROUP,
+                ReadingStorageConstants.TARGET_TYPE_READING_PART_GROUP,
                 targetIds
         );
         if (imageMap == null) {
@@ -797,21 +974,31 @@ public class AdminReadingServiceImpl implements AdminReadingService {
     }
 
     private ReadingQuestionVO toQuestionVo(ReadingQuestion question) {
+        return toQuestionVo(question, null);
+    }
+
+    private ReadingQuestionVO toQuestionVo(ReadingQuestion question, TestPartGroup partGroup) {
         ReadingQuestionVO vo = new ReadingQuestionVO();
         vo.setId(question.getId());
         vo.setPassageId(question.getPassageId());
         vo.setPartGroupId(question.getPartGroupId());
         vo.setQuestionNumber(question.getQuestionNumber());
-        vo.setQuestionType(question.getQuestionType());
-        vo.setAnswerMode(question.getAnswerMode());
+        vo.setQuestionType(resolveField(question.getQuestionType(), partGroup == null ? null : partGroup.getQuestionType()));
+        vo.setAnswerMode(resolveField(question.getAnswerMode(), partGroup == null ? null : partGroup.getAnswerMode()));
         vo.setQuestionText(question.getQuestionText());
-        vo.setCorrectAnswer(question.getCorrectAnswer());
-        vo.setOptionsJson(question.getOptionsJson());
-        vo.setAcceptedAnswersJson(question.getAcceptedAnswersJson());
+        vo.setCorrectAnswer(resolveField(question.getCorrectAnswer(), null));
+        vo.setOptionsJson(resolveField(question.getOptionsJson(), partGroup == null ? null : partGroup.getOptionsJson()));
+        vo.setAcceptedAnswersJson(resolveField(question.getAcceptedAnswersJson(), partGroup == null ? null : partGroup.getAcceptedAnswersJson()));
         vo.setGroupLabel(question.getGroupLabel());
-        vo.setCaseInsensitive(question.getCaseInsensitive());
-        vo.setIgnoreWhitespace(question.getIgnoreWhitespace());
-        vo.setIgnorePunctuation(question.getIgnorePunctuation());
+        vo.setCaseInsensitive(question.getCaseInsensitive() != null
+                ? question.getCaseInsensitive()
+                : (partGroup == null || partGroup.getCaseInsensitive() == null ? 1 : partGroup.getCaseInsensitive()));
+        vo.setIgnoreWhitespace(question.getIgnoreWhitespace() != null
+                ? question.getIgnoreWhitespace()
+                : (partGroup == null || partGroup.getIgnoreWhitespace() == null ? 1 : partGroup.getIgnoreWhitespace()));
+        vo.setIgnorePunctuation(question.getIgnorePunctuation() != null
+                ? question.getIgnorePunctuation()
+                : (partGroup == null || partGroup.getIgnorePunctuation() == null ? 0 : partGroup.getIgnorePunctuation()));
         vo.setDisplayOrder(question.getDisplayOrder());
         vo.setScore(question.getScore());
         vo.setAnswerRules(
@@ -837,6 +1024,10 @@ public class AdminReadingServiceImpl implements AdminReadingService {
     }
 
     private String buildDisplayCorrectAnswer(ReadingQuestion question) {
+        return buildDisplayCorrectAnswer(question, null);
+    }
+
+    private String buildDisplayCorrectAnswer(ReadingQuestion question, TestPartGroup partGroup) {
         if (question == null) {
             return null;
         }
@@ -869,7 +1060,17 @@ public class AdminReadingServiceImpl implements AdminReadingService {
             return String.join(", ", acceptedAnswers);
         }
 
-        return trimToNull(question.getCorrectAnswer());
+        String correctAnswer = trimToNull(question.getCorrectAnswer());
+        if (correctAnswer != null) {
+            return correctAnswer;
+        }
+
+        List<String> groupAcceptedAnswers = parseJsonStringList(partGroup == null ? null : partGroup.getAcceptedAnswersJson());
+        if (!groupAcceptedAnswers.isEmpty()) {
+            return String.join(", ", groupAcceptedAnswers);
+        }
+
+        return null;
     }
 
     private ReadingAnswerRecord findMatchedAnswer(List<ReadingAnswerRecord> answerRecords, Long questionId) {
@@ -917,6 +1118,15 @@ public class AdminReadingServiceImpl implements AdminReadingService {
 
     private Integer defaultFlag(Integer value, int defaultValue) {
         return value == null ? defaultValue : value;
+    }
+
+    private String resolveField(String preferred, String fallback) {
+        String normalizedPreferred = trimToNull(preferred);
+        return normalizedPreferred != null ? normalizedPreferred : trimToNull(fallback);
+    }
+
+    private <T> List<T> safeList(List<T> source) {
+        return source == null ? new ArrayList<>() : source;
     }
 
     private boolean tokenEquals(String actual, String expected) {

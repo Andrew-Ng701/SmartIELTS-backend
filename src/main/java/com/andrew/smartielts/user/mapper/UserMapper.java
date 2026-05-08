@@ -1,6 +1,7 @@
 package com.andrew.smartielts.user.mapper;
 
 import com.andrew.smartielts.auth.domain.pojo.User;
+import com.andrew.smartielts.user.domain.query.admin.AdminDeletedUserPageQuery;
 import com.andrew.smartielts.user.domain.query.admin.AdminUserPageQuery;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -20,9 +21,9 @@ public interface UserMapper {
                           @Param("offset") Integer offset,
                           @Param("limit") Integer limit);
 
-    Long countDeleted();
+    Long countDeleted(@Param("query") AdminDeletedUserPageQuery query);
 
-    List<User> pageDeleted(@Param("sortDirection") String sortDirection,
+    List<User> pageDeleted(@Param("query") AdminDeletedUserPageQuery query,
                            @Param("offset") Integer offset,
                            @Param("limit") Integer limit);
 

@@ -20,6 +20,8 @@ public interface WritingQuestionMapper {
 
     WritingQuestion findByIdForAdmin(@Param("id") Long id);
 
+    List<WritingQuestion> findByIdsForAdmin(@Param("ids") List<Long> ids);
+
     void logicalDeleteById(@Param("id") Long id,
                            @Param("deletedTime") LocalDateTime deletedTime);
 

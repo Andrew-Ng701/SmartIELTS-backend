@@ -24,9 +24,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.andrew.smartielts.common.constants.StorageBizConstants.BIZ_PATH_WRITING_QUESTION_IMAGE;
@@ -35,6 +38,9 @@ import static com.andrew.smartielts.common.constants.StorageBizConstants.TARGET_
 
 @Service
 public class AdminWritingServiceImpl implements AdminWritingService {
+
+    private static final String INPUT_TYPE_TEXT = "TEXT";
+    private static final int ANSWER_PREVIEW_LENGTH = 160;
 
     private final WritingQuestionMapper writingQuestionMapper;
     private final WritingRecordMapper writingRecordMapper;
@@ -175,13 +181,7 @@ public class AdminWritingServiceImpl implements AdminWritingService {
         }
 
         List<WritingRecord> records = writingRecordMapper.pageAdminActive(safe_query, offset, page_size);
-        List<WritingRecordVO> vo_list = new ArrayList<>();
-        if (records != null) {
-            for (WritingRecord record : records) {
-                vo_list.add(toRecordVO(record));
-            }
-        }
-        return new PageResult<>(vo_list, total, page_num, page_size);
+        return new PageResult<>(buildRecordVOList(records), total, page_num, page_size);
     }
 
     @Override
@@ -197,13 +197,7 @@ public class AdminWritingServiceImpl implements AdminWritingService {
         }
 
         List<WritingRecord> records = writingRecordMapper.pageAdminDeleted(safe_query, offset, page_size);
-        List<WritingRecordVO> vo_list = new ArrayList<>();
-        if (records != null) {
-            for (WritingRecord record : records) {
-                vo_list.add(toRecordVO(record));
-            }
-        }
-        return new PageResult<>(vo_list, total, page_num, page_size);
+        return new PageResult<>(buildRecordVOList(records), total, page_num, page_size);
     }
 
     @Override
@@ -314,19 +308,66 @@ public class AdminWritingServiceImpl implements AdminWritingService {
                 .collect(Collectors.toList());
     }
 
-    private WritingRecordVO toRecordVO(WritingRecord record) {
+    private List<WritingRecordVO> buildRecordVOList(List<WritingRecord> records) {
+        if (records == null || records.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<Long> question_ids = records.stream()
+                .filter(Objects::nonNull)
+                .map(WritingRecord::getQuestionId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<Long, WritingQuestion> question_map = findQuestionMap(question_ids);
+        Map<Long, List<BizImageResource>> image_map = safeImageMap(question_ids);
+
+        List<Long> record_ids = records.stream()
+                .filter(Objects::nonNull)
+                .map(WritingRecord::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        Map<Long, Integer> attachment_count_map = findAttachmentCountMap(record_ids);
+
+        List<WritingRecordVO> result = new ArrayList<>();
+        for (WritingRecord record : records) {
+            if (record == null) {
+                continue;
+            }
+            result.add(toRecordVO(
+                    record,
+                    question_map.get(record.getQuestionId()),
+                    image_map.get(record.getQuestionId()),
+                    attachment_count_map.getOrDefault(record.getId(), 0)
+            ));
+        }
+        return result;
+    }
+
+    private WritingRecordVO toRecordVO(WritingRecord record,
+                                       WritingQuestion question,
+                                       List<BizImageResource> question_images,
+                                       Integer attachment_count) {
+        List<BizImageResource> sorted_images = sortImages(question_images);
+
         WritingRecordVO vo = new WritingRecordVO();
         vo.setId(record.getId());
         vo.setQuestionId(record.getQuestionId());
+        vo.setQuestionTitle(question == null ? null : question.getTitle());
+        vo.setQuestionDescription(question == null ? null : question.getDescription());
+        vo.setQuestionImageUrl(resolveQuestionImageUrl(question, sorted_images));
+        vo.setQuestionImages(sorted_images);
+        vo.setTaskType(question == null ? null : question.getTaskType());
         vo.setInputType(record.getInputType());
+        vo.setAnswerPreview(buildAnswerPreview(record));
+        vo.setAttachmentCount(attachment_count == null ? 0 : attachment_count);
         vo.setTargetScore(record.getTargetScore());
         vo.setAiScore(record.getAiScore());
         vo.setAiStatus(record.getAiStatus());
+        vo.setIsDeleted(record.getIsDeleted());
+        vo.setDeletedTime(record.getDeletedTime());
         vo.setCreatedTime(record.getCreatedTime());
-
-        WritingQuestion question = writingQuestionMapper.findByIdForAdmin(record.getQuestionId());
-        vo.setQuestionTitle(question == null ? null : question.getTitle());
-
         return vo;
     }
 
@@ -340,16 +381,21 @@ public class AdminWritingServiceImpl implements AdminWritingService {
         vo.setQuestionTitle(question == null ? null : question.getTitle());
         vo.setQuestionDescription(question == null ? null : question.getDescription());
         vo.setQuestionImageUrl(resolveQuestionImageUrl(question, question_images));
+        vo.setQuestionImages(sortImages(question_images));
         vo.setTaskType(question == null ? null : question.getTaskType());
         vo.setInputType(record.getInputType());
         vo.setTextContent(record.getTextContent());
         vo.setExtractedText(record.getExtractedText());
+        vo.setAnswerPreview(buildAnswerPreview(record));
+        vo.setAttachmentCount(attachments == null ? 0 : attachments.size());
         vo.setTargetScore(record.getTargetScore());
         vo.setAiScore(record.getAiScore());
         vo.setAiFeedback(record.getAiFeedback());
         vo.setAiStatus(record.getAiStatus());
         vo.setAiProvider(record.getAiProvider());
         vo.setAiModel(record.getAiModel());
+        vo.setIsDeleted(record.getIsDeleted());
+        vo.setDeletedTime(record.getDeletedTime());
         vo.setCreatedTime(record.getCreatedTime());
 
         List<WritingAttachmentVO> attachment_vo_list = new ArrayList<>();
@@ -387,6 +433,99 @@ public class AdminWritingServiceImpl implements AdminWritingService {
             }
         }
         return question == null ? null : trimToNull(question.getImageUrl());
+    }
+
+    private Map<Long, WritingQuestion> findQuestionMap(List<Long> question_ids) {
+        if (question_ids == null || question_ids.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<WritingQuestion> questions = writingQuestionMapper.findByIdsForAdmin(question_ids);
+        if (questions == null || questions.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return questions.stream()
+                .filter(question -> question != null && question.getId() != null)
+                .collect(Collectors.toMap(
+                        WritingQuestion::getId,
+                        Function.identity(),
+                        (left, right) -> left,
+                        LinkedHashMap::new
+                ));
+    }
+
+    private Map<Long, List<BizImageResource>> safeImageMap(List<Long> question_ids) {
+        if (question_ids == null || question_ids.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, List<BizImageResource>> image_map = bizImageResourceService.listByTargets(
+                TARGET_TYPE_WRITING_QUESTION,
+                question_ids
+        );
+        return image_map == null ? Collections.emptyMap() : image_map;
+    }
+
+    private Map<Long, Integer> findAttachmentCountMap(List<Long> record_ids) {
+        if (record_ids == null || record_ids.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Map<String, Object>> rows = writingRecordAttachmentMapper.countByRecordIds(record_ids);
+        if (rows == null || rows.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, Integer> result = new HashMap<>();
+        for (Map<String, Object> row : rows) {
+            Long record_id = toLong(firstValue(row, "recordId", "record_id", "RECORDID", "RECORD_ID"));
+            Integer count = toInteger(firstValue(row, "attachmentCount", "attachment_count", "ATTACHMENTCOUNT", "ATTACHMENT_COUNT"));
+            if (record_id != null && count != null) {
+                result.put(record_id, count);
+            }
+        }
+        return result;
+    }
+
+    private String buildAnswerPreview(WritingRecord record) {
+        String source = INPUT_TYPE_TEXT.equals(record.getInputType())
+                ? record.getTextContent()
+                : record.getExtractedText();
+        String trimmed = trimToNull(source);
+        if (trimmed == null) {
+            return null;
+        }
+        return trimmed.length() <= ANSWER_PREVIEW_LENGTH
+                ? trimmed
+                : trimmed.substring(0, ANSWER_PREVIEW_LENGTH);
+    }
+
+    private Long toLong(Object value) {
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof String text && !text.isBlank()) {
+            return Long.parseLong(text);
+        }
+        return null;
+    }
+
+    private Object firstValue(Map<String, Object> row, String... keys) {
+        if (row == null || keys == null) {
+            return null;
+        }
+        for (String key : keys) {
+            if (row.containsKey(key)) {
+                return row.get(key);
+            }
+        }
+        return null;
+    }
+
+    private Integer toInteger(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value instanceof String text && !text.isBlank()) {
+            return Integer.parseInt(text);
+        }
+        return null;
     }
 
     private void validateQuestionInput(WritingQuestionDTO dto) {

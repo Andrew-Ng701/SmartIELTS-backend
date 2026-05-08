@@ -52,6 +52,18 @@
         order by sort_order asc, id asc
     </select>
 
+    <select id="countByRecordIds" resultType="map">
+        select
+            record_id as recordId,
+            count(1) as attachmentCount
+        from writing_record_attachment
+        where record_id in
+        <foreach collection="recordIds" item="recordId" open="(" separator="," close=")">
+            #{recordId}
+        </foreach>
+        group by record_id
+    </select>
+
     <update id="updateOcrText" parameterType="com.andrew.smartielts.writing.domain.pojo.WritingRecordAttachment">
         update writing_record_attachment
         set ocr_text = #{ocrText}

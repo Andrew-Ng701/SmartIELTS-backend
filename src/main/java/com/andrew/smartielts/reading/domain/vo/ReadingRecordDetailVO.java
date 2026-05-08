@@ -13,6 +13,7 @@ public class ReadingRecordDetailVO {
     private Integer totalScore;
     private LocalDateTime createdTime;
 
-    private List<ReadingPassageVO> passages;
+    private List<ReadingPartVO> parts;
+    private List<ReadingQuestionVO> questions;
     private List<ReadingAnswerResultVO> answers;
 }

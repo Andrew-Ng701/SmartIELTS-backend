@@ -2,6 +2,7 @@ package com.andrew.smartielts.common.storage.service.impl;
 
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
+import com.aliyun.oss.model.OSSObject;
 import com.aliyun.oss.model.PutObjectRequest;
 import com.andrew.smartielts.common.storage.BucketType;
 import com.andrew.smartielts.common.storage.OssProperties;
@@ -10,6 +11,8 @@ import com.andrew.smartielts.common.storage.service.OssStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.UUID;
 
 @Service
@@ -55,6 +58,38 @@ public class OssStorageServiceImpl implements OssStorageService {
             return new UploadResult(fileUrl, objectKey);
         } catch (Exception e) {
             throw new RuntimeException("OSS upload failed: " + e.getMessage(), e);
+        } finally {
+            if (ossClient != null) {
+                ossClient.shutdown();
+            }
+        }
+    }
+
+    @Override
+    public byte[] downloadBytes(BucketType bucketType, String objectKey) {
+        if (bucketType == null) {
+            throw new RuntimeException("Bucket type is required");
+        }
+        if (objectKey == null || objectKey.isBlank()) {
+            throw new RuntimeException("Object key is required");
+        }
+
+        OssProperties.BucketConfig bucketConfig = ossProperties.requireBucket(bucketType.getKey());
+        OSS ossClient = null;
+        try {
+            ossClient = new OSSClientBuilder().build(
+                    ossProperties.getEndpoint(),
+                    ossProperties.getAccessKeyId(),
+                    ossProperties.getAccessKeySecret()
+            );
+            OSSObject ossObject = ossClient.getObject(bucketConfig.getBucketName(), objectKey);
+            try (InputStream inputStream = ossObject.getObjectContent();
+                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                inputStream.transferTo(outputStream);
+                return outputStream.toByteArray();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("OSS download failed: " + e.getMessage(), e);
         } finally {
             if (ossClient != null) {
                 ossClient.shutdown();

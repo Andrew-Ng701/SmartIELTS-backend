@@ -46,65 +46,65 @@ public class UserReadingController {
     @Operation(summary = "Get reading session")
     @GetMapping("/sessions/{sessionId}")
     public Result<?> getSession(@PathVariable String sessionId) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        return Result.success(userReadingService.getSession(sessionId, user_id));
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(userReadingService.getSession(sessionId, userId));
     }
 
     @Operation(summary = "Pause reading session")
     @PostMapping("/sessions/{sessionId}/pause")
     public Result<?> pause(@PathVariable String sessionId,
                            @RequestBody(required = false) ReadingSessionActionDTO dto) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        return Result.success(userReadingService.pause(sessionId, user_id, dto));
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(userReadingService.pause(sessionId, userId, dto));
     }
 
     @Operation(summary = "Resume reading session")
     @PostMapping("/sessions/{sessionId}/resume")
     public Result<?> resume(@PathVariable String sessionId) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        return Result.success(userReadingService.resume(sessionId, user_id));
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(userReadingService.resume(sessionId, userId));
     }
 
     @Operation(summary = "Submit reading test")
     @PostMapping("/tests/{testId}/submit")
-    public Result<?> submit(@PathVariable Long testId, @RequestBody ReadingSubmitDTO dto) {
+    public Result<?> submit(@PathVariable Long testId, @Valid @RequestBody ReadingSubmitDTO dto) {
         return Result.success(userReadingService.submit(testId, dto));
     }
 
     @Operation(summary = "User reading active records overview")
     @PostMapping("/records/overview")
     public Result<?> pageActiveRecords(@Valid @RequestBody UserReadingRecordPageQuery query) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        return Result.success(userReadingService.pageActiveRecords(user_id, query));
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(userReadingService.pageActiveRecords(userId, query));
     }
 
     @Operation(summary = "User reading deleted records overview")
     @PostMapping("/records/deleted/overview")
     public Result<?> pageDeletedRecords(@Valid @RequestBody UserReadingDeletedRecordPageQuery query) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        return Result.success(userReadingService.pageDeletedRecords(user_id, query));
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(userReadingService.pageDeletedRecords(userId, query));
     }
 
     @Operation(summary = "Reading record detail")
     @GetMapping("/records/{recordId}")
     public Result<?> getRecord(@PathVariable Long recordId) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        return Result.success(userReadingService.getRecord(recordId, user_id));
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(userReadingService.getRecord(recordId, userId));
     }
 
     @Operation(summary = "Delete my reading record")
     @DeleteMapping("/records/{recordId}")
     public Result<?> deleteRecord(@PathVariable Long recordId) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        userReadingService.deleteRecord(recordId, user_id);
+        Long userId = SecurityUtils.getCurrentUserId();
+        userReadingService.deleteRecord(recordId, userId);
         return Result.success();
     }
 
     @Operation(summary = "Restore my reading record")
     @PutMapping("/records/{recordId}/restore")
     public Result<?> restoreRecord(@PathVariable Long recordId) {
-        Long user_id = SecurityUtils.getCurrentUserId();
-        userReadingService.restoreRecord(recordId, user_id);
+        Long userId = SecurityUtils.getCurrentUserId();
+        userReadingService.restoreRecord(recordId, userId);
         return Result.success();
     }
 }

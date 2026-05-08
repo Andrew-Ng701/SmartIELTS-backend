@@ -1,18 +1,29 @@
 package com.andrew.smartielts.reading.controller.admin;
 
+import com.andrew.smartielts.common.domain.pojo.TestPartGroup;
+import com.andrew.smartielts.common.image.domain.dto.BizImageResourceDTO;
+import com.andrew.smartielts.common.image.domain.pojo.BizImageResource;
+import com.andrew.smartielts.common.image.service.BizImageResourceService;
 import com.andrew.smartielts.common.resultDTO.Result;
+import com.andrew.smartielts.common.storage.BucketType;
+import com.andrew.smartielts.reading.constant.ReadingStorageConstants;
+import com.andrew.smartielts.reading.domain.dto.ReadingPartGroupDTO;
 import com.andrew.smartielts.reading.domain.dto.ReadingPassageDTO;
 import com.andrew.smartielts.reading.domain.dto.ReadingQuestionDTO;
 import com.andrew.smartielts.reading.domain.dto.ReadingTestDTO;
 import com.andrew.smartielts.reading.domain.query.admin.AdminReadingDeletedRecordPageQuery;
 import com.andrew.smartielts.reading.domain.query.admin.AdminReadingRecordPageQuery;
 import com.andrew.smartielts.reading.service.admin.AdminReadingService;
+import com.andrew.smartielts.reading.service.admin.impl.ReadingPartGroupServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Objects;
 
 @Tag(name = "Admin Reading API")
 @RestController
@@ -22,9 +33,15 @@ import org.springframework.web.bind.annotation.*;
 public class AdminReadingController {
 
     private final AdminReadingService adminReadingService;
+    private final ReadingPartGroupServiceImpl readingPartGroupService;
+    private final BizImageResourceService bizImageResourceService;
 
-    public AdminReadingController(AdminReadingService adminReadingService) {
+    public AdminReadingController(AdminReadingService adminReadingService,
+                                  ReadingPartGroupServiceImpl readingPartGroupService,
+                                  BizImageResourceService bizImageResourceService) {
         this.adminReadingService = adminReadingService;
+        this.readingPartGroupService = readingPartGroupService;
+        this.bizImageResourceService = bizImageResourceService;
     }
 
     @Operation(summary = "Create reading test")
@@ -93,6 +110,57 @@ public class AdminReadingController {
         return Result.success();
     }
 
+    @Operation(summary = "Create reading part group")
+    @PostMapping("/tests/{testId}/part-groups")
+    public Result<?> createPartGroup(@PathVariable Long testId, @Valid @RequestBody ReadingPartGroupDTO dto) {
+        adminReadingService.getTestDetail(testId);
+        TestPartGroup created = readingPartGroupService.createPartGroup(toPartGroup(testId, dto));
+        replacePartGroupImages(created.getId(), dto.getImages());
+        attachPartGroupImages(created);
+        return Result.success(created);
+    }
+
+    @Operation(summary = "Update reading part group")
+    @PutMapping("/part-groups/{partGroupId}")
+    public Result<?> updatePartGroup(@PathVariable Long partGroupId, @Valid @RequestBody ReadingPartGroupDTO dto) {
+        TestPartGroup existing = requirePartGroup(partGroupId);
+        TestPartGroup updated = readingPartGroupService.updatePartGroup(partGroupId, toPartGroup(existing.getTestId(), dto));
+        replacePartGroupImages(partGroupId, dto.getImages());
+        attachPartGroupImages(updated);
+        return Result.success(updated);
+    }
+
+    @Operation(summary = "Get reading part group detail")
+    @GetMapping("/part-groups/{partGroupId}")
+    public Result<?> getPartGroup(@PathVariable Long partGroupId) {
+        TestPartGroup partGroup = requirePartGroup(partGroupId);
+        attachPartGroupImages(partGroup);
+        return Result.success(partGroup);
+    }
+
+    @Operation(summary = "List reading part groups")
+    @GetMapping("/tests/{testId}/part-groups")
+    public Result<?> listPartGroups(@PathVariable Long testId) {
+        adminReadingService.getTestDetail(testId);
+        List<TestPartGroup> partGroups = readingPartGroupService.listActiveByTestId(testId);
+        attachPartGroupImages(partGroups);
+        return Result.success(partGroups);
+    }
+
+    @Operation(summary = "Delete reading part group")
+    @DeleteMapping("/part-groups/{partGroupId}")
+    public Result<?> deletePartGroup(@PathVariable Long partGroupId) {
+        readingPartGroupService.deleteById(partGroupId);
+        return Result.success();
+    }
+
+    @Operation(summary = "Restore reading part group")
+    @PutMapping("/part-groups/{partGroupId}/restore")
+    public Result<?> restorePartGroup(@PathVariable Long partGroupId) {
+        readingPartGroupService.restoreById(partGroupId);
+        return Result.success();
+    }
+
     @Operation(summary = "Create question")
     @PostMapping("/passages/{passageId}/questions")
     public Result<?> createQuestion(@PathVariable Long passageId, @RequestBody ReadingQuestionDTO dto) {
@@ -151,5 +219,94 @@ public class AdminReadingController {
     public Result<?> restoreRecord(@PathVariable Long recordId) {
         adminReadingService.restoreRecord(recordId);
         return Result.success();
+    }
+
+    private TestPartGroup toPartGroup(Long testId, ReadingPartGroupDTO dto) {
+        TestPartGroup partGroup = new TestPartGroup();
+        partGroup.setId(dto.getId());
+        partGroup.setTestId(testId);
+        partGroup.setPartNumber(dto.getPartNumber());
+        partGroup.setGroupNumber(dto.getGroupNumber());
+        partGroup.setTitle(trimToNull(dto.getTitle()));
+        partGroup.setInstructionText(trimToNull(dto.getInstructionText()));
+        partGroup.setGroupGuideText(trimToNull(dto.getGroupGuideText()));
+        partGroup.setGroupRequirementText(trimToNull(dto.getGroupRequirementText()));
+        partGroup.setQuestionType(trimToNull(dto.getQuestionType()));
+        partGroup.setAnswerMode(trimToNull(dto.getAnswerMode()));
+        partGroup.setOptionsJson(trimToNull(dto.getOptionsJson()));
+        partGroup.setAcceptedAnswersJson(trimToNull(dto.getAcceptedAnswersJson()));
+        partGroup.setAnswerRulesJson(trimToNull(dto.getAnswerRulesJson()));
+        partGroup.setCaseInsensitive(dto.getCaseInsensitive());
+        partGroup.setIgnoreWhitespace(dto.getIgnoreWhitespace());
+        partGroup.setIgnorePunctuation(dto.getIgnorePunctuation());
+        partGroup.setQuestionNoStart(dto.getQuestionNoStart());
+        partGroup.setQuestionNoEnd(dto.getQuestionNoEnd());
+        partGroup.setDisplayOrder(dto.getDisplayOrder());
+        partGroup.setTimeLimitSeconds(dto.getTimeLimitSeconds());
+        partGroup.setIsDeleted(0);
+        return partGroup;
+    }
+
+    private void replacePartGroupImages(Long partGroupId, List<BizImageResourceDTO> images) {
+        bizImageResourceService.replaceByTarget(
+                ReadingStorageConstants.TARGET_TYPE_READING_PART_GROUP,
+                partGroupId,
+                BucketType.QUESTION_GROUP_IMAGE.getKey(),
+                ReadingStorageConstants.BIZ_PATH_QUESTION_GROUP_IMAGE,
+                images
+        );
+    }
+
+    private TestPartGroup requirePartGroup(Long partGroupId) {
+        TestPartGroup partGroup = readingPartGroupService.getActiveById(partGroupId);
+        if (partGroup == null) {
+            throw new RuntimeException("reading_part_group_not_found");
+        }
+        return partGroup;
+    }
+
+    private void attachPartGroupImages(TestPartGroup partGroup) {
+        if (partGroup == null || partGroup.getId() == null) {
+            return;
+        }
+        partGroup.setImages(bizImageResourceService.listByTarget(
+                ReadingStorageConstants.TARGET_TYPE_READING_PART_GROUP,
+                partGroup.getId()
+        ));
+    }
+
+    private void attachPartGroupImages(List<TestPartGroup> partGroups) {
+        if (partGroups == null || partGroups.isEmpty()) {
+            return;
+        }
+        List<Long> partGroupIds = partGroups.stream()
+                .filter(Objects::nonNull)
+                .map(TestPartGroup::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (partGroupIds.isEmpty()) {
+            return;
+        }
+
+        var imageMap = bizImageResourceService.listByTargets(
+                ReadingStorageConstants.TARGET_TYPE_READING_PART_GROUP,
+                partGroupIds
+        );
+        for (TestPartGroup partGroup : partGroups) {
+            if (partGroup == null || partGroup.getId() == null) {
+                continue;
+            }
+            List<BizImageResource> images = imageMap == null ? null : imageMap.get(partGroup.getId());
+            partGroup.setImages(images);
+        }
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

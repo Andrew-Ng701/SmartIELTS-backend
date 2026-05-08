@@ -23,6 +23,9 @@ public interface WritingRecordMapper {
     WritingRecord findByIdForUser(@Param("recordId") Long recordId,
                                   @Param("userId") Long userId);
 
+    WritingRecord findAnyByIdForUser(@Param("recordId") Long recordId,
+                                     @Param("userId") Long userId);
+
     List<WritingRecord> findByUserId(@Param("userId") Long userId);
 
     void updateExtractedText(@Param("recordId") Long recordId,
@@ -76,6 +79,8 @@ public interface WritingRecordMapper {
 
     List<WritingRecord> findRecentActiveByUserId(@Param("userId") Long userId,
                                                  @Param("limit") Integer limit);
+
+    List<WritingRecord> findRecentAiFailures(@Param("limit") Integer limit);
 
     BigDecimal selectUserAverageScore(@Param("userId") Long userId);
 

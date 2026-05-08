@@ -1,6 +1,7 @@
 package com.andrew.smartielts.reading.domain.vo;
 
 import com.andrew.smartielts.common.domain.pojo.QuestionAnswerRule;
+import com.andrew.smartielts.common.image.domain.dto.BizImageResourceDTO;
 import lombok.Data;
 
 import java.util.List;
@@ -24,4 +25,5 @@ public class ReadingQuestionVO {
     private Integer displayOrder;
     private Integer score;
     private List<QuestionAnswerRule> answerRules;
+    private List<BizImageResourceDTO> groupImages;
 }

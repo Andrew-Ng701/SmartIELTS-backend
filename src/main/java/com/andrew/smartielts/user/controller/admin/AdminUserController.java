@@ -23,13 +23,13 @@ public class AdminUserController {
 
     @Operation(summary = "Admin active user overview")
     @PostMapping("/overview")
-    public Result<?> pageActiveUsers(@RequestBody AdminUserPageQuery query) {
+    public Result<?> pageActiveUsers(@RequestBody(required = false) AdminUserPageQuery query) {
         return Result.success(adminUserService.pageActiveUsers(query));
     }
 
     @Operation(summary = "Admin deleted user overview")
     @PostMapping("/deleted/overview")
-    public Result<?> pageDeletedUsers(@RequestBody AdminDeletedUserPageQuery query) {
+    public Result<?> pageDeletedUsers(@RequestBody(required = false) AdminDeletedUserPageQuery query) {
         return Result.success(adminUserService.pageDeletedUsers(query));
     }
 

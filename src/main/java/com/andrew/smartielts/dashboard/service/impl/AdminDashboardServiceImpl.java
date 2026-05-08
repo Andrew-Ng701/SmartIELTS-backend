@@ -75,64 +75,35 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         long activeUsers = safeLong(userMapper.countActiveUsers());
         long deletedUsers = safeLong(userMapper.countDeletedUsers());
 
-        long listeningActive = safeLong(
-                listeningRecordMapper.countAdminActive(new AdminListeningRecordPageQuery())
-        );
-        long listeningDeleted = safeLong(
-                listeningRecordMapper.countAdminDeleted(new AdminListeningDeletedRecordPageQuery())
-        );
-
-        long readingActive = safeLong(
-                readingRecordMapper.countAdminActive(new AdminReadingRecordPageQuery())
-        );
-        long readingDeleted = safeLong(
-                readingRecordMapper.countAdminDeleted(new AdminReadingDeletedRecordPageQuery())
-        );
-
-        long writingActive = safeLong(
-                writingRecordMapper.countAdminActive(new AdminWritingRecordPageQuery())
-        );
-        long writingDeleted = safeLong(
-                writingRecordMapper.countAdminDeleted(new AdminWritingDeletedRecordPageQuery())
-        );
-
-        long speakingActive = safeLong(
-                speakingRecordMapper.countAdminActive(new AdminSpeakingRecordPageQuery())
-        );
-        long speakingDeleted = safeLong(
-                speakingRecordMapper.countAdminDeleted(new AdminSpeakingDeletedRecordPageQuery())
-        );
-
+        List<AdminModuleStatVO> modules = moduleStats();
+        AdminModuleStatVO listening = findModuleStat(modules, "listening");
+        AdminModuleStatVO reading = findModuleStat(modules, "reading");
+        AdminModuleStatVO writing = findModuleStat(modules, "writing");
+        AdminModuleStatVO speaking = findModuleStat(modules, "speaking");
         List<AdminRecentIssueVO> recentIssues = recentIssues();
-        long recentAiFailureCount = aiFailureSummary().stream()
-                .mapToLong(AdminAiFailureVO::getFailureCount)
-                .sum();
 
         AdminOverviewVO vo = new AdminOverviewVO();
         vo.setTotalUsers(totalUsers);
         vo.setActiveUsers(activeUsers);
         vo.setDeletedUsers(deletedUsers);
 
-        vo.setListeningActiveRecords(listeningActive);
-        vo.setListeningDeletedRecords(listeningDeleted);
+        vo.setListeningActiveRecords(listening.getActiveCount());
+        vo.setListeningDeletedRecords(listening.getDeletedCount());
 
-        vo.setReadingActiveRecords(readingActive);
-        vo.setReadingDeletedRecords(readingDeleted);
+        vo.setReadingActiveRecords(reading.getActiveCount());
+        vo.setReadingDeletedRecords(reading.getDeletedCount());
 
-        vo.setWritingActiveRecords(writingActive);
-        vo.setWritingDeletedRecords(writingDeleted);
+        vo.setWritingActiveRecords(writing.getActiveCount());
+        vo.setWritingDeletedRecords(writing.getDeletedCount());
 
-        vo.setSpeakingActiveRecords(speakingActive);
-        vo.setSpeakingDeletedRecords(speakingDeleted);
+        vo.setSpeakingActiveRecords(speaking.getActiveCount());
+        vo.setSpeakingDeletedRecords(speaking.getDeletedCount());
 
-        vo.setTotalActiveRecords(
-                listeningActive + readingActive + writingActive + speakingActive
-        );
-        vo.setTotalDeletedRecords(
-                listeningDeleted + readingDeleted + writingDeleted + speakingDeleted
-        );
+        vo.setTotalActiveRecords(modules.stream().mapToLong(AdminModuleStatVO::getActiveCount).sum());
+        vo.setTotalDeletedRecords(modules.stream().mapToLong(AdminModuleStatVO::getDeletedCount).sum());
+        vo.setModules(modules);
 
-        vo.setRecentAiFailureCount((int) recentAiFailureCount);
+        vo.setRecentAiFailureCount(recentIssues == null ? 0 : recentIssues.size());
         vo.setRecentIssues(recentIssues == null ? List.of() : recentIssues);
         vo.setGeneratedAt(LocalDateTime.now());
         return vo;
@@ -439,6 +410,13 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         vo.setActiveCount(active);
         vo.setDeletedCount(deleted);
         return vo;
+    }
+
+    private AdminModuleStatVO findModuleStat(List<AdminModuleStatVO> modules, String module) {
+        return modules.stream()
+                .filter(stat -> stat != null && module.equals(stat.getModule()))
+                .findFirst()
+                .orElseGet(() -> moduleStat(module, 0L, 0L));
     }
 
     private BigDecimal buildAverageScore(BigDecimal listening,

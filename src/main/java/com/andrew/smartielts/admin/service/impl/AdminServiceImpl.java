@@ -24,11 +24,14 @@ import com.andrew.smartielts.user.mapper.UserMapper;
 import com.andrew.smartielts.writing.domain.query.admin.AdminWritingDeletedRecordPageQuery;
 import com.andrew.smartielts.writing.domain.query.admin.AdminWritingRecordPageQuery;
 import com.andrew.smartielts.writing.domain.query.user.UserWritingDeletedRecordPageQuery;
+import com.andrew.smartielts.writing.domain.pojo.WritingRecord;
 import com.andrew.smartielts.writing.mapper.WritingRecordMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -61,34 +64,11 @@ public class AdminServiceImpl implements AdminService {
         long activeUsers = safeLong(userMapper.countActiveUsers());
         long deletedUsers = safeLong(userMapper.countDeletedUsers());
 
-        long listeningActive = safeLong(
-                listeningRecordMapper.countAdminActive(new AdminListeningRecordPageQuery())
-        );
-        long listeningDeleted = safeLong(
-                listeningRecordMapper.countAdminDeleted(new AdminListeningDeletedRecordPageQuery())
-        );
-
-        long readingActive = safeLong(
-                readingRecordMapper.countAdminActive(new AdminReadingRecordPageQuery())
-        );
-        long readingDeleted = safeLong(
-                readingRecordMapper.countAdminDeleted(new AdminReadingDeletedRecordPageQuery())
-        );
-
-        long writingActive = safeLong(
-                writingRecordMapper.countAdminActive(new AdminWritingRecordPageQuery())
-        );
-        long writingDeleted = safeLong(
-                writingRecordMapper.countAdminDeleted(new AdminWritingDeletedRecordPageQuery())
-        );
-
-        long speakingActive = safeLong(
-                speakingRecordMapper.countAdminActive(new AdminSpeakingRecordPageQuery())
-        );
-        long speakingDeleted = safeLong(
-                speakingRecordMapper.countAdminDeleted(new AdminSpeakingDeletedRecordPageQuery())
-        );
-
+        List<AdminModuleStatVO> modules = moduleStats();
+        AdminModuleStatVO listening = findModuleStat(modules, "listening");
+        AdminModuleStatVO reading = findModuleStat(modules, "reading");
+        AdminModuleStatVO writing = findModuleStat(modules, "writing");
+        AdminModuleStatVO speaking = findModuleStat(modules, "speaking");
         List<AdminRecentIssueVO> recentIssues = recentIssues();
 
         AdminOverviewVO vo = new AdminOverviewVO();
@@ -96,20 +76,21 @@ public class AdminServiceImpl implements AdminService {
         vo.setActiveUsers(activeUsers);
         vo.setDeletedUsers(deletedUsers);
 
-        vo.setListeningActiveRecords(listeningActive);
-        vo.setListeningDeletedRecords(listeningDeleted);
+        vo.setListeningActiveRecords(listening.getActiveCount());
+        vo.setListeningDeletedRecords(listening.getDeletedCount());
 
-        vo.setReadingActiveRecords(readingActive);
-        vo.setReadingDeletedRecords(readingDeleted);
+        vo.setReadingActiveRecords(reading.getActiveCount());
+        vo.setReadingDeletedRecords(reading.getDeletedCount());
 
-        vo.setWritingActiveRecords(writingActive);
-        vo.setWritingDeletedRecords(writingDeleted);
+        vo.setWritingActiveRecords(writing.getActiveCount());
+        vo.setWritingDeletedRecords(writing.getDeletedCount());
 
-        vo.setSpeakingActiveRecords(speakingActive);
-        vo.setSpeakingDeletedRecords(speakingDeleted);
+        vo.setSpeakingActiveRecords(speaking.getActiveCount());
+        vo.setSpeakingDeletedRecords(speaking.getDeletedCount());
 
-        vo.setTotalActiveRecords(listeningActive + readingActive + writingActive + speakingActive);
-        vo.setTotalDeletedRecords(listeningDeleted + readingDeleted + writingDeleted + speakingDeleted);
+        vo.setTotalActiveRecords(modules.stream().mapToLong(AdminModuleStatVO::getActiveCount).sum());
+        vo.setTotalDeletedRecords(modules.stream().mapToLong(AdminModuleStatVO::getDeletedCount).sum());
+        vo.setModules(modules);
         vo.setRecentAiFailureCount(recentIssues == null ? 0 : recentIssues.size());
         vo.setRecentIssues(recentIssues);
         vo.setGeneratedAt(LocalDateTime.now());
@@ -118,13 +99,31 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public List<AdminRecentIssueVO> recentIssues() {
-        List<SpeakingRecord> records = speakingRecordMapper.findRecentAiFailures(RECENT_AI_FAILURE_LIMIT);
-        if (records == null || records.isEmpty()) {
+        List<AdminRecentIssueVO> issues = new ArrayList<>();
+
+        List<WritingRecord> writingRecords = writingRecordMapper.findRecentAiFailures(RECENT_AI_FAILURE_LIMIT);
+        if (writingRecords != null && !writingRecords.isEmpty()) {
+            issues.addAll(writingRecords.stream()
+                    .filter(Objects::nonNull)
+                    .map(this::toWritingIssue)
+                    .toList());
+        }
+
+        List<SpeakingRecord> speakingRecords = speakingRecordMapper.findRecentAiFailures(RECENT_AI_FAILURE_LIMIT);
+        if (speakingRecords != null && !speakingRecords.isEmpty()) {
+            issues.addAll(speakingRecords.stream()
+                    .filter(Objects::nonNull)
+                    .map(this::toSpeakingIssue)
+                    .toList());
+        }
+
+        if (issues.isEmpty()) {
             return Collections.emptyList();
         }
-        return records.stream()
-                .filter(Objects::nonNull)
-                .map(this::toIssue)
+        return issues.stream()
+                .sorted(Comparator.comparing(this::issueSortTime,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(RECENT_AI_FAILURE_LIMIT)
                 .toList();
     }
 
@@ -216,7 +215,24 @@ public class AdminServiceImpl implements AdminService {
         return vo;
     }
 
-    private AdminRecentIssueVO toIssue(SpeakingRecord record) {
+    private AdminRecentIssueVO toWritingIssue(WritingRecord record) {
+        AdminRecentIssueVO vo = new AdminRecentIssueVO();
+        vo.setModule("writing");
+        vo.setType("AI_FAILURE");
+        vo.setRecordId(record.getId());
+        vo.setQuestionId(record.getQuestionId());
+        vo.setAiStatus(record.getAiStatus());
+        vo.setAiProvider(record.getAiProvider());
+        vo.setAiModel(record.getAiModel());
+        vo.setMessage(record.getAiFeedback() == null || record.getAiFeedback().isBlank()
+                ? "Writing AI processing failed"
+                : record.getAiFeedback());
+        vo.setCreatedTime(record.getCreatedTime());
+        vo.setUpdatedTime(record.getCreatedTime());
+        return vo;
+    }
+
+    private AdminRecentIssueVO toSpeakingIssue(SpeakingRecord record) {
         AdminRecentIssueVO vo = new AdminRecentIssueVO();
         vo.setModule("speaking");
         vo.setType("AI_FAILURE");
@@ -234,6 +250,13 @@ public class AdminServiceImpl implements AdminService {
         return vo;
     }
 
+    private LocalDateTime issueSortTime(AdminRecentIssueVO issue) {
+        if (issue == null) {
+            return null;
+        }
+        return issue.getUpdatedTime() == null ? issue.getCreatedTime() : issue.getUpdatedTime();
+    }
+
     private AdminQuickLinkVO quickLink(String code, String title, String path) {
         AdminQuickLinkVO vo = new AdminQuickLinkVO();
         vo.setCode(code);
@@ -249,6 +272,13 @@ public class AdminServiceImpl implements AdminService {
         vo.setDeletedCount(deleted);
         vo.setTotalCount(active + deleted);
         return vo;
+    }
+
+    private AdminModuleStatVO findModuleStat(List<AdminModuleStatVO> modules, String module) {
+        return modules.stream()
+                .filter(stat -> stat != null && module.equals(stat.getModule()))
+                .findFirst()
+                .orElseGet(() -> moduleStat(module, 0L, 0L));
     }
 
     private long safeLong(Long value) {

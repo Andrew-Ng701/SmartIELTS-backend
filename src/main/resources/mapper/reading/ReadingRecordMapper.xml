@@ -34,6 +34,21 @@
         is_deleted
     </sql>
 
+    <sql id="BaseColumnListWithAlias">
+        rr.id,
+        rr.user_id,
+        rr.test_id,
+        rr.session_id,
+        rr.total_score,
+        rr.started_time,
+        rr.submitted_time,
+        rr.time_limit_seconds,
+        rr.time_spent_seconds,
+        rr.record_status,
+        rr.created_time,
+        rr.is_deleted
+    </sql>
+
     <insert id="insertReadingRecord"
             parameterType="com.andrew.smartielts.reading.domain.pojo.ReadingRecord"
             useGeneratedKeys="true"
@@ -240,7 +255,7 @@
     </select>
 
     <select id="pageUserActive" resultMap="ReadingRecordResultMap">
-        SELECT rr.<include refid="BaseColumnList"/>
+        SELECT <include refid="BaseColumnListWithAlias"/>
         FROM reading_record rr
         <include refid="ReadingUserActiveWhere"/>
         <include refid="ReadingOrderByUserActive"/>
@@ -254,7 +269,7 @@
     </select>
 
     <select id="pageUserDeleted" resultMap="ReadingRecordResultMap">
-        SELECT rr.<include refid="BaseColumnList"/>
+        SELECT <include refid="BaseColumnListWithAlias"/>
         FROM reading_record rr
         <include refid="ReadingUserDeletedWhere"/>
         <include refid="ReadingOrderByUserDeleted"/>
@@ -269,7 +284,7 @@
     </select>
 
     <select id="pageAdminActive" resultMap="ReadingRecordResultMap">
-        SELECT rr.<include refid="BaseColumnList"/>
+        SELECT <include refid="BaseColumnListWithAlias"/>
         FROM reading_record rr
         LEFT JOIN reading_test rt ON rt.id = rr.test_id
         <include refid="ReadingAdminActiveWhere"/>
@@ -285,7 +300,7 @@
     </select>
 
     <select id="pageAdminDeleted" resultMap="ReadingRecordResultMap">
-        SELECT rr.<include refid="BaseColumnList"/>
+        SELECT <include refid="BaseColumnListWithAlias"/>
         FROM reading_record rr
         LEFT JOIN reading_test rt ON rt.id = rr.test_id
         <include refid="ReadingAdminDeletedWhere"/>
@@ -324,7 +339,7 @@
     </update>
 
     <select id="findRecentActiveByUserId" resultMap="ReadingRecordResultMap">
-        SELECT rr.<include refid="BaseColumnList"/>
+        SELECT <include refid="BaseColumnListWithAlias"/>
         FROM reading_record rr
         WHERE rr.user_id = #{userId}
         AND rr.is_deleted = 0

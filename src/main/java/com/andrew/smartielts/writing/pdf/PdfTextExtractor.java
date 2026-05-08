@@ -10,12 +10,26 @@ import org.springframework.web.multipart.MultipartFile;
 public class PdfTextExtractor {
 
     public String extractText(MultipartFile pdfFile) {
-        try (PDDocument document = Loader.loadPDF(pdfFile.getBytes())) {
+        if (pdfFile == null || pdfFile.isEmpty()) {
+            throw new RuntimeException("PDF file is empty");
+        }
+        try {
+            return extractText(pdfFile.getBytes());
+        } catch (Exception e) {
+            throw new RuntimeException("PDF text extraction failed: " + e.getMessage(), e);
+        }
+    }
+
+    public String extractText(byte[] pdfBytes) {
+        if (pdfBytes == null || pdfBytes.length == 0) {
+            throw new RuntimeException("PDF content is empty");
+        }
+        try (PDDocument document = Loader.loadPDF(pdfBytes)) {
             PDFTextStripper stripper = new PDFTextStripper();
             String text = stripper.getText(document);
             return text == null ? "" : text.trim();
         } catch (Exception e) {
-            throw new RuntimeException("PDF 文字抽取失敗: " + e.getMessage(), e);
+            throw new RuntimeException("PDF text extraction failed: " + e.getMessage(), e);
         }
     }
 }

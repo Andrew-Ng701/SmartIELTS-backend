@@ -26,6 +26,14 @@
         <if test="query != null and query.role != null and query.role != ''">
             and role = #{query.role}
         </if>
+        <choose>
+            <when test="query != null and query.email != null and query.email != ''">
+                and lower(email) like concat('%', lower(#{query.email}), '%')
+            </when>
+            <when test="query != null and query.keyword != null and query.keyword != ''">
+                and lower(email) like concat('%', lower(#{query.keyword}), '%')
+            </when>
+        </choose>
         <if test="query != null and query.startTime != null">
             and created_time <![CDATA[>=]]> #{query.startTime}
         </if>
@@ -41,13 +49,28 @@
         <if test="query != null and query.role != null and query.role != ''">
             and role = #{query.role}
         </if>
+        <choose>
+            <when test="query != null and query.email != null and query.email != ''">
+                and lower(email) like concat('%', lower(#{query.email}), '%')
+            </when>
+            <when test="query != null and query.keyword != null and query.keyword != ''">
+                and lower(email) like concat('%', lower(#{query.keyword}), '%')
+            </when>
+        </choose>
         <if test="query != null and query.startTime != null">
             and created_time <![CDATA[>=]]> #{query.startTime}
         </if>
         <if test="query != null and query.endTime != null">
             and created_time <![CDATA[<=]]> #{query.endTime}
         </if>
-        order by created_time
+        order by
+        <choose>
+            <when test="query != null and query.sortField == 'id'">id</when>
+            <when test="query != null and query.sortField == 'email'">email</when>
+            <when test="query != null and query.sortField == 'role'">role</when>
+            <when test="query != null and query.sortField == 'deletedTime'">deleted_time</when>
+            <otherwise>created_time</otherwise>
+        </choose>
         <choose>
             <when test="query != null and query.sortDirection != null and query.sortDirection.name() == 'ASC'">
                 asc
@@ -63,15 +86,56 @@
         select count(*)
         from sys_user
         where is_deleted = 1
+        <if test="query != null and query.role != null and query.role != ''">
+            and role = #{query.role}
+        </if>
+        <choose>
+            <when test="query != null and query.email != null and query.email != ''">
+                and lower(email) like concat('%', lower(#{query.email}), '%')
+            </when>
+            <when test="query != null and query.keyword != null and query.keyword != ''">
+                and lower(email) like concat('%', lower(#{query.keyword}), '%')
+            </when>
+        </choose>
+        <if test="query != null and query.startTime != null">
+            and deleted_time <![CDATA[>=]]> #{query.startTime}
+        </if>
+        <if test="query != null and query.endTime != null">
+            and deleted_time <![CDATA[<=]]> #{query.endTime}
+        </if>
     </select>
 
     <select id="pageDeleted" resultType="com.andrew.smartielts.auth.domain.pojo.User">
         select id, email, password, role, is_deleted, deleted_time, created_time
         from sys_user
         where is_deleted = 1
-        order by deleted_time
+        <if test="query != null and query.role != null and query.role != ''">
+            and role = #{query.role}
+        </if>
         <choose>
-            <when test="sortDirection == 'ASC'">
+            <when test="query != null and query.email != null and query.email != ''">
+                and lower(email) like concat('%', lower(#{query.email}), '%')
+            </when>
+            <when test="query != null and query.keyword != null and query.keyword != ''">
+                and lower(email) like concat('%', lower(#{query.keyword}), '%')
+            </when>
+        </choose>
+        <if test="query != null and query.startTime != null">
+            and deleted_time <![CDATA[>=]]> #{query.startTime}
+        </if>
+        <if test="query != null and query.endTime != null">
+            and deleted_time <![CDATA[<=]]> #{query.endTime}
+        </if>
+        order by
+        <choose>
+            <when test="query != null and query.sortField == 'id'">id</when>
+            <when test="query != null and query.sortField == 'email'">email</when>
+            <when test="query != null and query.sortField == 'role'">role</when>
+            <when test="query != null and query.sortField == 'createdTime'">created_time</when>
+            <otherwise>deleted_time</otherwise>
+        </choose>
+        <choose>
+            <when test="query != null and query.sortDirection != null and query.sortDirection.name() == 'ASC'">
                 asc
             </when>
             <otherwise>

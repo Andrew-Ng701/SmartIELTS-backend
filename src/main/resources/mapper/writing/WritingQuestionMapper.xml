@@ -117,6 +117,16 @@
         LIMIT 1
     </select>
 
+    <select id="findByIdsForAdmin" resultMap="WritingQuestionResultMap">
+        SELECT
+        <include refid="BaseSelectColumns"/>
+        FROM writing_question q
+        WHERE q.id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
     <update id="logicalDeleteById">
         UPDATE writing_question
         SET

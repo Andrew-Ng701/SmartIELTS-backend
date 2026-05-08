@@ -8,7 +8,7 @@ public class WritingSubmissionValidator {
 
     public void validate(String textContent, MultipartFile[] images, MultipartFile pdf) {
         boolean hasText = textContent != null && !textContent.isBlank();
-        boolean hasImages = images != null && images.length > 0;
+        boolean hasImages = hasNonEmptyImage(images);
         boolean hasPdf = pdf != null && !pdf.isEmpty();
 
         int count = 0;
@@ -27,7 +27,7 @@ public class WritingSubmissionValidator {
 
     public String resolveInputType(String textContent, MultipartFile[] images, MultipartFile pdf) {
         boolean hasText = textContent != null && !textContent.isBlank();
-        boolean hasImages = images != null && images.length > 0;
+        boolean hasImages = hasNonEmptyImage(images);
         boolean hasPdf = pdf != null && !pdf.isEmpty();
 
         if (hasText) return "TEXT";
@@ -35,5 +35,16 @@ public class WritingSubmissionValidator {
         if (hasPdf) return "PDF";
 
         throw new RuntimeException("無法識別輸入類型");
+    }
+    private boolean hasNonEmptyImage(MultipartFile[] images) {
+        if (images == null || images.length == 0) {
+            return false;
+        }
+        for (MultipartFile image : images) {
+            if (image != null && !image.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 }
