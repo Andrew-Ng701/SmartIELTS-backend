@@ -14,9 +14,11 @@ public final class StorageBizConstants {
     public static final String BUCKET_KEY_LISTENING_AUDIO = "listening-audio";
     public static final String BUCKET_KEY_SPEAKING_AUDIO = "speaking-audio";
     public static final String BUCKET_KEY_QUESTION_GROUP_IMAGE = "question-group-image";
+    public static final String BUCKET_KEY_USER_PROFILE_PICTURE = "user-profile-picture";
 
     public static final String BIZ_PATH_LISTENING_AUDIO = "listening-audio";
     public static final String BIZ_PATH_QUESTION_GROUP_IMAGE = "question-group-image";
     public static final String BIZ_PATH_WRITING_QUESTION_IMAGE = "writing-question-image";
     public static final String BIZ_PATH_WRITING_RECORD = "writing-record";
+    public static final String BIZ_PATH_USER_PROFILE_PICTURE = "user-profile-picture";
 }

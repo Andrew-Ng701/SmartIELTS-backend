@@ -17,4 +17,5 @@ public class ListeningSessionVO {
     private Integer remainingSeconds;
     private Integer allowPause;
     private Integer autoSubmit;
+    private Integer allowAudioSeek;
 }

@@ -8,6 +8,8 @@ public interface LoginService {
 
     AuthResponseDTO login(UserDTO dto);
 
+    AuthResponseDTO refresh();
+
     void changePassword(ChangePasswordDTO dto);
 
     void logout();

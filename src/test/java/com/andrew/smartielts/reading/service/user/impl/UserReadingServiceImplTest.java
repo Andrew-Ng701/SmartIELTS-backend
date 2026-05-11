@@ -87,7 +87,6 @@ class UserReadingServiceImplTest {
         when(readingPassageMapper.findActiveByTestId(2L)).thenReturn(List.of(passage(22L, 2L, 12L, 1)));
         when(readingQuestionMapper.findActiveByPassageId(21L)).thenReturn(List.of(question));
         when(readingQuestionMapper.findActiveByPassageId(22L)).thenReturn(List.of());
-        when(readingQuestionAnswerRuleMapper.findByQuestionId(31L)).thenReturn(List.of());
         when(bizImageResourceService.listByTargets("READING_PART_GROUP", List.of(11L)))
                 .thenReturn(Map.of(11L, List.of(image)));
         when(bizImageResourceService.listByTargets("READING_PART_GROUP", List.of(12L)))

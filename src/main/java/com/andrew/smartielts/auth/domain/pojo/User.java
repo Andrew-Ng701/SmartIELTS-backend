@@ -11,6 +11,8 @@ public class User {
 
     private String email;
 
+    private String username;
+
     private String password;
 
     private String role;
@@ -21,5 +23,13 @@ public class User {
 
     private LocalDateTime createdTime;
 
+    private LocalDateTime lastLoginTime;
+
     private Long tokenVersion;
+
+    private String profilePictureUrl;
+
+    private String profilePictureObjectKey;
+
+    private String ieltsTargetScores;
 }

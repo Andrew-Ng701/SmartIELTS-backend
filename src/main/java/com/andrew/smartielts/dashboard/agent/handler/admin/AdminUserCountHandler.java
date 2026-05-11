@@ -3,7 +3,7 @@ package com.andrew.smartielts.dashboard.agent.handler.admin;
 import com.andrew.smartielts.dashboard.agent.DashboardAgentContext;
 import com.andrew.smartielts.dashboard.agent.DashboardCapability;
 import com.andrew.smartielts.dashboard.agent.DashboardCapabilityHandler;
-import com.andrew.smartielts.dashboard.service.AdminDashboardService;
+import com.andrew.smartielts.console.service.AdminConsoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class AdminUserCountHandler implements DashboardCapabilityHandler {
 
-    private final AdminDashboardService adminDashboardService;
+    private final AdminConsoleService adminConsoleService;
 
     @Override
     public DashboardCapability support() {
@@ -20,6 +20,6 @@ public class AdminUserCountHandler implements DashboardCapabilityHandler {
 
     @Override
     public Object handle(DashboardAgentContext context) {
-        return adminDashboardService.userCount();
+        return adminConsoleService.userCount();
     }
 }

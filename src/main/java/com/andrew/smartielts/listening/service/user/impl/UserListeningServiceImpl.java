@@ -384,6 +384,7 @@ public class UserListeningServiceImpl implements UserListeningService {
         detailVO.setTotalSeconds(test.getTotalSeconds());
         detailVO.setAutoSubmit(test.getAutoSubmit());
         detailVO.setAllowPause(test.getAllowPause());
+        detailVO.setAllowAudioSeek(resolveAllowAudioSeek(test));
         detailVO.setTestAudio(findTestAudio(audios));
         detailVO.setParts(buildPartVOList(partGroups, questionVOList, audios));
         detailVO.setPartGroups(sortPartGroups(partGroups));
@@ -536,6 +537,7 @@ public class UserListeningServiceImpl implements UserListeningService {
         detailVO.setTestId(test.getId());
         detailVO.setTestTitle(test.getTitle());
         detailVO.setTestAudio(findTestAudio(audios));
+        detailVO.setAllowAudioSeek(resolveAllowAudioSeek(test));
         detailVO.setParts(buildPartVOList(partGroups, questionVOList, audios));
         detailVO.setPartGroupAudios(findPartGroupAudios(audios));
         detailVO.setTotalScore(record.getTotalScore());
@@ -558,6 +560,7 @@ public class UserListeningServiceImpl implements UserListeningService {
         vo.setRemainingSeconds(resolveRemainingSeconds(record));
         vo.setAllowPause(resolveAllowPause(test));
         vo.setAutoSubmit(resolveAutoSubmit(test));
+        vo.setAllowAudioSeek(resolveAllowAudioSeek(test));
         return vo;
     }
 
@@ -671,6 +674,10 @@ public class UserListeningServiceImpl implements UserListeningService {
 
     private Integer resolveAutoSubmit(ListeningTest test) {
         return defaultInt(test == null ? null : test.getAutoSubmit(), ListeningConstants.DEFAULT_AUTO_SUBMIT);
+    }
+
+    private Integer resolveAllowAudioSeek(ListeningTest test) {
+        return defaultInt(test == null ? null : test.getAllowAudioSeek(), ListeningConstants.DEFAULT_ALLOW_AUDIO_SEEK);
     }
 
     private Integer resolveCurrentTimeSpentSeconds(ListeningRecord record) {

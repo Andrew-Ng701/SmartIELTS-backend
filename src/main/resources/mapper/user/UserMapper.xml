@@ -5,14 +5,16 @@
 <mapper namespace="com.andrew.smartielts.user.mapper.UserMapper">
 
     <select id="findAnyById" resultType="com.andrew.smartielts.auth.domain.pojo.User">
-        select id, email, password, role, is_deleted, deleted_time, created_time
+        select id, email, username, password, role, is_deleted, deleted_time, created_time, last_login_time,
+               profile_picture_url, profile_picture_object_key, ielts_target_scores
         from sys_user
         where id = #{id}
         limit 1
     </select>
 
     <select id="findActiveById" resultType="com.andrew.smartielts.auth.domain.pojo.User">
-        select id, email, password, role, is_deleted, deleted_time, created_time
+        select id, email, username, password, role, is_deleted, deleted_time, created_time, last_login_time,
+               profile_picture_url, profile_picture_object_key, ielts_target_scores
         from sys_user
         where id = #{id}
           and is_deleted = 0
@@ -43,7 +45,8 @@
     </select>
 
     <select id="pageActive" resultType="com.andrew.smartielts.auth.domain.pojo.User">
-        select id, email, password, role, is_deleted, deleted_time, created_time
+        select id, email, username, password, role, is_deleted, deleted_time, created_time, last_login_time,
+               profile_picture_url, profile_picture_object_key, ielts_target_scores
         from sys_user
         where is_deleted = 0
         <if test="query != null and query.role != null and query.role != ''">
@@ -68,6 +71,7 @@
             <when test="query != null and query.sortField == 'id'">id</when>
             <when test="query != null and query.sortField == 'email'">email</when>
             <when test="query != null and query.sortField == 'role'">role</when>
+            <when test="query != null and query.sortField == 'lastLoginTime'">last_login_time</when>
             <when test="query != null and query.sortField == 'deletedTime'">deleted_time</when>
             <otherwise>created_time</otherwise>
         </choose>
@@ -106,7 +110,8 @@
     </select>
 
     <select id="pageDeleted" resultType="com.andrew.smartielts.auth.domain.pojo.User">
-        select id, email, password, role, is_deleted, deleted_time, created_time
+        select id, email, username, password, role, is_deleted, deleted_time, created_time, last_login_time,
+               profile_picture_url, profile_picture_object_key, ielts_target_scores
         from sys_user
         where is_deleted = 1
         <if test="query != null and query.role != null and query.role != ''">
@@ -131,6 +136,7 @@
             <when test="query != null and query.sortField == 'id'">id</when>
             <when test="query != null and query.sortField == 'email'">email</when>
             <when test="query != null and query.sortField == 'role'">role</when>
+            <when test="query != null and query.sortField == 'lastLoginTime'">last_login_time</when>
             <when test="query != null and query.sortField == 'createdTime'">created_time</when>
             <otherwise>deleted_time</otherwise>
         </choose>
@@ -162,6 +168,86 @@
         where is_deleted = 1
     </select>
 
+    <select id="selectRecordCountsByUserIds" resultType="com.andrew.smartielts.user.domain.vo.UserRecordCountVO">
+        select
+            user_id as userId,
+            module_type as moduleType,
+            paper_id as paperId,
+            paper_title as paperTitle,
+            sum(active_count) as activeRecordCount,
+            sum(deleted_count) as deletedRecordCount,
+            sum(active_count + deleted_count) as totalRecordCount
+        from (
+            select
+                lr.user_id,
+                'LISTENING' as module_type,
+                lr.test_id as paper_id,
+                coalesce(lt.title, concat('Listening Test #', lr.test_id)) as paper_title,
+                sum(case when lr.is_deleted = 0 then 1 else 0 end) as active_count,
+                sum(case when lr.is_deleted = 1 then 1 else 0 end) as deleted_count
+            from listening_record lr
+            left join listening_test lt on lt.id = lr.test_id
+            where lr.user_id in
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+            group by lr.user_id, lr.test_id, lt.title
+
+            union all
+
+            select
+                rr.user_id,
+                'READING' as module_type,
+                rr.test_id as paper_id,
+                coalesce(rt.title, concat('Reading Test #', rr.test_id)) as paper_title,
+                sum(case when rr.is_deleted = 0 then 1 else 0 end) as active_count,
+                sum(case when rr.is_deleted = 1 then 1 else 0 end) as deleted_count
+            from reading_record rr
+            left join reading_test rt on rt.id = rr.test_id
+            where rr.user_id in
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+            group by rr.user_id, rr.test_id, rt.title
+
+            union all
+
+            select
+                wr.user_id,
+                'WRITING' as module_type,
+                wr.question_id as paper_id,
+                coalesce(wq.title, concat('Writing Question #', wr.question_id)) as paper_title,
+                sum(case when wr.is_deleted = 0 then 1 else 0 end) as active_count,
+                sum(case when wr.is_deleted = 1 then 1 else 0 end) as deleted_count
+            from writing_record wr
+            left join writing_question wq on wq.id = wr.question_id
+            where wr.user_id in
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+            group by wr.user_id, wr.question_id, wq.title
+
+            union all
+
+            select
+                sr.user_id,
+                'SPEAKING' as module_type,
+                sr.question_id as paper_id,
+                coalesce(sq.question_text, concat('Speaking Question #', sr.question_id)) as paper_title,
+                sum(case when sr.is_deleted = 0 then 1 else 0 end) as active_count,
+                sum(case when sr.is_deleted = 1 then 1 else 0 end) as deleted_count
+            from speaking_record sr
+            left join speaking_question sq on sq.id = sr.question_id
+            where sr.user_id in
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+            group by sr.user_id, sr.question_id, sq.question_text
+        ) record_counts
+        group by user_id, module_type, paper_id, paper_title
+        order by user_id asc, module_type asc, paper_id asc
+    </select>
+
     <update id="softDeleteById">
         update sys_user
         set is_deleted = 1,
@@ -189,6 +275,23 @@
     <update id="updateEmailById">
         update sys_user
         set email = #{email}
+        where id = #{id}
+          and is_deleted = 0
+    </update>
+
+    <update id="updateProfileById">
+        update sys_user
+        set email = #{email},
+            username = #{username},
+            ielts_target_scores = #{ieltsTargetScores}
+        where id = #{id}
+          and is_deleted = 0
+    </update>
+
+    <update id="updateProfilePictureById">
+        update sys_user
+        set profile_picture_url = #{profilePictureUrl},
+            profile_picture_object_key = #{profilePictureObjectKey}
         where id = #{id}
           and is_deleted = 0
     </update>

@@ -16,6 +16,7 @@
         <result property="totalSeconds" column="total_seconds"/>
         <result property="autoSubmit" column="auto_submit"/>
         <result property="allowPause" column="allow_pause"/>
+        <result property="allowAudioSeek" column="allow_audio_seek"/>
     </resultMap>
 
     <sql id="BaseColumnList">
@@ -28,7 +29,8 @@
         timer_mode,
         total_seconds,
         auto_submit,
-        allow_pause
+        allow_pause,
+        allow_audio_seek
     </sql>
 
     <insert id="insertListeningTest"
@@ -45,7 +47,8 @@
             timer_mode,
             total_seconds,
             auto_submit,
-            allow_pause
+            allow_pause,
+            allow_audio_seek
         ) VALUES (
                      #{title},
                      #{totalScore},
@@ -55,7 +58,8 @@
                      #{timerMode},
                      #{totalSeconds},
                      #{autoSubmit},
-                     #{allowPause}
+                     #{allowPause},
+                     #{allowAudioSeek}
                  )
     </insert>
 
@@ -103,7 +107,8 @@
             timer_mode = #{timerMode},
             total_seconds = #{totalSeconds},
             auto_submit = #{autoSubmit},
-            allow_pause = #{allowPause}
+            allow_pause = #{allowPause},
+            allow_audio_seek = #{allowAudioSeek}
         WHERE id = #{id}
     </update>
 

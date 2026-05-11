@@ -13,6 +13,7 @@ public class ListeningRecordDetailVO {
     private Long testId;
     private String testTitle;
     private ListeningAudio testAudio;
+    private Integer allowAudioSeek;
     private List<ListeningPartVO> parts;
     private List<ListeningAudio> partGroupAudios;
     private Integer totalScore;

@@ -39,6 +39,13 @@ public class AuthController {
         return Result.success(loginService.login(dto));
     }
 
+    @Operation(summary = "Refresh current access token")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/refresh")
+    public Result<?> refresh() {
+        return Result.success(loginService.refresh());
+    }
+
     @Operation(summary = "Change current user password")
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/password")

@@ -21,10 +21,10 @@ public class AdminUserController {
     @Autowired
     private AdminUserService adminUserService;
 
-    @Operation(summary = "Admin active user overview")
-    @PostMapping("/overview")
-    public Result<?> pageActiveUsers(@RequestBody(required = false) AdminUserPageQuery query) {
-        return Result.success(adminUserService.pageActiveUsers(query));
+    @Operation(summary = "List users")
+    @PostMapping("/list")
+    public Result<?> listUsers(@RequestBody(required = false) AdminUserPageQuery query) {
+        return Result.success(adminUserService.listUsers(query));
     }
 
     @Operation(summary = "Admin deleted user overview")
@@ -53,15 +53,4 @@ public class AdminUserController {
         return Result.success();
     }
 
-    @Operation(summary = "Get user counts")
-    @GetMapping("/stats/count")
-    public Result<?> counts() {
-        return Result.success(
-                java.util.Map.of(
-                        "totalUsers", adminUserService.totalUsers(),
-                        "activeUsers", adminUserService.activeUsers(),
-                        "deletedUsers", adminUserService.deletedUsers()
-                )
-        );
-    }
 }

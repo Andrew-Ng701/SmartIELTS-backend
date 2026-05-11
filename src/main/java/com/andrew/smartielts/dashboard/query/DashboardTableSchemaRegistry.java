@@ -92,12 +92,14 @@ public class DashboardTableSchemaRegistry {
         return new DashboardTableSchemaContract(
                 TABLE_SYS_USER,
                 "System user queries. Use for user counts and admin-level user identity scope.",
-                columns("id", "email", "role", "is_deleted", "created_time"),
+                columns("id", "email", "username", "role", "is_deleted", "created_time", "ielts_target_scores"),
                 joinMap(),
-                aliases("user_id", "email", "role", "is_deleted", "created_time", "total_users", "active_users", "deleted_users"),
+                aliases("user_id", "email", "username", "role", "is_deleted", "created_time", "ielts_target_scores",
+                        "total_users", "active_users", "deleted_users"),
                 params("target_user_id", "limit"),
                 List.of(
                         "Use sys_user only for user identity or admin user counting.",
+                        "ielts_target_scores stores target bands as listening,reading,writing,speaking.",
                         "Do not use sys_user as a replacement for learner record tables."
                 )
         );

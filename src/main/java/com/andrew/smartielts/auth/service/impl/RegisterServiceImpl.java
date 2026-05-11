@@ -60,14 +60,23 @@ public class RegisterServiceImpl implements RegisterService {
             throw new RuntimeException("User id generation failed");
         }
 
+        Long tokenTtl = jwtProperties.getTtl() == null ? 7200000L : jwtProperties.getTtl();
+        Long refreshInterval = jwtProperties.getRefreshInterval() == null ? 900000L : jwtProperties.getRefreshInterval();
+
         String token = JwtUtil.createToken(
                 user.getId(),
                 user.getRole(),
                 user.getTokenVersion(),
                 jwtProperties.getSecretKey(),
-                jwtProperties.getTtl()
+                tokenTtl
         );
 
-        return new AuthResponseDTO(token, user.getId(), user.getRole());
+        return new AuthResponseDTO(
+                token,
+                tokenTtl / 1000,
+                refreshInterval / 1000,
+                user.getId(),
+                user.getRole()
+        );
     }
 }

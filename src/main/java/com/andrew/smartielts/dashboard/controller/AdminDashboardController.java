@@ -1,6 +1,7 @@
 package com.andrew.smartielts.dashboard.controller;
 
 import com.andrew.smartielts.common.resultDTO.Result;
+import com.andrew.smartielts.console.service.AdminConsoleService;
 import com.andrew.smartielts.dashboard.agent.DashboardIntentExecutionFacade;
 import com.andrew.smartielts.dashboard.controller.dto.DashboardAskRequest;
 import com.andrew.smartielts.dashboard.controller.dto.DashboardAssistantResponse;
@@ -19,6 +20,7 @@ public class AdminDashboardController {
 
     private final DashboardIntentExecutionFacade executionFacade;
     private final AdminDashboardService adminDashboardService;
+    private final AdminConsoleService adminConsoleService;
 
     @PostMapping("/ask")
     public Result<DashboardAssistantResponse> ask(@RequestBody DashboardAskRequest request) {
@@ -40,7 +42,7 @@ public class AdminDashboardController {
 
         Long operatorUserId = currentUserId();
         Long effectiveTargetUserId = targetUserId != null ? targetUserId : operatorUserId;
-        return Result.success(adminDashboardService.adminOverviewVisual(operatorUserId, effectiveTargetUserId, timeRange));
+        return Result.success(adminConsoleService.overviewVisual(operatorUserId, effectiveTargetUserId, timeRange));
     }
 
     @GetMapping("/executive_summary")

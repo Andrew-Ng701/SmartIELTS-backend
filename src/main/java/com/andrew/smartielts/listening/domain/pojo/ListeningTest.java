@@ -29,6 +29,8 @@ public class ListeningTest {
 
     private Integer allowPause;
 
+    private Integer allowAudioSeek;
+
     private ListeningAudio testAudio;
 
     private List<TestPartGroup> partGroups;

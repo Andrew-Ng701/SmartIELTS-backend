@@ -8,6 +8,9 @@ import lombok.Getter;
 public class AuthResponseVO {
 
     private String token;
+    private Long tokenExpiresIn;
+    private Long refreshAfterSeconds;
+    private String tokenType;
     private Long userId;
     private String role;
 

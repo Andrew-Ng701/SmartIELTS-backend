@@ -27,6 +27,7 @@ public class LoginServiceImpl implements LoginService {
     private PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional
     public AuthResponseDTO login(UserDTO dto) {
         if (dto == null) {
             throw new RuntimeException("Request body is required");
@@ -57,16 +58,21 @@ public class LoginServiceImpl implements LoginService {
         }
 
         Long tokenVersion = user.getTokenVersion() == null ? 0L : user.getTokenVersion();
+        authMapper.updateLastLoginTimeById(user.getId());
 
-        String token = JwtUtil.createToken(
-                user.getId(),
-                user.getRole(),
-                tokenVersion,
-                jwtProperties.getSecretKey(),
-                jwtProperties.getTtl()
-        );
+        return createAuthResponse(user.getId(), user.getRole(), tokenVersion);
+    }
 
-        return new AuthResponseDTO(token, user.getId(), user.getRole());
+    @Override
+    public AuthResponseDTO refresh() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        User user = authMapper.findActiveById(userId);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        Long dbVersion = user.getTokenVersion() == null ? 0L : user.getTokenVersion();
+        return createAuthResponse(user.getId(), user.getRole(), dbVersion);
     }
 
     @Override
@@ -114,5 +120,26 @@ public class LoginServiceImpl implements LoginService {
 
     private boolean isBlank(String text) {
         return text == null || text.isBlank();
+    }
+
+    private AuthResponseDTO createAuthResponse(Long userId, String role, Long tokenVersion) {
+        Long tokenTtl = jwtProperties.getTtl() == null ? 7200000L : jwtProperties.getTtl();
+        Long refreshInterval = jwtProperties.getRefreshInterval() == null ? 900000L : jwtProperties.getRefreshInterval();
+
+        String token = JwtUtil.createToken(
+                userId,
+                role,
+                tokenVersion,
+                jwtProperties.getSecretKey(),
+                tokenTtl
+        );
+
+        return new AuthResponseDTO(
+                token,
+                tokenTtl / 1000,
+                refreshInterval / 1000,
+                userId,
+                role
+        );
     }
 }

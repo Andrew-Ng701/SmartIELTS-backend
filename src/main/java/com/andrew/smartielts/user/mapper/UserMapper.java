@@ -3,6 +3,7 @@ package com.andrew.smartielts.user.mapper;
 import com.andrew.smartielts.auth.domain.pojo.User;
 import com.andrew.smartielts.user.domain.query.admin.AdminDeletedUserPageQuery;
 import com.andrew.smartielts.user.domain.query.admin.AdminUserPageQuery;
+import com.andrew.smartielts.user.domain.vo.UserRecordCountVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -33,6 +34,8 @@ public interface UserMapper {
 
     Long countDeletedUsers();
 
+    List<UserRecordCountVO> selectRecordCountsByUserIds(@Param("userIds") List<Long> userIds);
+
     void softDeleteById(@Param("id") Long id);
 
     void restoreById(@Param("id") Long id);
@@ -42,4 +45,13 @@ public interface UserMapper {
 
     void updateEmailById(@Param("id") Long id,
                          @Param("email") String email);
+
+    void updateProfileById(@Param("id") Long id,
+                           @Param("email") String email,
+                           @Param("username") String username,
+                           @Param("ieltsTargetScores") String ieltsTargetScores);
+
+    void updateProfilePictureById(@Param("id") Long id,
+                                  @Param("profilePictureUrl") String profilePictureUrl,
+                                  @Param("profilePictureObjectKey") String profilePictureObjectKey);
 }

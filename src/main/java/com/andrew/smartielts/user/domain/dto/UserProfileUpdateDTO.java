@@ -1,11 +1,21 @@
 package com.andrew.smartielts.user.domain.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 public class UserProfileUpdateDTO {
 
-    @NotBlank(message = "Email cannot be empty")
     private String email;
+
+    private String username;
+
+    private BigDecimal listeningTargetScore;
+
+    private BigDecimal readingTargetScore;
+
+    private BigDecimal writingTargetScore;
+
+    private BigDecimal speakingTargetScore;
 }

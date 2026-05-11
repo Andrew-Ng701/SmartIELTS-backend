@@ -27,6 +27,16 @@
 - 行為改動應補上或更新聚焦的測試，特別是 service logic、API contract、permission check、mapper/query behavior。
 - generated ID、timestamp、ownership、scoring、status transition 預設視為 backend-owned，除非現有設計明確不是如此。
 
+## 目前後端結構速查
+
+- `console` package 負責 deterministic console/overview display data；目前公開 `/api/admin/console/overview` 與 `/api/user/console/overview-visual`，dashboard service 也會複用這裡的聚合邏輯。
+- `record` package 是前端 record page 的統一入口，支援 `READING`、`LISTENING`、`WRITING`、`SPEAKING` 的 list/detail/delete/restore；module-specific ownership、soft-delete、restore 與 detail 載入仍委派給各 module service。
+- Admin user list 目前使用 `POST /api/admin/users/list`，response 是 `AdminUserListVO`，其中 `users` 才是 `PageResult<UserAdminVO>`，另外回傳 `totalUsers`、`activeUsers`、`deletedUsers`。
+- Auth response 目前包含 `token`、`tokenExpiresIn`、`refreshAfterSeconds`、`tokenType`、`userId`、`role`。前端不需要 refresh token；`POST /api/auth/refresh` 使用現有 Bearer token 換發新 JWT。
+- User profile 已包含 profile picture 與 IELTS target score 欄位；profile picture upload 使用 `/api/user/profile-picture` multipart `file`。
+- Listening test/session/detail contract 已包含 audio seek 相關設定與 test/group audio 資訊；新增或修改 listening API 時要同步檢查 audio 欄位是否仍完整回傳。
+- OSS bucket type 目前包含 user profile picture、writing question/record、listening audio、speaking audio、question group image 等用途；新增上傳類別時先擴充 `BucketType` 與 `StorageBizConstants`，再接 module service。
+
 ## 登入、驗證與測試帳號
 
 ### 登入入口與 request/response

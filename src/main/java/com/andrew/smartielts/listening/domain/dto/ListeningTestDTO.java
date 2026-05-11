@@ -18,4 +18,6 @@ public class ListeningTestDTO {
     private Integer autoSubmit;
 
     private Integer allowPause;
+
+    private Integer allowAudioSeek;
 }

@@ -20,6 +20,8 @@ public interface AuthMapper {
     void updatePasswordById(@Param("id") Long id,
                             @Param("password") String password);
 
+    void updateLastLoginTimeById(@Param("id") Long id);
+
     /**
      * tokenVersion = tokenVersion + 1
      * 用於 logout / changePassword 後讓舊 token 失效。

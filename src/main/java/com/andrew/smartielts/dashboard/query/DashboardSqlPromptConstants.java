@@ -75,7 +75,9 @@ public final class DashboardSqlPromptConstants {
             Purpose:
             - user identity and role scope
             Key columns:
-            - id, email, role, is_deleted, created_time
+            - id, email, username, role, is_deleted, created_time, ielts_target_scores
+            Notes:
+            - ielts_target_scores stores target bands in listening,reading,writing,speaking order, for example 7,6.5,7,7.5.
 
             [listening_test]
             Purpose:

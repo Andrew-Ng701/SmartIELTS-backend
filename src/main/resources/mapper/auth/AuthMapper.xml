@@ -12,11 +12,12 @@
         <result property="isDeleted" column="is_deleted"/>
         <result property="deletedTime" column="deleted_time"/>
         <result property="createdTime" column="created_time"/>
+        <result property="lastLoginTime" column="last_login_time"/>
         <result property="tokenVersion" column="token_version"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, email, password, role, is_deleted, deleted_time, created_time, token_version
+        id, email, password, role, is_deleted, deleted_time, created_time, last_login_time, token_version
     </sql>
 
     <select id="findActiveByEmail" resultMap="UserMap">
@@ -53,15 +54,22 @@
             useGeneratedKeys="true"
             keyProperty="id">
         INSERT INTO sys_user (
-            email, password, role, is_deleted, deleted_time, created_time, token_version
+            email, password, role, is_deleted, deleted_time, created_time, last_login_time, token_version
         ) VALUES (
-                     #{email}, #{password}, #{role}, #{isDeleted}, #{deletedTime}, #{createdTime}, #{tokenVersion}
+                     #{email}, #{password}, #{role}, #{isDeleted}, #{deletedTime}, #{createdTime}, #{lastLoginTime}, #{tokenVersion}
                  )
     </insert>
 
     <update id="updatePasswordById">
         UPDATE sys_user
         SET password = #{password}
+        WHERE id = #{id}
+          AND is_deleted = 0
+    </update>
+
+    <update id="updateLastLoginTimeById">
+        UPDATE sys_user
+        SET last_login_time = NOW()
         WHERE id = #{id}
           AND is_deleted = 0
     </update>

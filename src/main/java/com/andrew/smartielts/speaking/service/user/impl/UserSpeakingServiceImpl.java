@@ -599,6 +599,7 @@ public class UserSpeakingServiceImpl implements UserSpeakingService {
                 vo.setSessionId(record.getSessionId());
                 vo.setPart(question != null ? question.getPart() : null);
                 vo.setQuestionText(question != null ? question.getQuestionText() : null);
+                vo.setAudioUrl(record.getAudioUrl());
                 vo.setFluencyAndCoherence(record.getFluencyAndCoherence());
                 vo.setLexicalResource(record.getLexicalResource());
                 vo.setGrammaticalRangeAndAccuracy(record.getGrammaticalRangeAndAccuracy());

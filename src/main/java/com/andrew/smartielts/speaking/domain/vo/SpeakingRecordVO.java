@@ -18,6 +18,8 @@ public class SpeakingRecordVO {
 
     private String questionText;
 
+    private String audioUrl;
+
     private BigDecimal fluencyAndCoherence;
 
     private BigDecimal lexicalResource;

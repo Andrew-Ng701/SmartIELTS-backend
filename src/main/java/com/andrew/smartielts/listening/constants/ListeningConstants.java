@@ -10,6 +10,7 @@ public final class ListeningConstants {
     public static final Integer DEFAULT_TOTAL_SECONDS = 3600;
     public static final Integer DEFAULT_AUTO_SUBMIT = 1;
     public static final Integer DEFAULT_ALLOW_PAUSE = 0;
+    public static final Integer DEFAULT_ALLOW_AUDIO_SEEK = 0;
 
     public static final Integer NOT_DELETED = 0;
     public static final Integer DELETED = 1;

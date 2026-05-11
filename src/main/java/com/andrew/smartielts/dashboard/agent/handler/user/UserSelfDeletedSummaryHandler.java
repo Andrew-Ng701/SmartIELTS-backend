@@ -3,7 +3,7 @@ package com.andrew.smartielts.dashboard.agent.handler.user;
 import com.andrew.smartielts.dashboard.agent.DashboardAgentContext;
 import com.andrew.smartielts.dashboard.agent.DashboardCapability;
 import com.andrew.smartielts.dashboard.agent.DashboardCapabilityHandler;
-import com.andrew.smartielts.dashboard.service.UserDashboardService;
+import com.andrew.smartielts.console.service.UserConsoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class UserSelfDeletedSummaryHandler implements DashboardCapabilityHandler {
 
-    private final UserDashboardService userDashboardService;
+    private final UserConsoleService userConsoleService;
 
     @Override
     public DashboardCapability support() {
@@ -20,6 +20,6 @@ public class UserSelfDeletedSummaryHandler implements DashboardCapabilityHandler
 
     @Override
     public Object handle(DashboardAgentContext context) {
-        return userDashboardService.deletedSummary(context.getOperatorUserId());
+        return userConsoleService.deletedSummary(context.getOperatorUserId());
     }
 }

@@ -17,6 +17,7 @@ public class ListeningTestDetailVO {
     private Integer totalSeconds;
     private Integer autoSubmit;
     private Integer allowPause;
+    private Integer allowAudioSeek;
 
     private ListeningAudio testAudio;
     private List<ListeningPartVO> parts;

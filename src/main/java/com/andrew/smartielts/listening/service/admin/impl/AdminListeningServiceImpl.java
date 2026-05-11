@@ -91,6 +91,7 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         test.setTotalSeconds(resolveTotalSeconds(dto.getTotalSeconds()));
         test.setAutoSubmit(resolveAutoSubmit(dto.getAutoSubmit()));
         test.setAllowPause(resolveAllowPause(dto.getAllowPause()));
+        test.setAllowAudioSeek(resolveAllowAudioSeek(dto.getAllowAudioSeek()));
         test.setCreatedTime(LocalDateTime.now());
         test.setUpdatedTime(LocalDateTime.now());
         test.setIsDeleted(ListeningConstants.NOT_DELETED);
@@ -111,6 +112,7 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         existing.setTotalSeconds(resolveTotalSeconds(dto.getTotalSeconds()));
         existing.setAutoSubmit(resolveAutoSubmit(dto.getAutoSubmit()));
         existing.setAllowPause(resolveAllowPause(dto.getAllowPause()));
+        existing.setAllowAudioSeek(resolveAllowAudioSeek(dto.getAllowAudioSeek()));
         existing.setUpdatedTime(LocalDateTime.now());
 
         listeningTestMapper.updateListeningTest(existing);
@@ -321,6 +323,7 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         detailVO.setTotalSeconds(test.getTotalSeconds());
         detailVO.setAutoSubmit(test.getAutoSubmit());
         detailVO.setAllowPause(test.getAllowPause());
+        detailVO.setAllowAudioSeek(resolveAllowAudioSeek(test.getAllowAudioSeek()));
         detailVO.setTestAudio(findTestAudio(audios));
         detailVO.setParts(buildPartVOList(partGroups, questionVOList, audios));
         detailVO.setPartGroups(sortPartGroups(partGroups));
@@ -435,6 +438,7 @@ public class AdminListeningServiceImpl implements AdminListeningService {
         detailVO.setTestId(test.getId());
         detailVO.setTestTitle(test.getTitle());
         detailVO.setTestAudio(findTestAudio(audios));
+        detailVO.setAllowAudioSeek(resolveAllowAudioSeek(test.getAllowAudioSeek()));
         detailVO.setParts(buildPartVOList(partGroups, questionVOList, audios));
         detailVO.setPartGroupAudios(findPartGroupAudios(audios));
         detailVO.setTotalScore(record.getTotalScore());
@@ -684,6 +688,10 @@ public class AdminListeningServiceImpl implements AdminListeningService {
 
     private Integer resolveAllowPause(Integer allowPause) {
         return defaultInt(allowPause, ListeningConstants.DEFAULT_ALLOW_PAUSE);
+    }
+
+    private Integer resolveAllowAudioSeek(Integer allowAudioSeek) {
+        return defaultInt(allowAudioSeek, ListeningConstants.DEFAULT_ALLOW_AUDIO_SEEK);
     }
 
     private List<ListeningPartVO> buildPartVOList(List<TestPartGroup> partGroups,

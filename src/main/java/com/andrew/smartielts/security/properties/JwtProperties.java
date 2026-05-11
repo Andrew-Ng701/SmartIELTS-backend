@@ -12,4 +12,6 @@ public class JwtProperties {
     private String secretKey;
 
     private Long ttl;
+
+    private Long refreshInterval;
 }
