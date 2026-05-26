@@ -1,40 +1,47 @@
-# <span style="font-size: 2.2em;">SmartIELTS Backend</span>
+<p align="right">
+  <a href="./README.md"><img src="https://img.shields.io/badge/English-default-111827?style=for-the-badge" alt="English README"></a>
+  <a href="./README.zh-TW.md"><img src="https://img.shields.io/badge/%E7%B9%81%E9%AB%94%E4%B8%AD%E6%96%87-readme-2563eb?style=for-the-badge" alt="Traditional Chinese README"></a>
+</p>
 
-**SmartIELTS Backend** 是 SmartIELTS 系統的後端服務，負責 **身份驗證、權限控制、IELTS 四科考試流程、AI 評分、Dashboard 智能查詢、後台管理、檔案資源管理與資料持久化**。
+# SmartIELTS Backend
 
-> 本倉庫定位為 **`SmartIELTS-backend`**：只保存後端完整代碼、後端 README、API 文件、DB migration、部署說明與後端測試。
+**SmartIELTS Backend** is the backend service for the SmartIELTS platform. It powers **authentication, role-based access control, IELTS Reading / Listening / Writing / Speaking workflows, AI scoring, dashboard intelligence, admin management, file resources, and database persistence**.
+
+> This repository is designed as **`SmartIELTS-backend`**. It contains the complete backend source code, backend README, API documentation, database migrations, deployment notes, and backend tests.
 
 ---
 
-## <span style="font-size: 1.4em;">Repository 分工</span>
+## Repository Layout
 
-| Repository | 是否放代碼 | 負責內容 |
+| Repository | Contains code | Responsibility |
 | --- | --- | --- |
-| **SmartIELTS** | 否 | 主專案總覽、系統介紹、架構圖、前後端 repo links、demo screenshots、整體部署流程 |
-| **SmartIELTS-frontend** | 是 | 前端完整代碼、前端 README、前端部署說明、前端環境變數範例 |
-| **SmartIELTS-backend** | 是 | 後端完整代碼、後端 README、API 文件、DB migration、後端部署說明 |
+| **SmartIELTS** | No | Main project hub, product overview, architecture diagrams, frontend/backend links, screenshots, and end-to-end deployment explanation |
+| **SmartIELTS-frontend** | Yes | Complete frontend source code, frontend README, frontend deployment guide, and frontend environment examples |
+| **SmartIELTS-backend** | Yes | Complete backend source code, backend README, API documentation, DB migrations, and backend deployment guide |
 
-這樣拆分後，前後端可以各自管理依賴、CI/CD、commit history 與部署流程；主倉庫則作為對外展示與整體說明入口。
-
----
-
-## <span style="font-size: 1.4em;">Backend Overview</span>
-
-SmartIELTS Backend 提供一套面向 IELTS 練習平台的 REST API。核心責任包括：
-
-- **Auth / Security**：註冊、登入、JWT refresh、登出、密碼修改、role-based access control。
-- **User**：個人資料、profile picture、IELTS target score、學習進度資料。
-- **Admin**：使用者管理、考試內容管理、學生作答記錄管理。
-- **Reading / Listening / Writing / Speaking**：四科考試內容、作答流程、批改、記錄與詳情。
-- **Record**：統一 user/admin record list、detail、review、delete、restore。
-- **Console**：固定 overview data，支援前端 dashboard/console 畫面快速渲染。
-- **Dashboard AI**：自然語言 ask、SQL generation、executive summary、learning context、answer rewrite。
-- **Storage**：透過 `biz_image_resource` 與 Aliyun OSS 管理圖片、音訊與業務資源。
-- **AI Integration**：Aliyun DashScope / OCR / ASR 與 D-ID speaking avatar flow。
+This split keeps frontend and backend dependencies, history, and deployment pipelines clean. The main repository should act as the public-facing project hub, while this repository focuses only on backend engineering.
 
 ---
 
-## <span style="font-size: 1.4em;">Tech Stack</span>
+## Backend Overview
+
+SmartIELTS Backend exposes REST APIs for an IELTS learning and practice platform.
+
+Core responsibilities:
+
+- **Auth / Security**: registration, login, JWT refresh, logout, password update, and role-based access control.
+- **User**: profile data, profile picture, IELTS target score, and learning progress data.
+- **Admin**: user management, exam content management, and student record management.
+- **Reading / Listening / Writing / Speaking**: exam content, session flow, answer submission, scoring, record list, and record detail.
+- **Record**: unified user/admin record list, detail, review, delete, and restore workflows.
+- **Console**: deterministic overview data for dashboard-like frontend views.
+- **Dashboard AI**: natural-language ask, SQL generation, executive summary, learning context, and answer rewrite.
+- **Storage**: business image/audio/file resource management through `biz_image_resource` and Aliyun OSS.
+- **AI Integrations**: Aliyun DashScope, OCR, ASR, and D-ID speaking avatar flow.
+
+---
+
+## Tech Stack
 
 | Category | Technology |
 | --- | --- |
@@ -42,18 +49,18 @@ SmartIELTS Backend 提供一套面向 IELTS 練習平台的 REST API。核心責
 | Framework | **Spring Boot 3.3.5** |
 | Security | **Spring Security**, JWT |
 | Database | **MySQL 8+** |
-| ORM / Mapper | **MyBatis** |
+| Mapper | **MyBatis** |
 | Cache / Runtime Store | **Redis** |
-| API Docs | **Knife4j / OpenAPI** |
+| API Documentation | **Knife4j / OpenAPI** |
 | Build Tool | **Maven Wrapper** |
-| Storage | **Aliyun OSS** |
+| Object Storage | **Aliyun OSS** |
 | AI / OCR / ASR | **Aliyun DashScope**, Aliyun OCR |
 | Speaking Avatar | **D-ID API** |
 | Testing | JUnit 5, Mockito, Spring Boot Test |
 
 ---
 
-## <span style="font-size: 1.4em;">Architecture</span>
+## Architecture
 
 ```mermaid
 flowchart LR
@@ -75,7 +82,7 @@ flowchart LR
 
 ---
 
-## <span style="font-size: 1.4em;">Project Structure</span>
+## Project Structure
 
 ```text
 SmartIELTS-backend/
@@ -112,7 +119,7 @@ SmartIELTS-backend/
 
 ---
 
-## <span style="font-size: 1.4em;">Main API Areas</span>
+## Main API Areas
 
 | Area | Base Path | Role |
 | --- | --- | --- |
@@ -124,26 +131,26 @@ SmartIELTS-backend/
 | User dashboard | `/api/user/dashboard/**` | `USER` |
 | Admin dashboard | `/api/admin/dashboard/**` | `ADMIN` |
 
-完整 contract 請看：
+Documentation entry points:
 
-- **API contract**：`docs/api/api-contract.md`
-- **Backend overview**：`docs/backend/backend-overview.md`
-- **Database overview**：`docs/database-overview.md`
+- **API contract**: `docs/api/api-contract.md`
+- **Backend overview**: `docs/backend/backend-overview.md`
+- **Database overview**: `docs/database-overview.md`
 
 ---
 
-## <span style="font-size: 1.4em;">Authentication</span>
+## Authentication
 
-本專案使用 **stateless JWT**，不依賴 session 或 cookie。
+SmartIELTS Backend uses **stateless JWT authentication**. It does not rely on server-side sessions or cookies.
 
-登入 endpoint：
+Login endpoint:
 
 ```http
 POST /api/auth/login
 Content-Type: application/json
 ```
 
-Request：
+Request:
 
 ```json
 {
@@ -152,48 +159,46 @@ Request：
 }
 ```
 
-成功後 response 會回傳 `data.token`。後續請使用：
+After login, use `data.token` in the `Authorization` header:
 
 ```http
 Authorization: Bearer <data.token>
 ```
 
-JWT claims 會包含：
+JWT claims include:
 
 - `userId`
 - `role`
 - `tokenVersion`
 
-`logout` 或修改密碼後會遞增 `token_version`，舊 token 會立即失效。
+Calling logout or changing the password increments `token_version`, which immediately invalidates old tokens.
 
 ---
 
-## <span style="font-size: 1.4em;">Environment Requirements</span>
-
-本地開發建議環境：
+## Environment Requirements
 
 | Dependency | Version / Notes |
 | --- | --- |
 | JDK | **17+** |
 | MySQL | **8+** |
 | Redis | **6+** |
-| Maven | 使用內建 `mvnw.cmd` 即可 |
-| OS Shell | PowerShell |
+| Maven | Use the included Maven Wrapper |
+| Shell | PowerShell is recommended on Windows |
 
-外部服務依功能啟用：
+Optional external services:
 
-- Aliyun OSS：圖片、音訊、附件資源儲存。
-- Aliyun DashScope：writing / speaking scoring、dashboard LLM。
-- Aliyun OCR / ASR：圖片描述、聽力語音處理等 AI workflow。
-- D-ID：speaking avatar talk flow。
+- **Aliyun OSS** for images, audio, and file attachments.
+- **Aliyun DashScope** for writing/speaking scoring and dashboard LLM features.
+- **Aliyun OCR / ASR** for image description and listening/speaking workflows.
+- **D-ID** for the speaking avatar talk flow.
 
 ---
 
-## <span style="font-size: 1.4em;">Environment Variables</span>
+## Environment Variables
 
-設定來源：`src/main/resources/application.yml`
+Configuration source: `src/main/resources/application.yml`
 
-**不要提交真實 secret、password、token、access key。**
+**Never commit real secrets, passwords, tokens, or access keys.**
 
 ### Required for Basic Startup
 
@@ -262,42 +267,40 @@ $env:DID_VOICE_ID="en-US-JennyNeural"
 
 ---
 
-## <span style="font-size: 1.4em;">Database Setup</span>
+## Database Setup
 
-1. 建立 MySQL database，例如 `smartielts`。
-2. 套用 schema 與 migration scripts。
-3. 如需 demo data，再套用 seed scripts。
-4. 確認 Redis 已啟動。
-5. 設定 `DB_URL`、`DB_USERNAME`、`DB_PASSWORD`。
+1. Create a MySQL database, for example `smartielts`.
+2. Apply the required schema and migration scripts.
+3. Apply seed scripts if demo data is needed.
+4. Start Redis.
+5. Configure `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD`.
 
-SQL scripts 位置：
+SQL scripts location:
 
 ```text
 scripts/sql/
 ```
 
-常見 migration / setup scripts 包含：
+Common migration / setup scripts:
 
 | Script | Purpose |
 | --- | --- |
-| `speaking_talk.sql` | D-ID speaking talk flow 必需表 |
-| `user_profile_picture.sql` | User profile picture 欄位 |
-| `user_profile_targets.sql` | IELTS target score 欄位 |
-| `listening_test_allow_audio_seek.sql` | Listening audio seek 設定 |
+| `speaking_talk.sql` | Required table for the D-ID speaking talk flow |
+| `user_profile_picture.sql` | User profile picture fields |
+| `user_profile_targets.sql` | IELTS target score fields |
+| `listening_test_allow_audio_seek.sql` | Listening audio seek settings |
 | `reading_test_prep_seconds.sql` | Reading time setting migration |
 | `listening_test_prep_seconds.sql` | Listening time setting migration |
 | `writing_question_time_settings.sql` | Writing time setting migration |
 | `biz_image_resource_target_index.sql` | Business image resource index |
 
-資料庫結構說明請以 `docs/database-overview.md` 為準。
+Use `docs/database-overview.md` as the live database structure reference.
 
 ---
 
-## <span style="font-size: 1.4em;">Local Development</span>
+## Local Development
 
-### 1. Install Dependencies
-
-通常不需要手動安裝 Maven，直接使用 Maven Wrapper：
+### 1. Check Maven Wrapper
 
 ```powershell
 .\mvnw.cmd -v
@@ -315,7 +318,7 @@ scripts/sql/
 .\mvnw.cmd spring-boot:run
 ```
 
-預設服務入口：
+Default service URL:
 
 ```text
 http://localhost:8080/api
@@ -327,7 +330,7 @@ http://localhost:8080/api
 .\mvnw.cmd clean package
 ```
 
-產物位置：
+Build output:
 
 ```text
 target/SmartIELTS-0.0.1-SNAPSHOT.jar
@@ -335,7 +338,7 @@ target/SmartIELTS-0.0.1-SNAPSHOT.jar
 
 ---
 
-## <span style="font-size: 1.4em;">Production Deployment</span>
+## Production Deployment
 
 ### Build
 
@@ -351,24 +354,24 @@ java -jar target\SmartIELTS-0.0.1-SNAPSHOT.jar
 
 ### Production Checklist
 
-- **Database**：MySQL schema 已套用最新 migration。
-- **Redis**：連線可用，且 production 使用獨立 database/index。
-- **JWT**：`JWT_SECRET_KEY` 使用足夠長且不可預測的 secret。
-- **OSS**：所有 bucket、domain、region、access key 設定正確。
-- **AI**：DashScope / OCR / ASR API key 設定正確，並確認 quota。
-- **D-ID**：production webhook 使用 HTTPS URL。
-- **Security**：不要把 `.env`、secret、token、production dump 提交到 GitHub。
-- **Docs**：API 或 DB 變更後同步更新 `docs/`。
+- **Database**: latest MySQL schema and migrations are applied.
+- **Redis**: connection is available and production uses an isolated database/index.
+- **JWT**: `JWT_SECRET_KEY` is long, random, and not shared publicly.
+- **OSS**: bucket names, domains, region, and access keys are configured.
+- **AI**: DashScope / OCR / ASR credentials and quota are valid.
+- **D-ID**: production webhook uses HTTPS.
+- **Security**: `.env`, secrets, tokens, and production dumps are not committed.
+- **Docs**: API and DB changes are reflected in `docs/`.
 
 ---
 
-## <span style="font-size: 1.4em;">Testing Strategy</span>
+## Testing Strategy
 
-本專案測試以 service/unit tests 為主，重點覆蓋：
+The test suite focuses on service and unit coverage for:
 
 - Auth login validation
 - Question answer rule judging
-- Console overview service
+- Console overview services
 - Dashboard ask / SQL / learning context
 - Exam time settings
 - Reading / Listening admin and user flows
@@ -377,13 +380,13 @@ java -jar target\SmartIELTS-0.0.1-SNAPSHOT.jar
 - Writing scoring and image description
 - User profile and admin user management
 
-執行：
+Run:
 
 ```powershell
 .\mvnw.cmd test
 ```
 
-成功範例：
+Expected successful result:
 
 ```text
 Tests run: 119, Failures: 0, Errors: 0, Skipped: 0
@@ -392,61 +395,63 @@ BUILD SUCCESS
 
 ---
 
-## <span style="font-size: 1.4em;">Development Rules</span>
+## Development Rules
 
-修改前請先閱讀 `AGENTS.md`。重要規則摘要：
+Read `AGENTS.md` before making project changes.
 
-- **API contract 變更**：同步更新 `docs/api/api-contract.md`。
-- **Backend flow / package boundary 變更**：同步更新 `docs/backend/backend-overview.md`。
-- **DB schema / migration / dashboard SQL allow-list 變更**：同步更新 `docs/database-overview.md`。
-- **Storage target / bucket / path**：以 `StorageBizConstants` 為來源。
-- **Dashboard 可查詢表**：同步檢查 `DashboardTableNameConstants` 與 `DashboardTableSchemaRegistry`。
-- **前後端職責**：業務規則、權限、評分、持久化與 server-owned values 放後端。
-- **Secrets**：禁止提交真實 token、password、access key、production secret。
+Important maintenance rules:
+
+- **API contract changes**: update `docs/api/api-contract.md`.
+- **Backend flow / package boundary changes**: update `docs/backend/backend-overview.md`.
+- **DB schema / migration / dashboard SQL allow-list changes**: update `docs/database-overview.md`.
+- **Storage target / bucket / path**: use `StorageBizConstants` as the source of truth.
+- **Dashboard queryable tables**: check `DashboardTableNameConstants` and `DashboardTableSchemaRegistry`.
+- **Frontend/backend ownership**: business rules, authorization, scoring, persistence, and server-owned values belong on the backend.
+- **Secrets**: never commit real tokens, passwords, access keys, or production secrets.
 
 ---
 
-## <span style="font-size: 1.4em;">Useful Links Inside This Repository</span>
+## Useful Links Inside This Repository
 
 | Document | Description |
 | --- | --- |
-| `AGENTS.md` | 專案開發規則與既有結論 |
-| `docs/api/api-contract.md` | 前後端 API contract |
-| `docs/backend/backend-overview.md` | 後端模組、service flow、package boundary |
-| `docs/database-overview.md` | live database schema overview |
-| `docs/database-production-cleanup-outline.md` | production cleanup / temporary structure notes |
+| `AGENTS.md` | Project rules and existing conclusions |
+| `docs/api/api-contract.md` | Frontend/backend API contract |
+| `docs/backend/backend-overview.md` | Backend modules, service flow, package boundaries |
+| `docs/database-overview.md` | Live database schema overview |
+| `docs/database-production-cleanup-outline.md` | Production cleanup and temporary structure notes |
 | `scripts/sql/` | DB migration and seed scripts |
-| `scripts/smoke/` | manual smoke test scripts |
+| `scripts/smoke/` | Manual smoke test scripts |
 
 ---
 
-## <span style="font-size: 1.4em;">Repository Links</span>
+## Repository Links
 
-目前規劃：
+Planned repository structure:
 
-- **Main project hub**：`SmartIELTS`
-- **Frontend repository**：`SmartIELTS-frontend`
-- **Backend repository**：`SmartIELTS-backend`
+- **Main project hub**: `SmartIELTS`
+- **Frontend repository**: `SmartIELTS-frontend`
+- **Backend repository**: `SmartIELTS-backend`
 
-如果 GitHub repository 已完成拆分，請在主倉庫 `SmartIELTS` 的 README 補上實際 URL，並在本 README 更新對應連結。
-
----
-
-## <span style="font-size: 1.4em;">Current Release Note</span>
-
-本次後端整理包含：
-
-- Dashboard、Console、Record、Exam wrapper 與 IELTS modules 的後端功能更新。
-- Reading / Listening / Writing time settings 與相關 migration。
-- Business image resource 與 OSS target 整理。
-- User profile picture、IELTS target score、consecutive login days 等 user profile 能力。
-- Admin/user record list、detail、review、delete、restore flows。
-- Writing image description service、AI scoring service 測試。
-- Dashboard AI ask、learning context、SQL generation、answer compose/rewrite 測試。
-- API、backend overview、database overview 文件更新。
+After the GitHub repositories are fully split, update this section with the actual URLs.
 
 ---
 
-## <span style="font-size: 1.4em;">License / Usage</span>
+## Current Release Note
 
-此專案目前作為 SmartIELTS 系統後端代碼倉庫使用。若要公開展示，建議在主倉庫 `SmartIELTS` 補上正式 license、demo screenshots、系統架構圖與前後端 repository links。
+This backend release includes:
+
+- Dashboard, Console, Record, Exam wrapper, and IELTS module backend updates.
+- Reading / Listening / Writing time settings and related migrations.
+- Business image resource and OSS target cleanup.
+- User profile picture, IELTS target score, and consecutive login days.
+- Admin/user record list, detail, review, delete, and restore flows.
+- Writing image description service and AI scoring tests.
+- Dashboard AI ask, learning context, SQL generation, answer compose/rewrite tests.
+- API, backend overview, and database overview documentation updates.
+
+---
+
+## License / Usage
+
+This repository is currently used as the backend codebase for the SmartIELTS system. For public presentation, the main `SmartIELTS` repository should include the formal license, screenshots, architecture overview, demo notes, and frontend/backend repository links.
