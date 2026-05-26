@@ -1,66 +1,81 @@
 <p align="right">
-  <a href="./README.md"><img src="https://img.shields.io/badge/English-default-111827?style=for-the-badge" alt="English README"></a>
-  <a href="./README.zh-TW.md"><img src="https://img.shields.io/badge/%E7%B9%81%E9%AB%94%E4%B8%AD%E6%96%87-readme-2563eb?style=for-the-badge" alt="Traditional Chinese README"></a>
+  <a href="./README.md"><img alt="English README" src="https://img.shields.io/badge/README-English-111827?style=for-the-badge"></a>
+  <a href="./README.zh-TW.md"><img alt="Traditional Chinese README" src="https://img.shields.io/badge/README-%E7%B9%81%E9%AB%94%E4%B8%AD%E6%96%87-2563eb?style=for-the-badge"></a>
 </p>
 
-# SmartIELTS Backend
+<h1 align="center">SmartIELTS Backend</h1>
 
-**SmartIELTS Backend** is the backend service for the SmartIELTS platform. It powers **authentication, role-based access control, IELTS Reading / Listening / Writing / Speaking workflows, AI scoring, dashboard intelligence, admin management, file resources, and database persistence**.
+<p align="center">
+  <strong>Complete backend source repository for SmartIELTS</strong><br>
+  Spring Boot REST API for authentication, IELTS modules, records, dashboard AI, admin management, storage, and database persistence.
+</p>
 
-> This repository is designed as **`SmartIELTS-backend`**. It contains the complete backend source code, backend README, API documentation, database migrations, deployment notes, and backend tests.
+<p align="center">
+  <strong>Java 17</strong> · <strong>Spring Boot 3.3.5</strong> · <strong>MyBatis</strong> · <strong>MySQL</strong> · <strong>Redis</strong>
+</p>
 
 ---
 
-## Repository Layout
+## 1. Repository Purpose
 
-| Repository | Contains code | Responsibility |
+**`SmartIELTS-backend` is the dedicated backend repository.**
+
+This repository contains:
+
+- Complete Spring Boot backend source code.
+- Backend README and deployment guide.
+- API contract and backend architecture documentation.
+- Database migration and seed scripts.
+- MyBatis mappers, services, controllers, and backend tests.
+
+This repository should not contain the React frontend implementation. Frontend code belongs in `SmartIELTS-frontend`.
+
+---
+
+## 2. Repository Split
+
+| Repository | Contains code | Main contents |
 | --- | --- | --- |
-| **SmartIELTS** | No | Main project hub, product overview, architecture diagrams, frontend/backend links, screenshots, and end-to-end deployment explanation |
-| **SmartIELTS-frontend** | Yes | Complete frontend source code, frontend README, frontend deployment guide, and frontend environment examples |
-| **SmartIELTS-backend** | Yes | Complete backend source code, backend README, API documentation, DB migrations, and backend deployment guide |
-
-This split keeps frontend and backend dependencies, history, and deployment pipelines clean. The main repository should act as the public-facing project hub, while this repository focuses only on backend engineering.
+| **SmartIELTS** | No | Main hub with overview README, architecture diagram, startup guide, deployment flow, repo links, demo screenshots, and API contract entry |
+| **SmartIELTS-frontend** | Yes, frontend code | React/Vite/TypeScript source, frontend README, frontend deployment guide, `.env.example` |
+| **SmartIELTS-backend** | Yes, backend code | Spring Boot source, backend README, API docs, DB migrations, backend deployment guide |
 
 ---
 
-## Backend Overview
+## 3. Backend Scope
 
-SmartIELTS Backend exposes REST APIs for an IELTS learning and practice platform.
-
-Core responsibilities:
-
-- **Auth / Security**: registration, login, JWT refresh, logout, password update, and role-based access control.
-- **User**: profile data, profile picture, IELTS target score, and learning progress data.
-- **Admin**: user management, exam content management, and student record management.
-- **Reading / Listening / Writing / Speaking**: exam content, session flow, answer submission, scoring, record list, and record detail.
-- **Record**: unified user/admin record list, detail, review, delete, and restore workflows.
-- **Console**: deterministic overview data for dashboard-like frontend views.
-- **Dashboard AI**: natural-language ask, SQL generation, executive summary, learning context, and answer rewrite.
-- **Storage**: business image/audio/file resource management through `biz_image_resource` and Aliyun OSS.
-- **AI Integrations**: Aliyun DashScope, OCR, ASR, and D-ID speaking avatar flow.
+- **Auth / Security**: register, login, JWT refresh, logout, password update, role-based access control.
+- **User**: profile, profile picture, IELTS target score, learning progress.
+- **Admin**: user management, exam content management, student record management.
+- **IELTS modules**: Reading, Listening, Writing, Speaking content, sessions, submissions, scoring, record detail.
+- **Record**: unified user/admin record list, detail, review, delete, restore.
+- **Console**: deterministic user/admin overview data.
+- **Dashboard AI**: natural-language ask, SQL generation, executive summary, learning context, answer rewrite.
+- **Storage**: image/audio/file resources through `biz_image_resource` and Aliyun OSS.
+- **AI integrations**: Aliyun DashScope, OCR, ASR, and D-ID speaking avatar flow.
 
 ---
 
-## Tech Stack
+## 4. Tech Stack
 
 | Category | Technology |
 | --- | --- |
-| Language | **Java 17** |
-| Framework | **Spring Boot 3.3.5** |
-| Security | **Spring Security**, JWT |
-| Database | **MySQL 8+** |
-| Mapper | **MyBatis** |
-| Cache / Runtime Store | **Redis** |
-| API Documentation | **Knife4j / OpenAPI** |
-| Build Tool | **Maven Wrapper** |
-| Object Storage | **Aliyun OSS** |
-| AI / OCR / ASR | **Aliyun DashScope**, Aliyun OCR |
-| Speaking Avatar | **D-ID API** |
-| Testing | JUnit 5, Mockito, Spring Boot Test |
+| Language | Java 17 |
+| Framework | Spring Boot 3.3.5 |
+| Security | Spring Security, JWT |
+| Database | MySQL 8+ |
+| Mapper | MyBatis |
+| Cache/runtime store | Redis |
+| API docs | Knife4j / OpenAPI |
+| Build | Maven Wrapper |
+| Object storage | Aliyun OSS |
+| AI/OCR/ASR | Aliyun DashScope, Aliyun OCR |
+| Speaking avatar | D-ID API |
+| Tests | JUnit 5, Mockito, Spring Boot Test |
 
 ---
 
-## Architecture
+## 5. Architecture
 
 ```mermaid
 flowchart LR
@@ -82,7 +97,7 @@ flowchart LR
 
 ---
 
-## Project Structure
+## 6. Project Structure
 
 ```text
 SmartIELTS-backend/
@@ -101,10 +116,7 @@ SmartIELTS-backend/
 
   src/main/resources/
     application.yml
-    mapper/         MyBatis XML mapper files
-
-  src/test/java/
-    Unit and service tests
+    mapper/
 
   docs/
     api/api-contract.md
@@ -112,14 +124,13 @@ SmartIELTS-backend/
     database-overview.md
     database-production-cleanup-outline.md
 
-  scripts/
-    sql/            Migration and seed scripts
-    smoke/          Manual smoke test scripts
+  scripts/sql/
+    DB migration and seed scripts
 ```
 
 ---
 
-## Main API Areas
+## 7. API Entry Points
 
 | Area | Base Path | Role |
 | --- | --- | --- |
@@ -128,22 +139,21 @@ SmartIELTS-backend/
 | Admin | `/api/admin/**` | `ADMIN` |
 | User console | `/api/user/console/**` | `USER` |
 | Admin console | `/api/admin/console/**` | `ADMIN` |
-| User dashboard | `/api/user/dashboard/**` | `USER` |
-| Admin dashboard | `/api/admin/dashboard/**` | `ADMIN` |
+| Dashboard | `/api/smartielts/dashboard/**` | USER / ADMIN by endpoint |
 
-Documentation entry points:
+Documentation:
 
-- **API contract**: `docs/api/api-contract.md`
-- **Backend overview**: `docs/backend/backend-overview.md`
-- **Database overview**: `docs/database-overview.md`
+- `docs/api/api-contract.md`
+- `docs/backend/backend-overview.md`
+- `docs/database-overview.md`
 
 ---
 
-## Authentication
+## 8. Authentication
 
-SmartIELTS Backend uses **stateless JWT authentication**. It does not rely on server-side sessions or cookies.
+The backend uses stateless JWT. It does not rely on server-side sessions or cookies.
 
-Login endpoint:
+Login:
 
 ```http
 POST /api/auth/login
@@ -159,133 +169,77 @@ Request:
 }
 ```
 
-After login, use `data.token` in the `Authorization` header:
+Subsequent requests:
 
 ```http
 Authorization: Bearer <data.token>
 ```
 
-JWT claims include:
-
-- `userId`
-- `role`
-- `tokenVersion`
-
-Calling logout or changing the password increments `token_version`, which immediately invalidates old tokens.
+JWT claims include `userId`, `role`, and `tokenVersion`. Logout and password changes increment `token_version`, which invalidates old tokens immediately.
 
 ---
 
-## Environment Requirements
+## 9. Environment Requirements
 
 | Dependency | Version / Notes |
 | --- | --- |
-| JDK | **17+** |
-| MySQL | **8+** |
-| Redis | **6+** |
+| JDK | 17+ |
+| MySQL | 8+ |
+| Redis | 6+ |
 | Maven | Use the included Maven Wrapper |
 | Shell | PowerShell is recommended on Windows |
 
 Optional external services:
 
-- **Aliyun OSS** for images, audio, and file attachments.
-- **Aliyun DashScope** for writing/speaking scoring and dashboard LLM features.
-- **Aliyun OCR / ASR** for image description and listening/speaking workflows.
-- **D-ID** for the speaking avatar talk flow.
+- Aliyun OSS for images, audio, and attachments.
+- Aliyun DashScope for Writing/Speaking scoring and Dashboard LLM.
+- Aliyun OCR / ASR for image description and audio/transcript flow.
+- D-ID for the Speaking avatar talk flow.
 
 ---
 
-## Environment Variables
+## 10. Local Startup
 
-Configuration source: `src/main/resources/application.yml`
-
-**Never commit real secrets, passwords, tokens, or access keys.**
-
-### Required for Basic Startup
+After configuring DB, Redis, and required environment variables:
 
 ```powershell
-$env:SERVER_PORT="8080"
-$env:SPRING_APPLICATION_NAME="SmartIELTS"
-$env:SPRING_MVC_SERVLET_PATH="/api"
-
-$env:DB_URL="jdbc:mysql://127.0.0.1:3306/smartielts?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Hong_Kong"
-$env:DB_USERNAME="root"
-$env:DB_PASSWORD="your_password"
-
-$env:REDIS_HOST="127.0.0.1"
-$env:REDIS_PORT="6379"
-$env:REDIS_DATABASE="0"
-
-$env:JWT_SECRET_KEY="replace-with-a-long-random-secret"
-$env:JWT_TTL="7200000"
-$env:JWT_REFRESH_INTERVAL="900000"
+.\mvnw.cmd test
+.\mvnw.cmd spring-boot:run
 ```
 
-### Required for File Upload / Media Features
+Default API:
 
-```powershell
-$env:ALIYUN_OSS_ENDPOINT=""
-$env:ALIYUN_OSS_REGION=""
-$env:ALIYUN_OSS_ACCESS_KEY_ID=""
-$env:ALIYUN_OSS_ACCESS_KEY_SECRET=""
-
-$env:ALIYUN_OSS_BUCKET_WRITING_QUESTION=""
-$env:ALIYUN_OSS_DOMAIN_WRITING_QUESTION=""
-$env:ALIYUN_OSS_BUCKET_WRITING_RECORD=""
-$env:ALIYUN_OSS_DOMAIN_WRITING_RECORD=""
-$env:ALIYUN_OSS_BUCKET_LISTENING_AUDIO=""
-$env:ALIYUN_OSS_DOMAIN_LISTENING_AUDIO=""
-$env:ALIYUN_OSS_BUCKET_SPEAKING_AUDIO=""
-$env:ALIYUN_OSS_DOMAIN_SPEAKING_AUDIO=""
-$env:ALIYUN_OSS_BUCKET_QUESTION_GROUP_IMAGE=""
-$env:ALIYUN_OSS_DOMAIN_QUESTION_GROUP_IMAGE=""
-$env:ALIYUN_OSS_BUCKET_USER_PROFILE_PICTURE=""
-$env:ALIYUN_OSS_DOMAIN_USER_PROFILE_PICTURE=""
+```text
+http://localhost:8080/api
 ```
 
-### Required for AI Features
+Build JAR:
 
 ```powershell
-$env:ALIYUN_AI_BASE_URL="https://dashscope.aliyuncs.com/compatible-mode/v1"
-$env:ALIYUN_AI_API_KEY=""
-$env:WRITING_SCORE_AI_MODEL="qwen3.6-plus"
-$env:SPEAKING_SCORE_AI_MODEL="qwen3-omni-flash"
-
-$env:ALIYUN_OCR_ACCESS_KEY_ID=""
-$env:ALIYUN_OCR_ACCESS_KEY_SECRET=""
-$env:ALIYUN_OCR_ENDPOINT="ocr-api.cn-hangzhou.aliyuncs.com"
+.\mvnw.cmd clean package
 ```
 
-### Required for D-ID Speaking Flow
+Run JAR:
 
 ```powershell
-$env:DID_BASE_URL="https://api.d-id.com"
-$env:DID_API_KEY=""
-$env:DID_WEBHOOK_URL="https://your-domain.com/api/speaking/webhook/end"
-$env:DID_PRESENTER_ID=""
-$env:DID_VOICE_ID="en-US-JennyNeural"
+java -jar target\SmartIELTS-0.0.1-SNAPSHOT.jar
 ```
 
 ---
 
-## Database Setup
+## 11. DB Migration
 
-1. Create a MySQL database, for example `smartielts`.
-2. Apply the required schema and migration scripts.
-3. Apply seed scripts if demo data is needed.
-4. Start Redis.
-5. Configure `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD`.
-
-SQL scripts location:
+SQL scripts:
 
 ```text
 scripts/sql/
 ```
 
-Common migration / setup scripts:
+Common migrations:
 
 | Script | Purpose |
 | --- | --- |
-| `speaking_talk.sql` | Required table for the D-ID speaking talk flow |
+| `speaking_talk.sql` | Required table for D-ID speaking talk flow |
 | `user_profile_picture.sql` | User profile picture fields |
 | `user_profile_targets.sql` | IELTS target score fields |
 | `listening_test_allow_audio_seek.sql` | Listening audio seek settings |
@@ -294,164 +248,40 @@ Common migration / setup scripts:
 | `writing_question_time_settings.sql` | Writing time setting migration |
 | `biz_image_resource_target_index.sql` | Business image resource index |
 
-Use `docs/database-overview.md` as the live database structure reference.
+Use `docs/database-overview.md` as the live schema reference.
 
 ---
 
-## Local Development
+## 12. Deployment Checklist
 
-### 1. Check Maven Wrapper
-
-```powershell
-.\mvnw.cmd -v
-```
-
-### 2. Run Tests
-
-```powershell
-.\mvnw.cmd test
-```
-
-### 3. Start Backend
-
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-Default service URL:
-
-```text
-http://localhost:8080/api
-```
-
-### 4. Build JAR
-
-```powershell
-.\mvnw.cmd clean package
-```
-
-Build output:
-
-```text
-target/SmartIELTS-0.0.1-SNAPSHOT.jar
-```
+- MySQL schema and migrations are applied.
+- Redis is reachable and production uses an isolated DB/index.
+- `JWT_SECRET_KEY` is long, random, and not public.
+- OSS bucket, domain, region, and access keys are configured.
+- DashScope / OCR / ASR credentials and quotas are valid.
+- D-ID webhook uses HTTPS.
+- `.env`, secrets, tokens, and production dumps are not committed.
+- API, DB, and backend flow changes are reflected in `docs/`.
 
 ---
 
-## Production Deployment
+## 13. Maintenance Rules
 
-### Build
-
-```powershell
-.\mvnw.cmd clean package
-```
-
-### Run
-
-```powershell
-java -jar target\SmartIELTS-0.0.1-SNAPSHOT.jar
-```
-
-### Production Checklist
-
-- **Database**: latest MySQL schema and migrations are applied.
-- **Redis**: connection is available and production uses an isolated database/index.
-- **JWT**: `JWT_SECRET_KEY` is long, random, and not shared publicly.
-- **OSS**: bucket names, domains, region, and access keys are configured.
-- **AI**: DashScope / OCR / ASR credentials and quota are valid.
-- **D-ID**: production webhook uses HTTPS.
-- **Security**: `.env`, secrets, tokens, and production dumps are not committed.
-- **Docs**: API and DB changes are reflected in `docs/`.
+- API contract changes: update `docs/api/api-contract.md`.
+- Package, service flow, or module boundary changes: update `docs/backend/backend-overview.md`.
+- DB table, column, relationship, migration, or dashboard SQL allow-list changes: update `docs/database-overview.md`.
+- Storage target/bucket/path values should come from `StorageBizConstants`.
+- Dashboard queryable tables require `DashboardTableNameConstants` and `DashboardTableSchemaRegistry` checks.
+- Never commit production secrets, passwords, tokens, access keys, or database dumps.
 
 ---
 
-## Testing Strategy
+## 14. Related Links
 
-The test suite focuses on service and unit coverage for:
-
-- Auth login validation
-- Question answer rule judging
-- Console overview services
-- Dashboard ask / SQL / learning context
-- Exam time settings
-- Reading / Listening admin and user flows
-- Record list/detail/review
-- Speaking scoring and final evaluation fallback
-- Writing scoring and image description
-- User profile and admin user management
-
-Run:
-
-```powershell
-.\mvnw.cmd test
-```
-
-Expected successful result:
-
-```text
-Tests run: 119, Failures: 0, Errors: 0, Skipped: 0
-BUILD SUCCESS
-```
-
----
-
-## Development Rules
-
-Read `AGENTS.md` before making project changes.
-
-Important maintenance rules:
-
-- **API contract changes**: update `docs/api/api-contract.md`.
-- **Backend flow / package boundary changes**: update `docs/backend/backend-overview.md`.
-- **DB schema / migration / dashboard SQL allow-list changes**: update `docs/database-overview.md`.
-- **Storage target / bucket / path**: use `StorageBizConstants` as the source of truth.
-- **Dashboard queryable tables**: check `DashboardTableNameConstants` and `DashboardTableSchemaRegistry`.
-- **Frontend/backend ownership**: business rules, authorization, scoring, persistence, and server-owned values belong on the backend.
-- **Secrets**: never commit real tokens, passwords, access keys, or production secrets.
-
----
-
-## Useful Links Inside This Repository
-
-| Document | Description |
+| Resource | Link |
 | --- | --- |
-| `AGENTS.md` | Project rules and existing conclusions |
-| `docs/api/api-contract.md` | Frontend/backend API contract |
-| `docs/backend/backend-overview.md` | Backend modules, service flow, package boundaries |
-| `docs/database-overview.md` | Live database schema overview |
-| `docs/database-production-cleanup-outline.md` | Production cleanup and temporary structure notes |
-| `scripts/sql/` | DB migration and seed scripts |
-| `scripts/smoke/` | Manual smoke test scripts |
-
----
-
-## Repository Links
-
-Planned repository structure:
-
-- **Main project hub**: `SmartIELTS`
-- **Frontend repository**: `SmartIELTS-frontend`
-- **Backend repository**: `SmartIELTS-backend`
-
-After the GitHub repositories are fully split, update this section with the actual URLs.
-
----
-
-## Current Release Note
-
-This backend release includes:
-
-- Dashboard, Console, Record, Exam wrapper, and IELTS module backend updates.
-- Reading / Listening / Writing time settings and related migrations.
-- Business image resource and OSS target cleanup.
-- User profile picture, IELTS target score, and consecutive login days.
-- Admin/user record list, detail, review, delete, and restore flows.
-- Writing image description service and AI scoring tests.
-- Dashboard AI ask, learning context, SQL generation, answer compose/rewrite tests.
-- API, backend overview, and database overview documentation updates.
-
----
-
-## License / Usage
-
-This repository is currently used as the backend codebase for the SmartIELTS system. For public presentation, the main `SmartIELTS` repository should include the formal license, screenshots, architecture overview, demo notes, and frontend/backend repository links.
+| Main hub | [SmartIELTS](https://github.com/Andrew-Ng701/SmartIELTS) |
+| Frontend code | [SmartIELTS-frontend](https://github.com/Andrew-Ng701/SmartIELTS-frontend) |
+| API contract | `docs/api/api-contract.md` |
+| Backend overview | `docs/backend/backend-overview.md` |
+| Database overview | `docs/database-overview.md` |
